@@ -91,6 +91,15 @@ export default function RotatingImageBanner() {
     return () => { alive = false; clearTimeout(tid); };
   }, []);
 
+  const handleMouseEnter = (idx: number) => {
+    const currentTileImage = srcsRef.current[idx];
+    const newSrc = pickDifferent(IMAGE_POOL, srcsRef.current, currentTileImage);
+    srcsRef.current[idx] = newSrc;
+    setCells((prev) =>
+      prev.map((c, i) => (i === idx ? { src: newSrc, version: c.version + 1 } : c))
+    );
+  };
+
   return (
     <>
       <style>{`
@@ -153,13 +162,16 @@ export default function RotatingImageBanner() {
                   return (
                     <div
                       key={col}
+                      onMouseEnter={() => handleMouseEnter(idx)}
                       style={{
                         flex: 1,
                         position: "relative",
                         overflow: "hidden", // Clips the image to form the parallelogram
                         borderRadius: `${RADIUS}px`,
+                        cursor: "pointer",
                         ...(col === 3 ? { flex: 1.2 } : {}), // Bleed column 4 slightly more
                       }}
+                      className="group"
                     >
                       {/* Counter-skew the image so the food stays straight! */}
                       <div
@@ -181,6 +193,7 @@ export default function RotatingImageBanner() {
                           fill
                           sizes="(max-width: 1400px) 25vw, 20vw"
                           style={{ objectFit: "cover" }}
+                          className="transition-transform duration-700 ease-out group-hover:scale-110"
                           priority={idx < 6}
                         />
                       </div>
