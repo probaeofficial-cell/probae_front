@@ -3,25 +3,51 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
 const IMAGE_POOL = [
-  "https://images.unsplash.com/photo-1527324688151-0e627063f2b1?w=800&q=85",
-  "https://images.unsplash.com/photo-1568584711075-3d021a7c3ca3?w=800&q=85",
-  "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=800&q=85",
-  "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=800&q=85",
-  "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=800&q=85",
-  "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&q=85",
-  "https://images.unsplash.com/photo-1508747703725-719777637510?w=800&q=85",
-  "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=800&q=85",
-  "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=800&q=85",
-  "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&q=85",
-  "https://images.unsplash.com/photo-1577069861033-55d04cec4ef5?w=800&q=85",
-  "https://images.unsplash.com/photo-1587486913049-53fc88980cfc?w=800&q=85",
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=85",
-  "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=85",
+  "/images/banner/img-1.JPG",
+  "/images/banner/img-2.JPG",
+  "/images/banner/img-3.JPG",
+  "/images/banner/img-4.JPG",
+  "/images/banner/img-5.JPG",
+  "/images/banner/img-6.JPG",
+  "/images/banner/img-7.JPG",
+  "/images/banner/img-8.JPG",
+  "/images/banner/img-9.JPG",
+  "/images/banner/img-10.JPG",
+  "/images/banner/img-11.JPG",
+  "/images/banner/img-12.JPG",
+  "/images/banner/img-13.JPG",
+  "/images/banner/img-14.JPG",
+  "/images/banner/img-15.JPG",
+  "/images/banner/img-16.JPG",
+  "/images/banner/img-17.JPG",
+  "/images/banner/img-18.JPG",
+  "/images/banner/img-19.JPG",
+  "/images/banner/img-20.JPG",
+  "/images/banner/img-21.JPG",
+  "/images/banner/img-22.JPG",
+  "/images/banner/img-23.JPG",
+  "/images/banner/img-24.JPG",
+  "/images/banner/img-25.JPG",
+  "/images/banner/img-26.JPG",
+  "/images/banner/img-27.JPG",
 ];
 
-function pickDifferent(pool: string[], exclude: string): string {
-  const available = pool.filter((s) => s !== exclude);
-  return available[Math.floor(Math.random() * available.length)];
+function pickDifferent(pool: string[], currentlyShown: string[], currentTileImage: string): string {
+  // Find images not currently shown in ANY tile
+  const available = pool.filter((s) => !currentlyShown.includes(s));
+  
+  if (available.length > 0) {
+    return available[Math.floor(Math.random() * available.length)];
+  }
+  
+  // Fallback: If all images in the pool are already shown (e.g. pool size <= 12),
+  // pick one that isn't the same as the current tile to at least show a change.
+  const fallbackAvailable = pool.filter((s) => s !== currentTileImage);
+  if (fallbackAvailable.length > 0) {
+    return fallbackAvailable[Math.floor(Math.random() * fallbackAvailable.length)];
+  }
+  
+  return pool[0];
 }
 
 interface Cell {
@@ -35,10 +61,15 @@ const RADIUS = 14;         // Matching the softer radius from design
 const TOTAL = 12;
 
 export default function RotatingImageBanner() {
-  const [cells, setCells] = useState<Cell[]>(() =>
-    IMAGE_POOL.slice(0, TOTAL).map((src) => ({ src, version: 0 }))
+  // Ensure we have exactly TOTAL items, wrapping around if the pool is smaller than TOTAL
+  const initialSrcs = Array.from({ length: TOTAL }).map(
+    (_, i) => IMAGE_POOL[i % IMAGE_POOL.length]
   );
-  const srcsRef = useRef<string[]>(IMAGE_POOL.slice(0, TOTAL));
+
+  const [cells, setCells] = useState<Cell[]>(() =>
+    initialSrcs.map((src) => ({ src, version: 0 }))
+  );
+  const srcsRef = useRef<string[]>(initialSrcs);
 
   useEffect(() => {
     let tid: ReturnType<typeof setTimeout>;
@@ -47,7 +78,8 @@ export default function RotatingImageBanner() {
     const tick = () => {
       if (!alive) return;
       const idx = Math.floor(Math.random() * TOTAL);
-      const newSrc = pickDifferent(IMAGE_POOL, srcsRef.current[idx]);
+      const currentTileImage = srcsRef.current[idx];
+      const newSrc = pickDifferent(IMAGE_POOL, srcsRef.current, currentTileImage);
       srcsRef.current[idx] = newSrc;
       setCells((prev) =>
         prev.map((c, i) => (i === idx ? { src: newSrc, version: c.version + 1 } : c))

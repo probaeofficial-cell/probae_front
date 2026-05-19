@@ -1,5 +1,6 @@
 "use client";
-import { useState, useRef, useEffect, FormEvent, KeyboardEvent, ClipboardEvent, ButtonHTMLAttributes } from "react";
+import { useState, useRef, useEffect, FormEvent, KeyboardEvent, ClipboardEvent } from "react";
+import Image from "next/image";
 import { ProbaeButton } from "./ProbaeButton";
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -33,19 +34,15 @@ function ChevronRightIcon() {
 
 export function ProbaeWordmark() {
   return (
-    <div className="flex items-center justify-center gap-3 mb-10 w-full">
-      <div
-        className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden"
-        style={{ background: "#2e2e2e" }}
-      >
-        <svg viewBox="0 0 32 32" fill="none" className="w-7 h-7">
-          <path d="M8 6h9a6 6 0 0 1 0 12h-5v8H8V6z" fill="white" />
-        </svg>
-      </div>
-      <span className="text-white font-bold text-[1.7rem] tracking-tight leading-none select-none">
-        pro<em className="not-italic font-light text-neutral-400" style={{ fontFamily: "Georgia, serif", letterSpacing: "-0.02em" }}>bae</em>
-        <span className="text-neutral-400 font-light">.</span>
-      </span>
+    <div className="flex items-center justify-center mb-10 w-full">
+      <Image
+        src="/images/logos/PB_Probae Logo - LabWhite Horizontal.png"
+        alt="Probae Logo"
+        width={180}
+        height={45}
+        priority
+        className="object-contain select-none"
+      />
     </div>
   );
 }
