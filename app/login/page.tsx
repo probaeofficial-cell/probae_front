@@ -8,6 +8,7 @@ export default function LoginPage() {
       style={{ background: "#1c1c1c" }}
     >
       {/* ── Left: form panel ──────────────────────────────────────────────── */}
+      {/* Reverted back to 38% and px-14 so the login form DOES NOT MOVE */}
       <section
         className="relative flex-shrink-0 flex flex-col justify-center px-14 z-10"
         style={{ width: "38%" }}
@@ -16,10 +17,13 @@ export default function LoginPage() {
       </section>
 
       {/* ── Right: image grid ─────────────────────────────────────────────── */}
-      {/* Removed the clip-path and negative margin. The RotatingImageBanner 
-        now handles the geometric boundaries naturally.
+      {/* Added marginLeft to "pull" the image section to the left. 
+        Tweak the "-8%" up or down (e.g., "-5%" or "-12%") to get the exact gap you want.
       */}
-      <section className="flex-1 relative">
+      <section
+        className="flex-1 relative"
+        style={{ marginLeft: "-8%" }}
+      >
         <RotatingImageBanner />
       </section>
     </main>
