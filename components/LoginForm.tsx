@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect, FormEvent, KeyboardEvent, ClipboardEvent } from "react";
+import { useState, useRef, useEffect, FormEvent, KeyboardEvent, ClipboardEvent, ButtonHTMLAttributes } from "react";
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 function EyeIcon() {
@@ -33,24 +33,41 @@ function ChevronRightIcon() {
 export function ProbaeWordmark() {
   return (
     <div className="flex items-center justify-center gap-3 mb-10 w-full">
-      {/* Icon */}
       <div
         className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden"
         style={{ background: "#2e2e2e" }}
       >
         <svg viewBox="0 0 32 32" fill="none" className="w-7 h-7">
-          <path
-            d="M8 6h9a6 6 0 0 1 0 12h-5v8H8V6z"
-            fill="white"
-          />
+          <path d="M8 6h9a6 6 0 0 1 0 12h-5v8H8V6z" fill="white" />
         </svg>
       </div>
-      {/* Wordmark */}
       <span className="text-white font-bold text-[1.7rem] tracking-tight leading-none select-none">
         pro<em className="not-italic font-light text-neutral-400" style={{ fontFamily: "Georgia, serif", letterSpacing: "-0.02em" }}>bae</em>
         <span className="text-neutral-400 font-light">.</span>
       </span>
     </div>
+  );
+}
+
+// ─── Reusable Custom Button ───────────────────────────────────────────────────
+// Note: Replace "#7C3AED" with your exact Probae purple hex code if it differs!
+interface ProbaeButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> { }
+
+export function ProbaeButton({ children, disabled, className = "", ...props }: ProbaeButtonProps) {
+  const baseStyles = "w-full font-medium text-base rounded-2xl px-4 py-3.5 flex items-center justify-center gap-1.5 transition-all duration-200 outline-none";
+
+  const disabledStyles = "bg-[#353535] text-neutral-500 border border-transparent cursor-not-allowed opacity-60";
+
+  const activeStyles = "bg-[#7C3AED] text-white border border-[#7C3AED] hover:bg-white hover:text-[#7C3AED] cursor-pointer";
+
+  return (
+    <button
+      disabled={disabled}
+      className={`${baseStyles} ${disabled ? disabledStyles : activeStyles} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -61,18 +78,6 @@ const inputCls = `
   rounded-2xl px-4 py-3.5 text-sm
   outline-none focus:border-neutral-500
   transition-colors duration-150
-`;
-const btnDisabled = `
-  w-full bg-[#353535] text-neutral-500
-  font-medium text-base rounded-2xl
-  px-4 py-3.5 flex items-center justify-center gap-1.5
-  cursor-not-allowed select-none opacity-60
-`;
-const btnActive = `
-  w-full bg-[#3a3a3a] hover:bg-[#454545]
-  text-white font-medium text-base rounded-2xl
-  px-4 py-3.5 flex items-center justify-center gap-1.5
-  transition-colors duration-200 cursor-pointer
 `;
 
 // ─── OTP Input (shared) ───────────────────────────────────────────────────────
@@ -181,7 +186,6 @@ function LoginView({
     setError(null);
     setLoading(true);
     try {
-      // simulate network delay
       await new Promise((r) => setTimeout(r, 800));
       onSuccess();
     } catch {
@@ -231,17 +235,13 @@ function LoginView({
           </button>
         </div>
 
-        <button
-          type="submit"
-          disabled={!canSubmit || loading}
-          className={canSubmit && !loading ? btnActive : btnDisabled}
-        >
+        <ProbaeButton type="submit" disabled={!canSubmit || loading}>
           {loading ? (
             <span className="animate-pulse">Logging in…</span>
           ) : (
             <>Login <ChevronRightIcon /></>
           )}
-        </button>
+        </ProbaeButton>
       </form>
 
       <button
@@ -298,13 +298,9 @@ function AuthenticatorView({ onSuccess }: { onSuccess: () => void }) {
       <form onSubmit={handleSubmit} className="w-full flex flex-col items-center" noValidate>
         <OtpInput length={6} value={digits} onChange={setDigits} />
 
-        <button
-          type="submit"
-          disabled={!filled || loading}
-          className={filled && !loading ? btnActive : btnDisabled}
-        >
+        <ProbaeButton type="submit" disabled={!filled || loading}>
           {loading ? <span className="animate-pulse">Verifying…</span> : <>Submit <ChevronRightIcon /></>}
-        </button>
+        </ProbaeButton>
       </form>
     </>
   );
@@ -364,13 +360,10 @@ function ForgotEmailView({
           autoComplete="email"
           className={inputCls}
         />
-        <button
-          type="submit"
-          disabled={!canSubmit || loading}
-          className={canSubmit && !loading ? btnActive : btnDisabled}
-        >
+
+        <ProbaeButton type="submit" disabled={!canSubmit || loading}>
           {loading ? <span className="animate-pulse">Sending…</span> : <>Send code <ChevronRightIcon /></>}
-        </button>
+        </ProbaeButton>
       </form>
 
       <button
@@ -448,13 +441,9 @@ function EmailOtpView({
           <p className="text-neutral-500 text-sm mb-4">{seconds}s</p>
         )}
 
-        <button
-          type="submit"
-          disabled={!filled || loading}
-          className={filled && !loading ? btnActive : btnDisabled}
-        >
+        <ProbaeButton type="submit" disabled={!filled || loading}>
           {loading ? <span className="animate-pulse">Verifying…</span> : <>Verify email <ChevronRightIcon /></>}
-        </button>
+        </ProbaeButton>
       </form>
 
       {/* Resend */}
@@ -556,17 +545,13 @@ function ResetPasswordView({ onSuccess }: { onSuccess: () => void }) {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={!canSubmit || loading}
-          className={canSubmit && !loading ? btnActive : btnDisabled}
-        >
+        <ProbaeButton type="submit" disabled={!canSubmit || loading}>
           {loading ? (
             <span className="animate-pulse">Updating…</span>
           ) : (
             <>Update password <ChevronRightIcon /></>
           )}
-        </button>
+        </ProbaeButton>
       </form>
     </>
   );
@@ -589,9 +574,9 @@ function PasswordChangedView({ onLogin }: { onLogin: () => void }) {
         You can now log in with your new password.
       </p>
 
-      <button onClick={onLogin} className={btnActive}>
+      <ProbaeButton type="button" onClick={onLogin}>
         Back to Login <ChevronRightIcon />
-      </button>
+      </ProbaeButton>
     </div>
   );
 }
@@ -628,7 +613,6 @@ export default function LoginForm() {
   const [resetEmail, setResetEmail] = useState("");
 
   return (
-    // Added `mx-auto` and `items-center` to perfectly center the form within the left panel
     <div className="flex flex-col items-center w-full max-w-[360px] mx-auto">
       {view === "login" && (
         <LoginView
