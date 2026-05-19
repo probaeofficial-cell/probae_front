@@ -50,27 +50,7 @@ export function ProbaeWordmark() {
   );
 }
 
-// ─── Reusable Custom Button ───────────────────────────────────────────────────
-// Note: Replace "#7C3AED" with your exact Probae purple hex code if it differs!
-// interface ProbaeButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> { }
-
-// export function ProbaeButton({ children, disabled, className = "", ...props }: ProbaeButtonProps) {
-//   const baseStyles = "w-full font-medium text-base rounded-2xl px-4 py-3.5 flex items-center justify-center gap-1.5 transition-all duration-200 outline-none";
-
-//   const disabledStyles = "bg-[#353535] text-neutral-500 border border-transparent cursor-not-allowed opacity-60";
-
-//   const activeStyles = "bg-[#7C3AED] text-white border border-[#7C3AED] hover:bg-white hover:text-[#7C3AED] cursor-pointer";
-
-//   return (
-//     <button
-//       disabled={disabled}
-//       className={`${baseStyles} ${disabled ? disabledStyles : activeStyles} ${className}`}
-//       {...props}
-//     >
-//       {children}
-//     </button>
-//   );
-// }
+// ─── Reusable Custom Button (Imported from ./ProbaeButton) ───────────────────
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const inputCls = `
@@ -199,8 +179,8 @@ function LoginView({
   return (
     <>
       <ProbaeWordmark />
-      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">Login</h1>
-      <p className="text-neutral-500 text-sm mb-7 text-center w-full">Genius at work starts here</p>
+      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">Admin Login</h1>
+      <p className="text-neutral-500 text-sm mb-7 text-center w-full">Secure portal access</p>
 
       {error && (
         <p className="text-red-400 text-xs mb-4 bg-red-950/40 border border-red-800/40 rounded-xl px-3 py-2 w-full text-center">
@@ -284,10 +264,10 @@ function AuthenticatorView({ onSuccess }: { onSuccess: () => void }) {
     <>
       <ProbaeWordmark />
       <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">
-        Verification Code
+        Admin Verification
       </h1>
       <p className="text-neutral-500 text-sm leading-relaxed text-center w-full">
-        Enter the code sent to your phone<br />number ending in 2549
+        Restricted access. Enter the code sent to your<br />phone number ending in 2549
       </p>
 
       {error && (
@@ -340,10 +320,10 @@ function ForgotEmailView({
     <>
       <ProbaeWordmark />
       <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">
-        Reset password
+        Admin Recovery
       </h1>
       <p className="text-neutral-500 text-sm mb-7 text-center w-full">
-        Enter your email and we'll send you a code.
+        Secure portal access. Enter your email for a reset code.
       </p>
 
       {error && (
@@ -421,10 +401,10 @@ function EmailOtpView({
     <>
       <ProbaeWordmark />
       <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">
-        Check your email
+        Admin Verification
       </h1>
       <p className="text-neutral-500 text-sm leading-relaxed text-center w-full">
-        Enter the verification code sent to<br />
+        Restricted access. Enter the verification code sent to<br />
         <strong className="text-white font-semibold">{email}</strong>
       </p>
 
@@ -510,8 +490,8 @@ function ResetPasswordView({ onSuccess }: { onSuccess: () => void }) {
   return (
     <>
       <ProbaeWordmark />
-      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">New password</h1>
-      <p className="text-neutral-500 text-sm mb-7 text-center w-full">Create a new, strong password.</p>
+      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">Admin Reset</h1>
+      <p className="text-neutral-500 text-sm mb-7 text-center w-full">Secure portal access. Create a new password.</p>
 
       {error && (
         <p className="text-red-400 text-xs mb-4 bg-red-950/40 border border-red-800/40 rounded-xl px-3 py-2 w-full text-center">

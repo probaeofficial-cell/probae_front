@@ -8,21 +8,23 @@ export default function LoginPage() {
       style={{ background: "#1c1c1c" }}
     >
       {/* ── Left: form panel ──────────────────────────────────────────────── */}
-      {/* Reverted back to 38% and px-14 so the login form DOES NOT MOVE */}
+      {/* 
+        On Desktop (lg and up): 38% width, px-14 
+        On Mobile/Tablet (below lg): w-full, px-6
+      */}
       <section
-        className="relative flex-shrink-0 flex flex-col justify-center px-14 z-10"
-        style={{ width: "38%" }}
+        className="relative flex-shrink-0 flex flex-col justify-center px-6 lg:px-14 w-full lg:w-[38%] z-10"
       >
         <LoginForm />
       </section>
 
       {/* ── Right: image grid ─────────────────────────────────────────────── */}
-      {/* Added marginLeft to "pull" the image section to the left. 
-        Tweak the "-8%" up or down (e.g., "-5%" or "-12%") to get the exact gap you want.
+      {/* 
+        On Desktop (lg and up): block, flex-1, pulled to the left
+        On Mobile/Tablet (below lg): completely hidden
       */}
       <section
-        className="flex-1 relative"
-        style={{ marginLeft: "-8%" }}
+        className="hidden lg:block flex-1 relative -ml-[8%]"
       >
         <RotatingImageBanner />
       </section>
