@@ -8,9 +8,10 @@ export interface LoginResponse {
 }
 
 export interface UserProfile {
-  id: string;
+  id: string | number;
   email: string;
   role: string;
+  two_factor_enabled: boolean;
   // ... other user fields
 }
 

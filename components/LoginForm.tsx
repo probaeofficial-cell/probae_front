@@ -1,7 +1,10 @@
 "use client";
 import { useState, useRef, useEffect, FormEvent, KeyboardEvent, ClipboardEvent } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ProbaeButton } from "./ProbaeButton";
+import { useAuth } from "@/lib/AuthContext";
+import { endpoints, ApiError } from "@/lib/apiService";
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 function EyeIcon() {
@@ -46,8 +49,6 @@ export function ProbaeWordmark() {
     </div>
   );
 }
-
-// ─── Reusable Custom Button (Imported from ./ProbaeButton) ───────────────────
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const inputCls = `
@@ -126,7 +127,6 @@ function OtpInput({ length, value, onChange }: OtpInputProps) {
   );
 }
 
-// ─── Countdown hook ───────────────────────────────────────────────────────────
 function useCountdown(initial: number) {
   const [seconds, setSeconds] = useState(initial);
   const [running, setRunning] = useState(true);
@@ -146,9 +146,11 @@ function useCountdown(initial: number) {
 function LoginView({
   onForgot,
   onSuccess,
+  onRequires2FA
 }: {
   onForgot: () => void;
-  onSuccess: () => void;
+  onSuccess: (token: string) => void;
+  onRequires2FA: (email: string, pass: string) => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -164,10 +166,14 @@ function LoginView({
     setError(null);
     setLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 800));
-      onSuccess();
-    } catch {
-      setError("Invalid credentials. Please try again.");
+      const data = await endpoints.auth.login({ email, password });
+      onSuccess(data.access_token);
+    } catch (err: any) {
+      if (err instanceof ApiError && err.status === 403 && err.detail === "2FA verification required") {
+        onRequires2FA(email, password);
+        return;
+      }
+      setError(err.message || "Invalid credentials. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -233,8 +239,8 @@ function LoginView({
   );
 }
 
-// ─── VIEW: Google Authenticator OTP (6-digit, after login) ───────────────────
-function AuthenticatorView({ onSuccess }: { onSuccess: () => void }) {
+// ─── VIEW: Google Authenticator OTP ───────────────────────────────────────────
+function AuthenticatorView({ email, password, onSuccess }: { email: string, password: string, onSuccess: (token: string) => void }) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -247,10 +253,10 @@ function AuthenticatorView({ onSuccess }: { onSuccess: () => void }) {
     setLoading(true);
     setError(null);
     try {
-      await new Promise((r) => setTimeout(r, 600));
-      onSuccess();
-    } catch {
-      setError("Invalid code. Please try again.");
+      const data = await endpoints.auth.login({ email, password, totp_code: digits.join("") });
+      onSuccess(data.access_token);
+    } catch (err: any) {
+      setError(err.message || "Invalid code. Please try again.");
       setDigits(Array(6).fill(""));
     } finally {
       setLoading(false);
@@ -264,7 +270,7 @@ function AuthenticatorView({ onSuccess }: { onSuccess: () => void }) {
         Admin Verification
       </h1>
       <p className="text-neutral-500 text-sm leading-relaxed text-center w-full">
-        Restricted access. Enter the code sent to your<br />phone number ending in 2549
+        Restricted access. Enter your 6-digit Authenticator code.
       </p>
 
       {error && (
@@ -589,17 +595,39 @@ type View =
 export default function LoginForm() {
   const [view, setView] = useState<View>("login");
   const [resetEmail, setResetEmail] = useState("");
+  const [pendingCredentials, setPendingCredentials] = useState({ email: "", password: "" });
+  
+  const { setAccessToken, fetchMe } = useAuth();
+  const router = useRouter();
+
+  const handleLoginSuccess = async (token: string) => {
+    setAccessToken(token);
+    setView("success");
+    await fetchMe(token);
+    // Add small delay to let user see the success view before navigating
+    setTimeout(() => {
+      router.push("/admin/dashboard");
+    }, 1000);
+  };
 
   return (
     <div className="flex flex-col items-center w-full max-w-[360px] mx-auto">
       {view === "login" && (
         <LoginView
           onForgot={() => setView("forgot-email")}
-          onSuccess={() => setView("authenticator")}
+          onSuccess={handleLoginSuccess}
+          onRequires2FA={(email, password) => {
+            setPendingCredentials({ email, password });
+            setView("authenticator");
+          }}
         />
       )}
       {view === "authenticator" && (
-        <AuthenticatorView onSuccess={() => setView("success")} />
+        <AuthenticatorView 
+          email={pendingCredentials.email}
+          password={pendingCredentials.password}
+          onSuccess={handleLoginSuccess} 
+        />
       )}
       {view === "forgot-email" && (
         <ForgotEmailView

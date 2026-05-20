@@ -8,6 +8,8 @@ const inter = Inter({
   display: "swap",
 });
 
+import { Providers } from "@/components/Providers";
+
 export const metadata: Metadata = {
   title: "probae — Admin Login",
   description: "Sign in to the probae admin panel.",
@@ -20,7 +22,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable}>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
