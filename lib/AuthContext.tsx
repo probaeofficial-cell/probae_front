@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { endpoints, setMemoryAccessToken } from "./apiService";
 
 export interface User {
-  id: number;
+  id: string | number;
   email: string;
   role: string;
   two_factor_enabled: boolean;
@@ -17,7 +17,7 @@ interface AuthContextType {
   isLoading: boolean;
   setAccessToken: (token: string | null) => void;
   fetchMe: (token?: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,10 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await endpoints.auth.logout();
     setAccessTokenState(null);
+    setMemoryAccessToken(null);
     setUser(null);
-    endpoints.auth.logout();
   };
 
   // Run fetchMe on initial load if we had a way to persist token.

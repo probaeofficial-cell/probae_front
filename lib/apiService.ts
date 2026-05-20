@@ -201,9 +201,15 @@ export const endpoints = {
       setMemoryAccessToken(response.access_token);
       return response;
     },
-    logout: () => {
-      clearTokens();
-      if (typeof window !== "undefined") window.location.href = "/admin/login";
+    logout: async () => {
+      try {
+        await api.post("/auth/logout");
+      } catch (e) {
+        console.error("Failed to call logout API", e);
+      } finally {
+        clearTokens();
+        if (typeof window !== "undefined") window.location.href = "/admin/login";
+      }
     },
     setup2FA: async () => {
       return await api.post<{ secret: string; qr_code_url: string }>("/auth/setup-2fa");
