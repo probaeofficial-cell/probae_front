@@ -65,9 +65,14 @@ export function Sidebar() {
           </div>
         ) : (
           <div className="flex items-center justify-center w-full">
-            <div className="w-8 h-8 bg-white rounded flex items-center justify-center text-black font-bold text-xl leading-none">
-              P
-            </div>
+            <Image
+              src="/images/logos/2.svg"
+              alt="Probae Logo Collapsed"
+              width={32}
+              height={32}
+              priority
+              className="object-contain"
+            />
           </div>
         )}
         {!collapsed && (
