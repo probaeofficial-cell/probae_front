@@ -98,7 +98,7 @@ export function Sidebar() {
       )}
 
       {/* ── Scrollable Main Menu ───────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-none py-6">
+      <div className={`flex-1 scrollbar-none py-6 ${collapsed ? "overflow-visible" : "overflow-y-auto overflow-x-hidden"}`}>
         <div className="px-4 mb-2">
           {!collapsed && (
             <p className="text-[11px] font-semibold text-neutral-500 tracking-wider mb-4 px-2 uppercase">
