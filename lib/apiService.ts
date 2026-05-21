@@ -215,7 +215,7 @@ export const endpoints = {
       return await api.post<{ secret: string; qr_code_url: string }>("/auth/setup-2fa");
     },
     verify2FA: async (totp_code: string) => {
-      return await api.post<{ success: boolean }>("/auth/verify-2fa", { totp_code });
+      return await api.post<{ success: boolean }>("/auth/verify-2fa", { code: totp_code });
     }
   },
   
