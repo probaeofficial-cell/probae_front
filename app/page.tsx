@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 
 /**
- * Root page — redirects to the login screen.
- * Swap this for a dashboard or landing page once auth is implemented.
+ * Root page — redirects to the admin login screen.
  */
 export default function RootPage() {
-  redirect("/login");
+  redirect("/admin/login");
 }
+

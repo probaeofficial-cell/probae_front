@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -10,28 +10,12 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
-import { useAuth } from "@/lib/AuthContext";
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [rawMaterialsOpen, setRawMaterialsOpen] = useState(true);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const { logout } = useAuth();
-  
-  const profileRef = useRef<HTMLDivElement>(null);
-
-  // Close profile dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
-        setProfileDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   // Auto-expand sections when an active sub-item is detected
   useEffect(() => {
@@ -44,24 +28,6 @@ export function Sidebar() {
       }
     }
   }, [pathname]);
-
-  const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    // 1. Prevent the click from bubbling up and causing weird layout glitches
-    e.preventDefault();
-    e.stopPropagation();
-
-    console.log("✅ Logout triggered! Firing API...");
-
-    try {
-      // 2. Wait for the logout API/redirect to fully complete FIRST
-      await logout();
-      
-      // 3. Only close the dropdown AFTER it's successful
-      setProfileDropdownOpen(false);
-    } catch (error) {
-      console.error("❌ Logout API call failed:", error);
-    }
-  };
 
   const BowlIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
@@ -337,21 +303,21 @@ export function Sidebar() {
           })}
 
         {/* ── Profile button — isolated in its own relative wrapper ── */}
-        <div className="relative" ref={profileRef}>
+        <div className="relative group">
           {(() => {
             const isProfileActive = pathname === "/admin/profile" || pathname.startsWith("/admin/profile/");
             return (
               <>
                 <button
                   type="button"
-                  onClick={() => setProfileDropdownOpen((prev) => !prev)}
+                  onClick={() => router.push("/admin/profile")}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                     isProfileActive
                       ? "bg-[#7c26d9] text-white font-semibold"
                       : "text-neutral-400 hover:bg-[#2a2a2a] hover:text-white"
                   } ${
                     collapsed ? "justify-center" : ""
-                  } ${profileDropdownOpen ? "bg-[#2a2a2a] text-white" : ""}`}
+                  }`}
                 >
                   <div
                     className={`flex items-center justify-center ${
@@ -369,49 +335,12 @@ export function Sidebar() {
                   )}
                 </button>
 
-                {/* ── Profile Dropdown ──────────────────────────────────────
-                    Positioned ABOVE the button via bottom-full.
-                    z-[9999] ensures it sits on top of everything.
-                    The parent `relative` div is the positioning anchor —
-                    NOT the aside or any overflow-clipping ancestor.
-                ─────────────────────────────────────────────────────────── */}
-                {profileDropdownOpen && (
-                  <div
-                    className={`
-                      absolute z-[9999]
-                      ${collapsed ? "left-full top-0 ml-2" : "bottom-full left-0 mb-1 w-full"}
-                      bg-[#242424] border border-[#3a3a3a] rounded-xl shadow-2xl overflow-hidden
-                      min-w-[160px]
-                    `}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProfileDropdownOpen(false);
-                        router.push("/admin/profile");
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm text-neutral-200 hover:bg-[#2f2f2f] hover:text-white transition-colors"
-                    >
-                      View Profile
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProfileDropdownOpen(false);
-                        router.push("/admin/settings");
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm text-neutral-200 hover:bg-[#2f2f2f] hover:text-white transition-colors"
-                    >
-                      Change Password
-                    </button>
-                    <div className="h-[1px] bg-[#3a3a3a]" />
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-[#2f2f2f] hover:text-red-300 transition-colors font-semibold"
-                    >
-                      Log Out
-                    </button>
+                {/* Tooltip when collapsed */}
+                {collapsed && (
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[9999]">
+                    <div className="bg-[#2a2a2a] border border-[#3a3a3a] text-white text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-lg whitespace-nowrap">
+                      Profile
+                    </div>
                   </div>
                 )}
               </>

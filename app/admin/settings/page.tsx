@@ -40,12 +40,13 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-[#fafafa]">
-      <div className="p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.1)] flex flex-col bg-white overflow-y-auto">
+      <div className="p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.1)] flex flex-col bg-white overflow-hidden">
         {/* Header Area */}
         <Header />
 
         {/* Content Area */}
-        <div className="flex-1 max-w-3xl mx-auto w-full">
+        <div className="flex-1 overflow-y-auto pr-4 scrollbar-thin">
+          <div className="max-w-3xl mx-auto w-full">
           {/* Page Title */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-neutral-800">Settings</h1>
@@ -194,5 +195,6 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  </div>
   );
 }

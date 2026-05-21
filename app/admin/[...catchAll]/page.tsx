@@ -10,10 +10,10 @@ export default function AdminNotFound() {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-[#fafafa]">
-      <div className="p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.1)] flex flex-col bg-white overflow-y-auto">
+      <div className="p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.1)] flex flex-col bg-white overflow-hidden">
         <Header />
 
-        <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto text-center py-12">
+        <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto text-center py-12 overflow-y-auto">
           <div className="w-20 h-20 rounded-3xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 mb-6 shadow-sm">
             <AlertOctagon className="w-10 h-10 animate-pulse" />
           </div>
