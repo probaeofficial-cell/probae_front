@@ -54,7 +54,7 @@ export function Header() {
   return (
     <header className="flex items-center justify-between mb-8 relative z-40">
       {/* Search Bar */}
-      <div className="relative w-full max-w-md">
+      <div className="relative flex-1 sm:flex-initial sm:w-full max-w-[180px] sm:max-w-md mr-2 sm:mr-0">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
         <input
           type="text"
@@ -64,7 +64,7 @@ export function Header() {
       </div>
 
       {/* Right side icons */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
 
         {/* ── Notifications ───────────────────────────────────────── */}
         <div className="relative" ref={notifRef}>
@@ -74,19 +74,19 @@ export function Header() {
               setIsNotifOpen((prev) => !prev);
               setIsProfileOpen(false);
             }}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50 transition-colors"
+            className="flex items-center justify-center sm:justify-start gap-2 w-9 h-9 sm:w-auto sm:h-auto px-0 sm:px-4 py-0 sm:py-1.5 rounded-full border border-neutral-300 text-sm text-neutral-600 hover:bg-neutral-50 transition-colors relative"
           >
             <Bell className="w-4 h-4" />
-            Notifications
+            <span className="hidden sm:inline">Notifications</span>
             {unreadCount > 0 && (
-              <span className="bg-neutral-800 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-1">
+              <span className="bg-neutral-800 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold sm:static absolute -top-1 -right-1 sm:translate-x-0 sm:translate-y-0">
                 {unreadCount}
               </span>
             )}
           </button>
 
           {isNotifOpen && (
-            <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-neutral-100 overflow-hidden z-50">
+            <div className="absolute right-0 mt-3 w-[280px] sm:w-80 bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-neutral-100 overflow-hidden z-50">
               <div className="px-4 py-3 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
                 <span className="font-semibold text-neutral-800 text-sm">Notifications</span>
                 <button className="text-[11px] text-neutral-500 hover:text-neutral-800 font-medium">

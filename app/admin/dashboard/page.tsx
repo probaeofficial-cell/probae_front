@@ -4,7 +4,7 @@ import { Header } from "@/components/admin/Header";
 export default function DashboardPage() {
   return (
     <div className="flex flex-col flex-1 h-full bg-[#fafafa]">
-      <div className="p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.1)] flex flex-col bg-white overflow-hidden">
+      <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.1)] flex flex-col bg-white overflow-hidden">
         <Header />
 
         <div className="flex-1 bg-white overflow-y-auto">
