@@ -196,7 +196,7 @@ export const api = {
 // ─── Application API Endpoints ───────────────────────────────────────────────
 export const endpoints = {
   auth: {
-    login: async (payload: { email: string; password: string; totp_code?: string }): Promise<LoginResponse> => {
+    login: async (payload: { identifier: string; password: string; totp_code?: string }): Promise<LoginResponse> => {
       const response = await api.post<LoginResponse>("/auth/login", payload);
       setMemoryAccessToken(response.access_token);
       return response;

@@ -166,7 +166,7 @@ function LoginView({
     setError(null);
     setLoading(true);
     try {
-      const data = await endpoints.auth.login({ email, password });
+      const data = await endpoints.auth.login({ identifier: email, password });
       onSuccess(data.access_token);
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 403 && err.detail === "2FA verification required") {
@@ -253,7 +253,7 @@ function AuthenticatorView({ email, password, onSuccess }: { email: string, pass
     setLoading(true);
     setError(null);
     try {
-      const data = await endpoints.auth.login({ email, password, totp_code: digits.join("") });
+      const data = await endpoints.auth.login({ identifier: email, password, totp_code: digits.join("") });
       onSuccess(data.access_token);
     } catch (err: any) {
       setError(err.message || "Invalid code. Please try again.");
