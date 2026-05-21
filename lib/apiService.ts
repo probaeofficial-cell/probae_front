@@ -76,6 +76,17 @@ const parseError = async (response: Response): Promise<never> => {
   } catch (e) {
     // If response is not JSON, fallback to the standard HTTP status message
   }
+
+  // Intercept 401/403 status codes and redirect to login page if not already there
+  if (response.status === 401 || response.status === 403) {
+    clearTokens();
+    if (typeof window !== "undefined") {
+      if (!window.location.pathname.startsWith("/admin/login")) {
+        window.location.href = "/admin/login";
+      }
+    }
+  }
+
   throw new ApiError(errorMessage, response.status, detail);
 };
 
@@ -142,7 +153,11 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
           isRefreshing = false;
           clearTokens();
           onTokenRefreshed(null); 
-          if (typeof window !== "undefined") window.location.href = "/admin/login";
+          if (typeof window !== "undefined") {
+            if (!window.location.pathname.startsWith("/admin/login")) {
+              window.location.href = "/admin/login";
+            }
+          }
           throw new ApiError("Session expired. Please log in again.", 401);
         }
       }
