@@ -4,33 +4,50 @@ import React, { useState, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Camera, Mail, User, Shield, Save, Check, AlertCircle } from "lucide-react";
+import { endpoints } from "@/lib/apiService";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, fetchMe } = useAuth();
 
   const [displayName, setDisplayName] = useState(
     user?.email?.split("@")[0] ?? "Admin"
   );
-  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle avatar file selection
-  const handleFileChange = (file: File | null) => {
+  const handleFileChange = async (file: File | null) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = (e) => setAvatarSrc(e.target?.result as string);
-    reader.readAsDataURL(file);
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select a valid image file.");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const uploadRes = await endpoints.documents.upload(file);
+      await endpoints.users.updateProfile({ profile_picture_id: uploadRes.id });
+      await fetchMe();
+    } catch (err: any) {
+      console.error("Failed to upload avatar:", err);
+      setUploadError(err.detail || err.message || "An error occurred while uploading the avatar.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
+    if (isUploading) return;
     const file = e.dataTransfer.files?.[0] ?? null;
     handleFileChange(file);
-  }, []);
+  }, [isUploading, fetchMe]);
 
   const avatarLetter = (displayName || user?.email || "A").charAt(0).toUpperCase();
 
@@ -63,18 +80,27 @@ export default function ProfilePage() {
               {/* Avatar preview */}
               <div className="relative flex-shrink-0">
                 <div
-                  className={`w-24 h-24 rounded-full overflow-hidden border-4 ${
+                  className={`relative w-24 h-24 rounded-full overflow-hidden border-4 ${
                     isDragging ? "border-violet-400 scale-105" : "border-white"
                   } shadow-lg transition-all`}
-                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragOver={(e) => { e.preventDefault(); if (!isUploading) setIsDragging(true); }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={onDrop}
                 >
-                  {avatarSrc ? (
-                    <img src={avatarSrc} alt="Avatar" className="w-full h-full object-cover" />
+                  {user?.profile_picture?.file_url ? (
+                    <img src={user.profile_picture.file_url} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-white text-3xl font-bold">
                       {avatarLetter}
+                    </div>
+                  )}
+
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white backdrop-blur-[2px] z-10">
+                      <svg className="animate-spin w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
                     </div>
                   )}
                 </div>
@@ -83,7 +109,8 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 w-8 h-8 bg-violet-600 hover:bg-violet-700 rounded-full flex items-center justify-center shadow-md transition-colors"
+                  disabled={isUploading}
+                  className="absolute bottom-0 right-0 w-8 h-8 bg-violet-600 hover:bg-violet-700 rounded-full flex items-center justify-center shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Camera className="w-4 h-4 text-white" />
                 </button>
@@ -93,6 +120,7 @@ export default function ProfilePage() {
                   type="file"
                   accept="image/*"
                   className="hidden"
+                  disabled={isUploading}
                   onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
                 />
               </div>
@@ -104,12 +132,25 @@ export default function ProfilePage() {
                 <p className="text-xs text-neutral-400 mt-2">
                   Click the camera icon or drag & drop an image to update your avatar.
                 </p>
+                {uploadError && (
+                  <div className="mt-3 p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-xs flex items-center gap-2 max-w-md">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                    <span>{uploadError}</span>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="mt-3 text-sm text-violet-600 hover:text-violet-700 font-medium transition-colors"
+                  disabled={isUploading}
+                  className="mt-3 text-sm text-violet-600 hover:text-violet-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center sm:justify-start gap-1.5"
                 >
-                  Upload new photo
+                  {isUploading && (
+                    <svg className="animate-spin w-3.5 h-3.5 text-violet-600" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                  )}
+                  {isUploading ? "Uploading..." : "Upload new photo"}
                 </button>
               </div>
             </div>

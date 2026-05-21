@@ -136,7 +136,15 @@ export function Header() {
             }}
             className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-white font-bold text-sm border-2 border-white shadow-md hover:scale-105 transition-transform cursor-pointer overflow-hidden"
           >
-            {avatarLetter}
+            {user?.profile_picture?.file_url ? (
+              <img
+                src={user.profile_picture.file_url}
+                alt="Profile Avatar"
+                className="w-full h-full object-cover rounded-full"
+              />
+            ) : (
+              avatarLetter
+            )}
           </button>
 
           {/* Profile Dropdown */}

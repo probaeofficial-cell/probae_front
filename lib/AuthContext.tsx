@@ -9,6 +9,10 @@ export interface User {
   email: string;
   role: string;
   two_factor_enabled: boolean;
+  profile_picture?: {
+    id: number;
+    file_url: string;
+  } | null;
 }
 
 interface AuthContextType {

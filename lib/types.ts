@@ -7,12 +7,17 @@ export interface LoginResponse {
   token_type: string;
 }
 
+export interface Document {
+  id: number;
+  file_url: string;
+}
+
 export interface UserProfile {
   id: string | number;
   email: string;
   role: string;
   two_factor_enabled: boolean;
-  // ... other user fields
+  profile_picture?: Document | null;
 }
 
 // export interface Product {

@@ -238,5 +238,16 @@ export const endpoints = {
     getMe: async () => {
       return await api.get<UserProfile>("/auth/me");
     },
+    updateProfile: async (data: { profile_picture_id: number }) => {
+      return await api.patch<UserProfile>("/auth/me", data);
+    },
+  },
+
+  documents: {
+    upload: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return await api.post<{ id: number; file_url: string }>("/documents/upload", formData);
+    },
   },
 };
