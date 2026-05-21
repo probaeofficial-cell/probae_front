@@ -250,4 +250,13 @@ export const endpoints = {
       return await api.post<{ id: number; file_url: string }>("/documents/upload", formData);
     },
   },
+
+  settings: {
+    getSystemSettings: async (): Promise<{ R2_BASE_URL: string }> => {
+      return await api.get<{ R2_BASE_URL: string }>("/settings");
+    },
+    updateSystemSettings: async (payload: Record<string, string>): Promise<Record<string, string>> => {
+      return await api.put<Record<string, string>>("/settings", payload);
+    },
+  },
 };

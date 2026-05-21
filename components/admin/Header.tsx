@@ -4,10 +4,31 @@ import React, { useState, useRef, useEffect } from "react";
 import { Bell, Search, User, KeyRound, LogOut, Check } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
+import { UserAvatar } from "./UserAvatar";
+import { endpoints } from "@/lib/apiService";
 
 export function Header() {
   const { user, logout } = useAuth();
   const router = useRouter();
+
+  // Load system settings for R2 URL stitching
+  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+
+  useEffect(() => {
+    async function fetchSystemSettings() {
+      try {
+        const data = await endpoints.settings.getSystemSettings();
+        if (data && data.R2_BASE_URL !== undefined) {
+          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
+        }
+      } catch (error) {
+        console.error("Error fetching system settings in Header:", error);
+      }
+    }
+    if (user) {
+      fetchSystemSettings();
+    }
+  }, [user]);
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -136,15 +157,7 @@ export function Header() {
             }}
             className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-white font-bold text-sm border-2 border-white shadow-md hover:scale-105 transition-transform cursor-pointer overflow-hidden"
           >
-            {user?.profile_picture?.file_url ? (
-              <img
-                src={user.profile_picture.file_url}
-                alt="Profile Avatar"
-                className="w-full h-full object-cover rounded-full"
-              />
-            ) : (
-              avatarLetter
-            )}
+            <UserAvatar user={user} r2BaseUrl={systemSettings?.R2_BASE_URL} className="w-full h-full" />
           </button>
 
           {/* Profile Dropdown */}

@@ -11,7 +11,8 @@ export interface User {
   two_factor_enabled: boolean;
   profile_picture?: {
     id: number;
-    file_url: string;
+    filename: string;
+    file_url?: string;
   } | null;
 }
 

@@ -9,7 +9,8 @@ export interface LoginResponse {
 
 export interface Document {
   id: number;
-  file_url: string;
+  filename: string;
+  file_url?: string;
 }
 
 export interface UserProfile {

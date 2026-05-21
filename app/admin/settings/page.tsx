@@ -4,7 +4,8 @@ import { TwoFactorSetup } from "@/components/admin/TwoFactorSetup";
 import { Header } from "@/components/admin/Header";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
-import { Bell, User, Mail, Shield, ToggleLeft, ToggleRight, Check } from "lucide-react";
+import { Bell, User, Mail, Shield, ToggleLeft, ToggleRight, Check, Database } from "lucide-react";
+import { endpoints } from "@/lib/apiService";
 
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
@@ -16,11 +17,31 @@ export default function SettingsPage() {
   const [orderUpdate, setOrderUpdate] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
+  // System Configurations state
+  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+  const [sysSaveStatus, setSysSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/admin/login");
     }
   }, [user, isLoading, router]);
+
+  useEffect(() => {
+    async function fetchSystemSettings() {
+      try {
+        const data = await endpoints.settings.getSystemSettings();
+        if (data && data.R2_BASE_URL !== undefined) {
+          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
+        }
+      } catch (error) {
+        console.error("Error fetching system settings:", error);
+      }
+    }
+    if (user) {
+      fetchSystemSettings();
+    }
+  }, [user]);
 
   const handleSaveSettings = async () => {
     setSaveStatus("saving");
@@ -28,6 +49,21 @@ export default function SettingsPage() {
     await new Promise((r) => setTimeout(r, 650));
     setSaveStatus("saved");
     setTimeout(() => setSaveStatus("idle"), 2500);
+  };
+
+  const handleSaveSystemSettings = async () => {
+    setSysSaveStatus("saving");
+    try {
+      await endpoints.settings.updateSystemSettings({
+        R2_BASE_URL: systemSettings.R2_BASE_URL,
+      });
+      setSysSaveStatus("saved");
+    } catch (error) {
+      console.error("Error saving system settings:", error);
+      setSysSaveStatus("idle");
+      return;
+    }
+    setTimeout(() => setSysSaveStatus("idle"), 2500);
   };
 
   if (isLoading || !user) {
@@ -90,6 +126,67 @@ export default function SettingsPage() {
 
             {/* ── Two-Factor Authentication Setup ────────────────── */}
             <TwoFactorSetup />
+
+            {/* ── System Configurations Card ─────────────────────── */}
+            <div className="bg-white border border-neutral-100 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
+                  <Database className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-neutral-800">System Configurations</h2>
+                  <p className="text-sm text-neutral-500 mt-1">
+                    Manage global environmental variables and cloud storage endpoints.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-neutral-50">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                    Cloudflare R2 Base URL
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={systemSettings.R2_BASE_URL}
+                      onChange={(e) =>
+                        setSystemSettings({ ...systemSettings, R2_BASE_URL: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 text-sm text-neutral-800 transition-all"
+                      placeholder="e.g. https://pub-xxxxxx.r2.dev"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="flex justify-end mt-6 pt-4 border-t border-neutral-100">
+                <button
+                  type="button"
+                  onClick={handleSaveSystemSettings}
+                  disabled={sysSaveStatus === "saving"}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 border ${
+                    sysSaveStatus === "saved"
+                      ? "bg-emerald-500 text-white border-transparent"
+                      : "bg-violet-600 text-white border-transparent hover:bg-white hover:text-violet-600 hover:border-violet-600 shadow-sm"
+                  } disabled:opacity-60`}
+                >
+                  {sysSaveStatus === "saving" && (
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                  )}
+                  {sysSaveStatus === "saved" && <Check className="w-4 h-4" />}
+                  {sysSaveStatus === "saving"
+                    ? "Saving..."
+                    : sysSaveStatus === "saved"
+                    ? "Configurations Saved!"
+                    : "Save Configurations"}
+                </button>
+              </div>
+            </div>
 
             {/* ── Notification Preferences Card ──────────────────── */}
             <div className="bg-white border border-neutral-100 rounded-2xl p-6 shadow-sm">

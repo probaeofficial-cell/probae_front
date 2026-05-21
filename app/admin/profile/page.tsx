@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Camera, Mail, User, Shield, Save, Check, AlertCircle } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
+import { UserAvatar } from "@/components/admin/UserAvatar";
 
 export default function ProfilePage() {
   const { user, fetchMe } = useAuth();
@@ -17,6 +18,25 @@ export default function ProfilePage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load system settings for R2 URL stitching
+  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+
+  useEffect(() => {
+    async function fetchSystemSettings() {
+      try {
+        const data = await endpoints.settings.getSystemSettings();
+        if (data && data.R2_BASE_URL !== undefined) {
+          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
+        }
+      } catch (error) {
+        console.error("Error fetching system settings in Profile:", error);
+      }
+    }
+    if (user) {
+      fetchSystemSettings();
+    }
+  }, [user]);
 
   // Handle avatar file selection
   const handleFileChange = async (file: File | null) => {
@@ -87,13 +107,7 @@ export default function ProfilePage() {
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={onDrop}
                 >
-                  {user?.profile_picture?.file_url ? (
-                    <img src={user.profile_picture.file_url} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-white text-3xl font-bold">
-                      {avatarLetter}
-                    </div>
-                  )}
+                  <UserAvatar user={user} r2BaseUrl={systemSettings?.R2_BASE_URL} className="w-full h-full" />
 
                   {isUploading && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white backdrop-blur-[2px] z-10">
