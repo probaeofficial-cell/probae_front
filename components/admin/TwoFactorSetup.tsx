@@ -101,7 +101,7 @@ export function TwoFactorSetup() {
           <button
             onClick={handleBeginSetup}
             disabled={loading}
-            className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-70 shadow-sm shadow-violet-100 hover:shadow-md hover:scale-[1.01]"
+            className="border border-transparent bg-violet-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 hover:bg-white hover:text-violet-600 hover:border-violet-600 disabled:opacity-70 shadow-sm"
           >
             {loading ? "Starting Setup..." : "Set Up 2FA Verification"}
           </button>
@@ -164,7 +164,7 @@ export function TwoFactorSetup() {
                 <button
                   type="submit"
                   disabled={loading || code.length !== 6}
-                  className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-70 shadow-sm shadow-violet-100 hover:shadow-md hover:scale-[1.01]"
+                  className="border border-transparent bg-violet-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 hover:bg-white hover:text-violet-600 hover:border-violet-600 disabled:opacity-70 shadow-sm"
                 >
                   {loading ? "Verifying..." : "Verify & Activate"}
                 </button>

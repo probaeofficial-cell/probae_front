@@ -48,7 +48,7 @@ export default function ProfilePage() {
         <Header />
 
         <div className="flex-1 overflow-y-auto pr-4 scrollbar-thin">
-          <div className="max-w-3xl mx-auto w-full">
+          <div className="max-w-5xl mx-auto w-full">
           {/* Page title */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-neutral-800">My Profile</h1>
@@ -118,7 +118,7 @@ export default function ProfilePage() {
             <div className="bg-white border border-neutral-100 rounded-2xl p-6 shadow-sm">
               <h2 className="text-base font-semibold text-neutral-800 mb-4">Personal Information</h2>
 
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Display name */}
                 <div>
                   <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wide">
@@ -216,12 +216,12 @@ export default function ProfilePage() {
                 type="button"
                 onClick={handleSave}
                 disabled={saveStatus === "saving"}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 border ${
                   saveStatus === "saved"
-                    ? "bg-green-500 text-white"
+                    ? "bg-green-500 text-white border-transparent"
                     : saveStatus === "error"
-                    ? "bg-red-500 text-white"
-                    : "bg-violet-600 hover:bg-violet-700 text-white"
+                    ? "bg-red-500 text-white border-transparent"
+                    : "bg-violet-600 text-white border-transparent hover:bg-white hover:text-violet-600 hover:border-violet-600"
                 } disabled:opacity-60`}
               >
                 {saveStatus === "saving" && (

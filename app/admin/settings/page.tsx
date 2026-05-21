@@ -46,7 +46,7 @@ export default function SettingsPage() {
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto pr-4 scrollbar-thin">
-          <div className="max-w-3xl mx-auto w-full">
+          <div className="max-w-5xl mx-auto w-full">
           {/* Page Title */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-neutral-800">Settings</h1>
@@ -174,10 +174,10 @@ export default function SettingsPage() {
                   type="button"
                   onClick={handleSaveSettings}
                   disabled={saveStatus === "saving"}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 border ${
                     saveStatus === "saved"
-                      ? "bg-emerald-500 text-white"
-                      : "bg-violet-600 hover:bg-violet-700 text-white shadow-sm shadow-violet-100"
+                      ? "bg-emerald-500 text-white border-transparent"
+                      : "bg-violet-600 text-white border-transparent hover:bg-white hover:text-violet-600 hover:border-violet-600 shadow-sm"
                   } disabled:opacity-60`}
                 >
                   {saveStatus === "saving" && (

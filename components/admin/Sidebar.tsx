@@ -132,22 +132,18 @@ export function Sidebar() {
                         router.push(item.path);
                       }
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                      isItemActive && !collapsed
+                    className={`flex items-center transition-colors ${
+                      collapsed
+                        ? "w-10 h-10 justify-center mx-auto rounded-xl p-0"
+                        : "w-full justify-between px-3 py-2.5 rounded-xl"
+                    } ${
+                      isItemActive
                         ? "bg-[#7c26d9] text-white font-semibold"
                         : "text-neutral-400 hover:bg-[#2a2a2a] hover:text-white"
-                    } ${collapsed ? "justify-center" : ""}`}
+                    }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`flex items-center justify-center ${
-                          collapsed ? "w-10 h-10 rounded-xl" : ""
-                        } ${
-                          collapsed && isItemActive
-                            ? "bg-[#7c26d9] text-white"
-                            : ""
-                        }`}
-                      >
+                      <div className="flex items-center justify-center">
                         <Icon className="w-[18px] h-[18px]" />
                       </div>
                       {!collapsed && (
@@ -273,21 +269,17 @@ export function Sidebar() {
                 <button
                   type="button"
                   onClick={() => item.path && router.push(item.path)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                  className={`flex items-center transition-colors ${
+                    collapsed
+                      ? "w-10 h-10 justify-center mx-auto rounded-xl p-0"
+                      : "w-full gap-3 px-3 py-2.5 rounded-xl"
+                  } ${
                     isItemActive
                       ? "bg-[#7c26d9] text-white font-semibold"
                       : "text-neutral-400 hover:bg-[#2a2a2a] hover:text-white"
-                  } ${collapsed ? "justify-center" : ""}`}
+                  }`}
                 >
-                  <div
-                    className={`flex items-center justify-center ${
-                      collapsed ? "w-10 h-10 rounded-xl" : ""
-                    } ${
-                      collapsed && isItemActive
-                        ? "bg-[#7c26d9] text-white"
-                        : ""
-                    }`}
-                  >
+                  <div className="flex items-center justify-center">
                     <item.icon className="w-[18px] h-[18px]" />
                   </div>
                   {!collapsed && (
@@ -316,23 +308,17 @@ export function Sidebar() {
                 <button
                   type="button"
                   onClick={() => router.push("/admin/profile")}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                  className={`flex items-center transition-colors ${
+                    collapsed
+                      ? "w-10 h-10 justify-center mx-auto rounded-xl p-0"
+                      : "w-full gap-3 px-3 py-2.5 rounded-xl"
+                  } ${
                     isProfileActive
                       ? "bg-[#7c26d9] text-white font-semibold"
                       : "text-neutral-400 hover:bg-[#2a2a2a] hover:text-white"
-                  } ${
-                    collapsed ? "justify-center" : ""
                   }`}
                 >
-                  <div
-                    className={`flex items-center justify-center ${
-                      collapsed ? "w-10 h-10 rounded-xl" : ""
-                    } ${
-                      collapsed && isProfileActive
-                        ? "bg-[#7c26d9] text-white"
-                        : ""
-                    }`}
-                  >
+                  <div className="flex items-center justify-center">
                     <BOTTOM_MENU.profile.icon className="w-[18px] h-[18px]" />
                   </div>
                   {!collapsed && (

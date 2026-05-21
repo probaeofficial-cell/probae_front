@@ -26,7 +26,7 @@ export default function AdminNotFound() {
           <button
             type="button"
             onClick={() => router.push("/admin/dashboard")}
-            className="mt-8 flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-all shadow-sm shadow-violet-100 hover:shadow-md hover:scale-[1.01]"
+            className="mt-8 flex items-center gap-2 px-6 py-3 rounded-xl border border-transparent bg-violet-600 text-white font-semibold text-sm transition-colors duration-200 hover:bg-white hover:text-violet-600 hover:border-violet-600 shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
