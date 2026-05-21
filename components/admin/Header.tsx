@@ -166,7 +166,7 @@ export function Header() {
               {/* User info header */}
               <div className="px-4 py-3 border-b border-neutral-100 bg-neutral-50/50">
                 <p className="text-sm font-semibold text-neutral-800 truncate">
-                  {user?.email?.split("@")[0] ?? "Admin"}
+                  {user?.full_name ?? user?.email?.split("@")[0] ?? "Admin"}
                 </p>
                 <p className="text-[11px] text-neutral-500 truncate">{user?.email ?? ""}</p>
               </div>

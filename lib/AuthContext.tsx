@@ -2,13 +2,14 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { endpoints, setMemoryAccessToken } from "./apiService";
+import { endpoints, setMemoryAccessToken, getAccessToken } from "./apiService";
 
 export interface User {
   id: string | number;
   email: string;
   role: string;
   two_factor_enabled: boolean;
+  full_name?: string | null;
   profile_picture?: {
     id: number;
     filename: string;
@@ -20,7 +21,7 @@ interface AuthContextType {
   user: User | null;
   accessToken: string | null;
   isLoading: boolean;
-  setAccessToken: (token: string | null) => void;
+  setAccessToken: (token: string | null, rememberMe?: boolean) => void;
   fetchMe: (token?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -31,11 +32,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
 
-  // Update token (which is already set in memory by apiService)
-  const setAccessToken = (token: string | null) => {
-    setMemoryAccessToken(token);
+  // Update token
+  const setAccessToken = (token: string | null, rememberMe?: boolean) => {
+    setMemoryAccessToken(token, rememberMe);
     setAccessTokenState(token);
   };
 
@@ -67,24 +69,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  // Run fetchMe on initial load if we had a way to persist token.
-  // But we store token purely in memory per rules, so on hard reload, 
-  // they will lose the access_token and must rely on backend refresh token logic 
-  // (which usually requires a silent refresh endpoint, but the prompt just says 
-  // "The backend returns an access_token in the JSON body. You must store this in memory... 
-  // Upon successful login or app reload, fetch this endpoint using the Bearer token.").
-  // Wait, if it's stored in memory, app reload clears it. We'll need a way to refresh it.
-  // Assuming there's a silent refresh endpoint or we just let them log out on hard reload for now, 
-  // because the prompt doesn't specify a `/refresh` endpoint.
+  // Perform client-side token initialization once on mount
   useEffect(() => {
-    // If we have a token (e.g. from a recent login), fetch /me
+    const token = getAccessToken();
+    if (token) {
+      setAccessTokenState(token);
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // Fetch /me whenever accessToken changes, after initialization is complete
+  useEffect(() => {
+    if (!isInitialized) return;
+
     if (accessToken) {
       fetchMe(accessToken);
     } else {
+      setUser(null);
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  }, [accessToken, isInitialized]);
 
   return (
     <AuthContext.Provider value={{ user, accessToken, isLoading, setAccessToken, fetchMe, logout }}>

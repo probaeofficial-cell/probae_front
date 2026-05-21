@@ -11,7 +11,7 @@ export default function ProfilePage() {
   const { user, fetchMe } = useAuth();
 
   const [displayName, setDisplayName] = useState(
-    user?.email?.split("@")[0] ?? "Admin"
+    user?.full_name ?? user?.email?.split("@")[0] ?? "Admin"
   );
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -21,6 +21,12 @@ export default function ProfilePage() {
 
   // Load system settings for R2 URL stitching
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+
+  useEffect(() => {
+    if (user) {
+      setDisplayName(user.full_name ?? user.email?.split("@")[0] ?? "Admin");
+    }
+  }, [user]);
 
   useEffect(() => {
     async function fetchSystemSettings() {
@@ -73,10 +79,16 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     setSaveStatus("saving");
-    // Simulate API call – replace with real endpoint later
-    await new Promise((r) => setTimeout(r, 900));
-    setSaveStatus("saved");
-    setTimeout(() => setSaveStatus("idle"), 2500);
+    try {
+      await endpoints.users.updateProfile({ full_name: displayName });
+      await fetchMe();
+      setSaveStatus("saved");
+    } catch (err: any) {
+      console.error("Failed to update profile name:", err);
+      setSaveStatus("error");
+    } finally {
+      setTimeout(() => setSaveStatus("idle"), 2500);
+    }
   };
 
   return (

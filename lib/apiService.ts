@@ -31,19 +31,59 @@ export class ApiError extends Error {
   }
 }
 
-// ─── Token Management Helpers (In-Memory Only) ───────────────────────────────
+// ─── Token Management Helpers (Storage Backed) ───────────────────────────────
 let memoryAccessToken: string | null = null;
 
-export const setMemoryAccessToken = (token: string | null) => {
+export const setMemoryAccessToken = (token: string | null, rememberMe?: boolean) => {
   memoryAccessToken = token;
+  if (typeof window !== "undefined") {
+    if (token) {
+      // Determine if we should remember based on parameter if provided,
+      // or inspect existing storage if not specified (e.g. during a refresh)
+      let shouldRemember = rememberMe;
+      if (shouldRemember === undefined) {
+        shouldRemember = localStorage.getItem("access_token") !== null;
+      }
+
+      if (shouldRemember) {
+        localStorage.setItem("access_token", token);
+        sessionStorage.removeItem("access_token");
+      } else {
+        sessionStorage.setItem("access_token", token);
+        localStorage.removeItem("access_token");
+      }
+    } else {
+      localStorage.removeItem("access_token");
+      sessionStorage.removeItem("access_token");
+    }
+  }
 };
 
 export const getAccessToken = (): string | null => {
-  return memoryAccessToken;
+  if (memoryAccessToken) {
+    return memoryAccessToken;
+  }
+  if (typeof window !== "undefined") {
+    const localToken = localStorage.getItem("access_token");
+    if (localToken) {
+      memoryAccessToken = localToken;
+      return localToken;
+    }
+    const sessionToken = sessionStorage.getItem("access_token");
+    if (sessionToken) {
+      memoryAccessToken = sessionToken;
+      return sessionToken;
+    }
+  }
+  return null;
 };
 
 const clearTokens = () => {
   memoryAccessToken = null;
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("access_token");
+    sessionStorage.removeItem("access_token");
+  }
 };
 
 // ─── Token Refresh Queue Logic ───────────────────────────────────────────────
@@ -211,9 +251,9 @@ export const api = {
 // ─── Application API Endpoints ───────────────────────────────────────────────
 export const endpoints = {
   auth: {
-    login: async (payload: { identifier: string; password: string; totp_code?: string }): Promise<LoginResponse> => {
+    login: async (payload: { identifier: string; password: string; totp_code?: string }, rememberMe?: boolean): Promise<LoginResponse> => {
       const response = await api.post<LoginResponse>("/auth/login", payload);
-      setMemoryAccessToken(response.access_token);
+      setMemoryAccessToken(response.access_token, rememberMe);
       return response;
     },
     logout: async () => {
@@ -238,7 +278,7 @@ export const endpoints = {
     getMe: async () => {
       return await api.get<UserProfile>("/auth/me");
     },
-    updateProfile: async (data: { profile_picture_id: number }) => {
+    updateProfile: async (data: { profile_picture_id?: number; full_name?: string | null }) => {
       return await api.patch<UserProfile>("/auth/me", data);
     },
   },

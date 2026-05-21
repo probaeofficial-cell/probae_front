@@ -18,6 +18,7 @@ export interface UserProfile {
   email: string;
   role: string;
   two_factor_enabled: boolean;
+  full_name?: string | null;
   profile_picture?: Document | null;
 }
 

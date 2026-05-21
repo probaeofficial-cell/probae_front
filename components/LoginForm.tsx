@@ -144,10 +144,14 @@ function useCountdown(initial: number) {
 
 // ─── VIEW: Login ──────────────────────────────────────────────────────────────
 function LoginView({
+  rememberMe,
+  onChangeRememberMe,
   onForgot,
   onSuccess,
   onRequires2FA
 }: {
+  rememberMe: boolean;
+  onChangeRememberMe: (val: boolean) => void;
   onForgot: () => void;
   onSuccess: (token: string) => void;
   onRequires2FA: (email: string, pass: string) => void;
@@ -166,7 +170,7 @@ function LoginView({
     setError(null);
     setLoading(true);
     try {
-      const data = await endpoints.auth.login({ identifier: email, password });
+      const data = await endpoints.auth.login({ identifier: email, password }, rememberMe);
       onSuccess(data.access_token);
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 403 && err.detail === "2FA verification required") {
@@ -219,6 +223,38 @@ function LoginView({
           </button>
         </div>
 
+        {/* Remember Me Checkbox */}
+        <div className="flex items-center justify-between pb-1.5 pt-0.5 px-1">
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => onChangeRememberMe(e.target.checked)}
+                className="sr-only"
+              />
+              <div className={`w-[18px] h-[18px] rounded-[6px] border transition-all duration-150 flex items-center justify-center ${rememberMe ? 'bg-[#7C3AED] border-[#7C3AED]' : 'border-[#3a3a3a] bg-transparent group-hover:border-neutral-500'}`}>
+                {rememberMe && (
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-3 h-3 text-white"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            <span className="text-xs text-neutral-400 group-hover:text-neutral-300 transition-colors">
+              Remember me
+            </span>
+          </label>
+        </div>
+
         <ProbaeButton type="submit" disabled={!canSubmit || loading}>
           {loading ? (
             <span className="animate-pulse">Logging in…</span>
@@ -240,7 +276,17 @@ function LoginView({
 }
 
 // ─── VIEW: Google Authenticator OTP ───────────────────────────────────────────
-function AuthenticatorView({ email, password, onSuccess }: { email: string, password: string, onSuccess: (token: string) => void }) {
+function AuthenticatorView({
+  email,
+  password,
+  rememberMe,
+  onSuccess
+}: {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+  onSuccess: (token: string) => void;
+}) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -253,7 +299,7 @@ function AuthenticatorView({ email, password, onSuccess }: { email: string, pass
     setLoading(true);
     setError(null);
     try {
-      const data = await endpoints.auth.login({ identifier: email, password, totp_code: digits.join("") });
+      const data = await endpoints.auth.login({ identifier: email, password, totp_code: digits.join("") }, rememberMe);
       onSuccess(data.access_token);
     } catch (err: any) {
       setError(err.message || "Invalid code. Please try again.");
@@ -596,12 +642,13 @@ export default function LoginForm() {
   const [view, setView] = useState<View>("login");
   const [resetEmail, setResetEmail] = useState("");
   const [pendingCredentials, setPendingCredentials] = useState({ email: "", password: "" });
+  const [rememberMe, setRememberMe] = useState(false);
   
   const { setAccessToken, fetchMe } = useAuth();
   const router = useRouter();
 
   const handleLoginSuccess = async (token: string) => {
-    setAccessToken(token);
+    setAccessToken(token, rememberMe);
     setView("success");
     await fetchMe(token);
     // Add small delay to let user see the success view before navigating
@@ -614,6 +661,8 @@ export default function LoginForm() {
     <div className="flex flex-col items-center w-full max-w-[360px] mx-auto">
       {view === "login" && (
         <LoginView
+          rememberMe={rememberMe}
+          onChangeRememberMe={setRememberMe}
           onForgot={() => setView("forgot-email")}
           onSuccess={handleLoginSuccess}
           onRequires2FA={(email, password) => {
@@ -626,6 +675,7 @@ export default function LoginForm() {
         <AuthenticatorView 
           email={pendingCredentials.email}
           password={pendingCredentials.password}
+          rememberMe={rememberMe}
           onSuccess={handleLoginSuccess} 
         />
       )}
