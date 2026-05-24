@@ -271,6 +271,12 @@ export const endpoints = {
     },
     verify2FA: async (totp_code: string) => {
       return await api.post<{ success: boolean }>("/auth/verify-2fa", { code: totp_code });
+    },
+    requestPasswordReset: async (email: string) => {
+      return await api.post<any>("/auth/forgot-password", { identifier: email });
+    },
+    resetPassword: async (token: string, new_password: string) => {
+      return await api.post<any>("/auth/reset-password", { token, new_password });
     }
   },
   

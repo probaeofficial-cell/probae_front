@@ -336,17 +336,15 @@ function AuthenticatorView({
   );
 }
 
-// ─── VIEW: Forgot password — enter email ──────────────────────────────────────
-function ForgotEmailView({
+function ForgotView({
   onBack,
-  onSent,
 }: {
   onBack: () => void;
-  onSent: (email: string) => void;
 }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const canSubmit = email.trim().length > 0;
 
@@ -356,23 +354,44 @@ function ForgotEmailView({
     setLoading(true);
     setError(null);
     try {
-      await new Promise((r) => setTimeout(r, 700));
-      onSent(email.trim());
-    } catch {
-      setError("Something went wrong. Please try again.");
+      await endpoints.auth.requestPasswordReset(email.trim());
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to send reset link. Please try again.");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (success) {
+    return (
+      <div className="flex flex-col items-center text-center w-full">
+        <ProbaeWordmark />
+        <div className="w-14 h-14 rounded-full bg-green-900/40 border border-green-700/40 flex items-center justify-center mb-6">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth={2.5}
+            strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <h1 className="text-white text-[2rem] font-bold tracking-tight mb-2 w-full">Check your inbox</h1>
+        <p className="text-neutral-500 text-sm mb-8 w-full leading-relaxed">
+          We&apos;ve sent a recovery link to your email.
+        </p>
+        <ProbaeButton type="button" onClick={onBack}>
+          Back to Login
+        </ProbaeButton>
+      </div>
+    );
   }
 
   return (
     <>
       <ProbaeWordmark />
       <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">
-        Admin Recovery
+        Reset your password
       </h1>
       <p className="text-neutral-500 text-sm mb-7 text-center w-full">
-        Secure portal access. Enter your email for a reset code.
+        Enter your email to get a recovery link.
       </p>
 
       {error && (
@@ -384,15 +403,16 @@ function ForgotEmailView({
       <form onSubmit={handleSubmit} className="w-full space-y-3" noValidate>
         <input
           type="email"
-          placeholder="Your email address"
+          placeholder="Email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
           className={inputCls}
+          disabled={loading}
         />
 
         <ProbaeButton type="submit" disabled={!canSubmit || loading}>
-          {loading ? <span className="animate-pulse">Sending…</span> : <>Send code <ChevronRightIcon /></>}
+          {loading ? <span className="animate-pulse">Sending…</span> : <>Send Reset Link <ChevronRightIcon /></>}
         </ProbaeButton>
       </form>
 
@@ -407,106 +427,13 @@ function ForgotEmailView({
   );
 }
 
-// ─── VIEW: Email OTP verification ─────────────────────────────────────────────
-function EmailOtpView({
-  email,
-  onBack,
+function ResetView({
+  token,
   onSuccess,
 }: {
-  email: string;
-  onBack: () => void;
+  token: string;
   onSuccess: () => void;
 }) {
-  const [digits, setDigits] = useState<string[]>(Array(4).fill(""));
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { seconds, expired, reset } = useCountdown(240);
-
-  const filled = digits.every((d) => d !== "");
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!filled) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await new Promise((r) => setTimeout(r, 600));
-      onSuccess();
-    } catch {
-      setError("Invalid code. Please try again.");
-      setDigits(Array(4).fill(""));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleResend() {
-    reset();
-    setDigits(Array(4).fill(""));
-    setError(null);
-  }
-
-  return (
-    <>
-      <ProbaeWordmark />
-      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">
-        Admin Verification
-      </h1>
-      <p className="text-neutral-500 text-sm leading-relaxed text-center w-full">
-        Restricted access. Enter the verification code sent to<br />
-        <strong className="text-white font-semibold">{email}</strong>
-      </p>
-
-      {error && (
-        <p className="text-red-400 text-xs mt-4 bg-red-950/40 border border-red-800/40 rounded-xl px-3 py-2 w-full text-center">
-          {error}
-        </p>
-      )}
-
-      <form onSubmit={handleSubmit} className="w-full flex flex-col items-center" noValidate>
-        <OtpInput length={4} value={digits} onChange={setDigits} />
-
-        {/* Countdown */}
-        {!expired && (
-          <p className="text-neutral-500 text-sm mb-4">{seconds}s</p>
-        )}
-
-        <ProbaeButton type="submit" disabled={!filled || loading}>
-          {loading ? <span className="animate-pulse">Verifying…</span> : <>Verify email <ChevronRightIcon /></>}
-        </ProbaeButton>
-      </form>
-
-      {/* Resend */}
-      <p className="mt-5 text-xs text-neutral-500 text-center w-full">
-        {expired ? (
-          <>
-            Didn't receive a code?{" "}
-            <button
-              type="button"
-              onClick={handleResend}
-              className="text-white font-semibold hover:text-neutral-300 transition-colors"
-            >
-              Resend Code
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={onBack}
-              className="hover:text-neutral-300 transition-colors"
-            >
-              ← back
-            </button>
-          </>
-        )}
-      </p>
-    </>
-  );
-}
-
-// ─── VIEW: Create New Password ────────────────────────────────────────────────
-function ResetPasswordView({ onSuccess }: { onSuccess: () => void }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -527,10 +454,10 @@ function ResetPasswordView({ onSuccess }: { onSuccess: () => void }) {
     setLoading(true);
     setError(null);
     try {
-      await new Promise((r) => setTimeout(r, 800));
+      await endpoints.auth.resetPassword(token, password);
       onSuccess();
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err: any) {
+      setError(err.message || "Failed to update password. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -539,8 +466,8 @@ function ResetPasswordView({ onSuccess }: { onSuccess: () => void }) {
   return (
     <>
       <ProbaeWordmark />
-      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">Admin Reset</h1>
-      <p className="text-neutral-500 text-sm mb-7 text-center w-full">Secure portal access. Create a new password.</p>
+      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">Update Password</h1>
+      <p className="text-neutral-500 text-sm mb-7 text-center w-full">Create a new, secure password.</p>
 
       {error && (
         <p className="text-red-400 text-xs mb-4 bg-red-950/40 border border-red-800/40 rounded-xl px-3 py-2 w-full text-center">
@@ -556,6 +483,7 @@ function ResetPasswordView({ onSuccess }: { onSuccess: () => void }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={`${inputCls} pr-11`}
+            disabled={loading}
           />
           <button
             type="button"
@@ -572,6 +500,7 @@ function ResetPasswordView({ onSuccess }: { onSuccess: () => void }) {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             className={`${inputCls} pr-11`}
+            disabled={loading}
           />
         </div>
 
@@ -579,7 +508,7 @@ function ResetPasswordView({ onSuccess }: { onSuccess: () => void }) {
           {loading ? (
             <span className="animate-pulse">Updating…</span>
           ) : (
-            <>Update password <ChevronRightIcon /></>
+            <>Update Password <ChevronRightIcon /></>
           )}
         </ProbaeButton>
       </form>
@@ -587,8 +516,7 @@ function ResetPasswordView({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-// ─── VIEW: Password Changed Success ───────────────────────────────────────────
-function PasswordChangedView({ onLogin }: { onLogin: () => void }) {
+function PasswordChangedSuccessView({ onLogin }: { onLogin: () => void }) {
   return (
     <div className="flex flex-col items-center text-center w-full">
       <ProbaeWordmark />
@@ -599,13 +527,12 @@ function PasswordChangedView({ onLogin }: { onLogin: () => void }) {
         </svg>
       </div>
       <h1 className="text-white text-[2rem] font-bold tracking-tight mb-2 w-full">Password updated</h1>
-      <p className="text-neutral-500 text-sm mb-8 w-full">
-        Your password has been changed successfully.<br />
-        You can now log in with your new password.
+      <p className="text-neutral-500 text-sm mb-8 w-full leading-relaxed">
+        Your password has been changed successfully.
       </p>
 
       <ProbaeButton type="button" onClick={onLogin}>
-        Back to Login <ChevronRightIcon />
+        Return to Login
       </ProbaeButton>
     </div>
   );
@@ -622,7 +549,7 @@ function SuccessView() {
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </div>
-      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 w-full">You're in!</h1>
+      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 w-full">You&apos;re in!</h1>
       <p className="text-neutral-500 text-sm w-full">Redirecting to your dashboard…</p>
     </div>
   );
@@ -631,27 +558,36 @@ function SuccessView() {
 // ─── Root export ──────────────────────────────────────────────────────────────
 type View =
   | "login"
-  | "authenticator"        // Google Auth TOTP — after login
-  | "forgot-email"         // Forgot password: enter email
-  | "forgot-otp"           // Forgot password: verify OTP
-  | "reset-password"       // Forgot password: enter new password
-  | "password-changed"     // Forgot password: success message
-  | "success";             // Login successful
+  | "authenticator"
+  | "forgot"
+  | "reset"
+  | "password-changed"
+  | "success";
 
 export default function LoginForm() {
   const [view, setView] = useState<View>("login");
-  const [resetEmail, setResetEmail] = useState("");
+  const [token, setToken] = useState("");
   const [pendingCredentials, setPendingCredentials] = useState({ email: "", password: "" });
   const [rememberMe, setRememberMe] = useState(false);
   
   const { setAccessToken, fetchMe } = useAuth();
   const router = useRouter();
 
-  const handleLoginSuccess = async (token: string) => {
-    setAccessToken(token, rememberMe);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get("token");
+      if (urlToken) {
+        setToken(urlToken);
+        setView("reset");
+      }
+    }
+  }, []);
+
+  const handleLoginSuccess = async (tokenVal: string) => {
+    setAccessToken(tokenVal, rememberMe);
     setView("success");
-    await fetchMe(token);
-    // Add small delay to let user see the success view before navigating
+    await fetchMe(tokenVal);
     setTimeout(() => {
       router.push("/admin/dashboard");
     }, 1000);
@@ -663,7 +599,7 @@ export default function LoginForm() {
         <LoginView
           rememberMe={rememberMe}
           onChangeRememberMe={setRememberMe}
-          onForgot={() => setView("forgot-email")}
+          onForgot={() => setView("forgot")}
           onSuccess={handleLoginSuccess}
           onRequires2FA={(email, password) => {
             setPendingCredentials({ email, password });
@@ -679,24 +615,14 @@ export default function LoginForm() {
           onSuccess={handleLoginSuccess} 
         />
       )}
-      {view === "forgot-email" && (
-        <ForgotEmailView
-          onBack={() => setView("login")}
-          onSent={(email) => { setResetEmail(email); setView("forgot-otp"); }}
-        />
+      {view === "forgot" && (
+        <ForgotView onBack={() => setView("login")} />
       )}
-      {view === "forgot-otp" && (
-        <EmailOtpView
-          email={resetEmail}
-          onBack={() => setView("forgot-email")}
-          onSuccess={() => setView("reset-password")}
-        />
-      )}
-      {view === "reset-password" && (
-        <ResetPasswordView onSuccess={() => setView("password-changed")} />
+      {view === "reset" && (
+        <ResetView token={token} onSuccess={() => setView("password-changed")} />
       )}
       {view === "password-changed" && (
-        <PasswordChangedView onLogin={() => setView("login")} />
+        <PasswordChangedSuccessView onLogin={() => setView("login")} />
       )}
       {view === "success" && <SuccessView />}
     </div>
