@@ -305,6 +305,9 @@ export const endpoints = {
       }
       return await api.get<PaginatedRawMaterials>(`/raw-materials/${query}`);
     },
+    getRawMaterial: async (id: number): Promise<RawMaterial> => {
+      return await api.get<RawMaterial>(`/raw-materials/${id}`);
+    },
     createRawMaterial: async (data: RawMaterialCreateInput): Promise<RawMaterial> => {
       return await api.post<RawMaterial>("/raw-materials/", data);
     },

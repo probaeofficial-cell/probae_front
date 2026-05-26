@@ -21,6 +21,7 @@ import {
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
+import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { RawMaterial, UnitType } from "@/lib/types";
@@ -51,12 +52,6 @@ export default function CostManagementPage() {
     description: "",
     image_filename: null as string | null,
     background_image_filename: null as string | null,
-    calories: "" as number | "",
-    protein: "" as number | "",
-    carbs: "" as number | "",
-    fiber: "" as number | "",
-    fat: "" as number | "",
-    microsString: "",
   });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBackgroundUrl, setPreviewBackgroundUrl] = useState<string | null>(null);
@@ -266,12 +261,6 @@ export default function CostManagementPage() {
       description: "",
       image_filename: null,
       background_image_filename: null,
-      calories: "",
-      protein: "",
-      carbs: "",
-      fiber: "",
-      fat: "",
-      microsString: "",
     });
     setPreviewUrl(null);
     setPreviewBackgroundUrl(null);
@@ -289,12 +278,6 @@ export default function CostManagementPage() {
       description: material.description || "",
       image_filename: material.image_filename || null,
       background_image_filename: material.background_image_filename || null,
-      calories: material.calories !== undefined && material.calories !== null ? material.calories : "",
-      protein: material.protein !== undefined && material.protein !== null ? material.protein : "",
-      carbs: material.carbs !== undefined && material.carbs !== null ? material.carbs : "",
-      fiber: material.fiber !== undefined && material.fiber !== null ? material.fiber : "",
-      fat: material.fat !== undefined && material.fat !== null ? material.fat : "",
-      microsString: material.micros?.join(", ") || "",
     });
     setPreviewUrl(getMediaUrl(systemSettings?.R2_BASE_URL, material.image_filename));
     setPreviewBackgroundUrl(getMediaUrl(systemSettings?.R2_BASE_URL, material.background_image_filename));
@@ -317,9 +300,6 @@ export default function CostManagementPage() {
 
     setIsSaving(true);
     
-    // CRITICAL DATA FORMATTING (Task 3)
-    const formattedMicros = formState.microsString.split(',').map(s => s.trim()).filter(Boolean);
-
     const payload = {
       name: formState.name.trim(),
       price: Number(formState.price),
@@ -327,12 +307,6 @@ export default function CostManagementPage() {
       description: formState.description.trim() || null,
       image_filename: formState.image_filename,
       background_image_filename: formState.background_image_filename,
-      calories: formState.calories !== "" ? Number(formState.calories) : 0,
-      protein: formState.protein !== "" ? Number(formState.protein) : 0,
-      carbs: formState.carbs !== "" ? Number(formState.carbs) : 0,
-      fiber: formState.fiber !== "" ? Number(formState.fiber) : 0,
-      fat: formState.fat !== "" ? Number(formState.fat) : 0,
-      micros: formattedMicros,
     };
 
     try {
@@ -443,7 +417,7 @@ export default function CostManagementPage() {
 
         {!isDetailOpen ? (
           /* ─── Grid Listing view ─── */
-          <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-2xl p-6 sm:p-8">
+          <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-2xl pt-2 pb-6 px-6 sm:pt-2 sm:pb-8 sm:px-8">
             {/* Sub Header / Filters and Buttons Bar */}
             <div className="flex flex-col sm:flex-row gap-4 mb-8 justify-between items-center shrink-0">
               {/* Search inputs */}
@@ -451,36 +425,41 @@ export default function CostManagementPage() {
                 className="flex-1 w-full max-w-[800px] flex items-center bg-white rounded-[24px] px-3.5 py-2.5 shadow-sm transition-all"
                 style={{
                   border: "1px solid transparent",
-                  backgroundImage: "linear-gradient(white, white), linear-gradient(135deg, #e11d48 0%, #6b21a8 100%)",
+                  backgroundImage: "linear-gradient(white, white), linear-gradient(135deg, #EA580C 0%, #7C3AED 100%)",
                   backgroundOrigin: "border-box",
                   backgroundClip: "padding-box, border-box"
                 }}
               >
                 {/* Gradient Search circle */}
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#e11d48] to-[#6b21a8] flex items-center justify-center text-white shrink-0 shadow-sm mr-3">
-                  <Search className="w-4.5 h-4.5 text-white" />
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#EA580C] to-[#7C3AED] flex items-center justify-center text-white shrink-0 shadow-sm mr-3">
+                  <Search className="w-4 h-4 text-white" />
                 </div>
+                {/* Vertical line separator after search circle */}
+                <div className="h-5 w-[1px] bg-neutral-200 mr-3 shrink-0" />
                 <input
                   type="text"
                   placeholder="Search for your order"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
+                  className="flex-1 bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none font-medium"
                 />
                 <div className="flex items-center gap-3 shrink-0 pr-1 select-none">
-                  <span className="text-xs text-neutral-400 font-bold tracking-wider">A to Z</span>
+                  {/* Vertical line separator before A to Z */}
                   <div className="h-5 w-[1px] bg-neutral-200" />
-                  <Filter className="w-4 h-4 text-neutral-400 hover:text-[#6b21a8] cursor-pointer transition-colors" />
+                  <span className="text-xs text-neutral-400 font-bold tracking-wider">A to Z</span>
+                  {/* Vertical line separator before filter icon */}
+                  <div className="h-5 w-[1px] bg-neutral-200" />
+                  <Filter className="w-4 h-4 text-neutral-400 hover:text-[#7C3AED] cursor-pointer transition-colors" />
                 </div>
               </div>
 
               {/* Actions */}
-              <button
+              <ProbaeButton
                 onClick={openAddModal}
-                className="w-full sm:w-auto bg-[#6b21a8] hover:bg-[#581c87] text-white px-8 py-3.5 rounded-[24px] text-sm font-semibold transition-all hover:scale-[1.01] active:scale-95 shadow-sm cursor-pointer shrink-0"
+                className="w-full sm:w-auto px-8 shrink-0"
               >
                 Add Raw Material
-              </button>
+              </ProbaeButton>
             </div>
 
             {/* Grid Content Area */}
@@ -502,12 +481,13 @@ export default function CostManagementPage() {
                       : "Get started by adding raw materials for cost management."}
                   </p>
                   {!debouncedSearch && (
-                    <button
-                      onClick={openAddModal}
-                      className="mt-6 bg-[#6b21a8] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#581c87] transition-colors"
-                    >
-                      Add Your First Item
-                    </button>
+                    <div className="mt-6 w-[200px]">
+                      <ProbaeButton
+                        onClick={openAddModal}
+                      >
+                        Add Your First Item
+                      </ProbaeButton>
+                    </div>
                   )}
                 </div>
               ) : (
@@ -719,52 +699,7 @@ export default function CostManagementPage() {
                   />
                 </div>
 
-                {/* Calories + Macronutrients (Read-only) */}
-                {selectedMaterial?.calories !== undefined && selectedMaterial?.calories !== null && (
-                  <div>
-                    <label className="block text-[13px] font-semibold text-neutral-500 mb-1">
-                      Nutritional Value
-                    </label>
-                    <div className="grid grid-cols-5 gap-2 text-center">
-                      <div className="bg-[#f3f4f6] rounded-xl p-1.5">
-                        <span className="block text-[9px] font-semibold text-neutral-400">Calories</span>
-                        <span className="text-xs font-bold text-neutral-700">{selectedMaterial.calories}</span>
-                      </div>
-                      <div className="bg-[#f3f4f6] rounded-xl p-1.5">
-                        <span className="block text-[9px] font-semibold text-neutral-400">Protein</span>
-                        <span className="text-xs font-bold text-neutral-700">{selectedMaterial.protein}g</span>
-                      </div>
-                      <div className="bg-[#f3f4f6] rounded-xl p-1.5">
-                        <span className="block text-[9px] font-semibold text-neutral-400">Carbs</span>
-                        <span className="text-xs font-bold text-neutral-700">{selectedMaterial.carbs}g</span>
-                      </div>
-                      <div className="bg-[#f3f4f6] rounded-xl p-1.5">
-                        <span className="block text-[9px] font-semibold text-neutral-400">Fat</span>
-                        <span className="text-xs font-bold text-neutral-700">{selectedMaterial.fat}g</span>
-                      </div>
-                      <div className="bg-[#f3f4f6] rounded-xl p-1.5">
-                        <span className="block text-[9px] font-semibold text-neutral-400">Fiber</span>
-                        <span className="text-xs font-bold text-neutral-700">{selectedMaterial.fiber}g</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Micronutrients (Read-only) */}
-                {selectedMaterial?.micros && selectedMaterial.micros.length > 0 && (
-                  <div>
-                    <label className="block text-[13px] font-semibold text-neutral-500 mb-1">
-                      Micronutrients
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedMaterial.micros.map((micro, idx) => (
-                        <span key={idx} className="px-2.5 py-1 bg-[#f3f4f6] text-neutral-600 rounded-full text-xs font-semibold">
-                          {micro}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Calories and Micronutrients are managed in Calorie MGT */}
               </div>
 
             </div>
@@ -994,118 +929,26 @@ export default function CostManagementPage() {
               />
             </div>
 
-            {/* Nutritional Info Section (Task 3) */}
-            <div className="border-t border-neutral-100 pt-4">
-              <h3 className="text-xs font-bold text-neutral-800 uppercase tracking-wider mb-3">
-                Nutritional & Calorie Info
-              </h3>
-              
-              <div className="grid grid-cols-5 gap-2">
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 mb-1 uppercase text-center">
-                    Cals
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={formState.calories}
-                    onChange={(e) => setFormState(prev => ({ ...prev, calories: e.target.value === "" ? "" : Number(e.target.value) }))}
-                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-2 py-2 text-xs text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 mb-1 uppercase text-center">
-                    Prot (g)
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="0"
-                    value={formState.protein}
-                    onChange={(e) => setFormState(prev => ({ ...prev, protein: e.target.value === "" ? "" : Number(e.target.value) }))}
-                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-2 py-2 text-xs text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 mb-1 uppercase text-center">
-                    Carbs (g)
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="0"
-                    value={formState.carbs}
-                    onChange={(e) => setFormState(prev => ({ ...prev, carbs: e.target.value === "" ? "" : Number(e.target.value) }))}
-                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-2 py-2 text-xs text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 mb-1 uppercase text-center">
-                    Fat (g)
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="0"
-                    value={formState.fat}
-                    onChange={(e) => setFormState(prev => ({ ...prev, fat: e.target.value === "" ? "" : Number(e.target.value) }))}
-                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-2 py-2 text-xs text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 mb-1 uppercase text-center">
-                    Fiber (g)
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="0"
-                    value={formState.fiber}
-                    onChange={(e) => setFormState(prev => ({ ...prev, fiber: e.target.value === "" ? "" : Number(e.target.value) }))}
-                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-2 py-2 text-xs text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Micronutrients (Task 3) */}
-            <div>
-              <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
-                Micronutrients (comma separated)
-              </label>
-              <input
-                type="text"
-                placeholder="Vitamin B12, Iron, Zinc"
-                value={formState.microsString}
-                onChange={(e) => setFormState(prev => ({ ...prev, microsString: e.target.value }))}
-                className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl px-4 py-3.5 text-sm text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400"
-              />
-            </div>
+            {/* Calories and Micronutrients are managed in Calorie MGT */}
 
             {/* Footer buttons */}
             <div className="flex gap-4 justify-start mt-6">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="bg-[#6b21a8] hover:bg-[#581c87] text-white py-3.5 px-8 rounded-2xl text-sm font-semibold transition-all hover:scale-[1.02] shadow-sm cursor-pointer"
+                className="bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-600 hover:text-black py-3.5 px-8 rounded-2xl text-sm font-bold transition-all shadow-sm cursor-pointer"
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={isUploadingPrimary || isUploadingBackground || isSaving}
-                className={`bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold py-3.5 px-8 rounded-2xl text-sm transition-all hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2 ${
-                  (isUploadingPrimary || isUploadingBackground || isSaving) ? "opacity-60 cursor-not-allowed" : ""
-                }`}
-              >
-                {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                Save
-              </button>
+              <div className="w-[140px]">
+                <ProbaeButton
+                  type="submit"
+                  disabled={isUploadingPrimary || isUploadingBackground || isSaving}
+                >
+                  {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save
+                </ProbaeButton>
+              </div>
             </div>
           </form>
         </div>

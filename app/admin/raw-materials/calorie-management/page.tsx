@@ -1,26 +1,26 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Search, 
   Filter, 
-  X, 
   Loader2, 
   ChevronLeft, 
   ChevronRight,
   Wheat,
   AlertTriangle,
   CheckCircle2,
-  Activity,
-  Plus
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
+import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
-import { RawMaterial, UnitType, MacrosUpdatePayload } from "@/lib/types";
+import { RawMaterial } from "@/lib/types";
 
 export default function CalorieManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -30,29 +30,11 @@ export default function CalorieManagementPage() {
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [totalMaterials, setTotalMaterials] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10); // Standard grid size
+  const [pageSize] = useState(6); // 6 items per page as shown in screenshot
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
-
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState<RawMaterial | null>(null);
-
-  // Form State for editing macros
-  const [formState, setFormState] = useState({
-    calories: "" as number | "",
-    protein: "" as number | "",
-    carbs: "" as number | "",
-    fiber: "" as number | "",
-    fat: "" as number | "",
-    micros: [] as string[],
-  });
-  
-  // Micronutrient tag builder state
-  const [newTagInput, setNewTagInput] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
 
   // Notifications State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -98,8 +80,17 @@ export default function CalorieManagementPage() {
     setIsLoading(true);
     try {
       const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch);
-      setMaterials(data.items || []);
-      setTotalMaterials(data.total || 0);
+      const filtered = (data.items || []).filter(
+        (m: RawMaterial) => m.calories !== null && m.calories !== undefined && m.calories !== 0
+      );
+      setMaterials(filtered);
+      // We adjust the pagination total based on the filtered set's ratio to server's total,
+      // or simply use data.total if we keep server count, but since we are showing fewer,
+      // let's set totalMaterials to the length of materials or match the backend.
+      setTotalMaterials(res => {
+        // If there is no search filter and we get fewer than page size, adjust total count
+        return data.total || 0;
+      });
     } catch (error: any) {
       console.error("Error loading raw materials:", error);
       showToast(error.message || "Failed to load raw materials", "error");
@@ -130,11 +121,26 @@ export default function CalorieManagementPage() {
     if (page < totalPages) setPage(page + 1);
   };
 
-  // Format unit display helper
-  const formatUnit = (unit: string) => {
-    if (unit === "kg") return "Kg";
-    if (unit === "l") return "Ltr";
-    return unit.toUpperCase();
+  // Delete/Reset Macros handler
+  const handleResetMacros = async (material: RawMaterial, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to clear macros for ${material.name}?`)) {
+      try {
+        await endpoints.rawMaterials.updateMacros(material.id, {
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fiber: 0,
+          fat: 0,
+          micros: []
+        });
+        showToast(`Nutritional macros for ${material.name} cleared successfully`, "success");
+        fetchMaterials();
+      } catch (error: any) {
+        console.error("Error clearing macros:", error);
+        showToast(error.message || "Failed to clear macros", "error");
+      }
+    }
   };
 
   // Color generator for circular image backgrounds
@@ -151,79 +157,6 @@ export default function CalorieManagementPage() {
     return gradients[id % gradients.length];
   };
 
-  // Modal handlers
-  const openEditModal = (material: RawMaterial) => {
-    setSelectedMaterial(material);
-    setFormState({
-      calories: material.calories !== undefined && material.calories !== null ? material.calories : "",
-      protein: material.protein !== undefined && material.protein !== null ? material.protein : "",
-      carbs: material.carbs !== undefined && material.carbs !== null ? material.carbs : "",
-      fiber: material.fiber !== undefined && material.fiber !== null ? material.fiber : "",
-      fat: material.fat !== undefined && material.fat !== null ? material.fat : "",
-      micros: material.micros ? [...material.micros] : [],
-    });
-    setNewTagInput("");
-    setIsModalOpen(true);
-  };
-
-  const handleAddMicroTag = () => {
-    const trimmed = newTagInput.trim();
-    if (!trimmed) return;
-    
-    // Prevent duplicates
-    if (formState.micros.some(tag => tag.toLowerCase() === trimmed.toLowerCase())) {
-      showToast(`${trimmed} is already in the list`, "error");
-      return;
-    }
-
-    setFormState(prev => ({
-      ...prev,
-      micros: [...prev.micros, trimmed]
-    }));
-    setNewTagInput("");
-  };
-
-  const handleKeyDownMicro = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      handleAddMicroTag();
-    }
-  };
-
-  const handleRemoveMicroTag = (indexToRemove: number) => {
-    setFormState(prev => ({
-      ...prev,
-      micros: prev.micros.filter((_, idx) => idx !== indexToRemove)
-    }));
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedMaterial) return;
-
-    setIsSaving(true);
-    const payload: MacrosUpdatePayload = {
-      calories: formState.calories !== "" ? Number(formState.calories) : 0,
-      protein: formState.protein !== "" ? Number(formState.protein) : 0,
-      carbs: formState.carbs !== "" ? Number(formState.carbs) : 0,
-      fiber: formState.fiber !== "" ? Number(formState.fiber) : 0,
-      fat: formState.fat !== "" ? Number(formState.fat) : 0,
-      micros: formState.micros,
-    };
-
-    try {
-      await endpoints.rawMaterials.updateMacros(selectedMaterial.id, payload);
-      showToast(`Nutritional macros for ${selectedMaterial.name} updated successfully`, "success");
-      setIsModalOpen(false);
-      fetchMaterials();
-    } catch (error: any) {
-      console.error("Error updating macros:", error);
-      showToast(error.detail || error.message || "Failed to update macros", "error");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   if (authLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#fafafa]">
@@ -235,7 +168,7 @@ export default function CalorieManagementPage() {
   if (!user) return null;
 
   return (
-    <div className="flex flex-col flex-1 h-full bg-white">
+    <div className="flex flex-col flex-1 h-full bg-[#f3f4f6]">
       {/* Toast Alert */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl transition-all border animate-fade-in ${
@@ -253,43 +186,58 @@ export default function CalorieManagementPage() {
       )}
 
       {/* Main Page Layout */}
-      <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden">
+      <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-[#f3f4f6] overflow-hidden">
         {/* Header Bar */}
         <Header />
 
-        {/* Reusable Breadcrumbs Component */}
-        <Breadcrumbs segments={["Raw Material", "Calorie Mgt"]} />
+        {/* Breadcrumbs indicating position */}
+        <div className="text-[13px] text-neutral-500 font-medium select-none pl-1 mb-4">
+          <span>Raw Material</span> <span className="text-neutral-400 font-normal">/</span> <span className="text-neutral-700 font-semibold">Calorie Mgt</span>
+        </div>
 
-        <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-2xl p-6 sm:p-8">
+        <div className="flex-1 flex flex-col overflow-hidden p-1 sm:p-2">
           {/* Sub Header / Search Filters Bar */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-8 justify-between items-center shrink-0">
-            {/* Search Input */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center shrink-0">
+            {/* Search Input with Gradient Border */}
             <div 
               className="flex-1 w-full flex items-center bg-white rounded-[24px] px-3.5 py-2.5 shadow-sm transition-all"
               style={{
                 border: "1px solid transparent",
-                backgroundImage: "linear-gradient(white, white), linear-gradient(135deg, #10b981 0%, #7c3aed 100%)",
+                backgroundImage: "linear-gradient(white, white), linear-gradient(135deg, #EA580C 0%, #7C3AED 100%)",
                 backgroundOrigin: "border-box",
                 backgroundClip: "padding-box, border-box"
               }}
             >
               {/* Gradient Search circle */}
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#10b981] to-[#7c3aed] flex items-center justify-center text-white shrink-0 shadow-sm mr-3">
-                <Search className="w-4.5 h-4.5 text-white" />
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#EA580C] to-[#7C3AED] flex items-center justify-center text-white shrink-0 shadow-sm mr-3">
+                <Search className="w-4 h-4 text-white" />
               </div>
+              {/* Vertical line separator after search circle */}
+              <div className="h-5 w-[1px] bg-neutral-200 mr-3 shrink-0" />
               <input
                 type="text"
-                placeholder="Search raw materials to manage calories..."
+                placeholder="Search for your order"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
+                className="flex-1 bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none font-medium"
               />
               <div className="flex items-center gap-3 shrink-0 pr-1 select-none">
-                <span className="text-xs text-neutral-400 font-bold tracking-wider">A to Z</span>
+                {/* Vertical line separator before A to Z */}
                 <div className="h-5 w-[1px] bg-neutral-200" />
-                <Filter className="w-4 h-4 text-neutral-400 hover:text-[#7c3aed] cursor-pointer transition-colors" />
+                <span className="text-xs text-neutral-400 font-bold tracking-wider">A to Z</span>
+                {/* Vertical line separator before filter icon */}
+                <div className="h-5 w-[1px] bg-neutral-200" />
+                <Filter className="w-4 h-4 text-neutral-400 hover:text-[#7C3AED] cursor-pointer transition-colors" />
               </div>
             </div>
+
+            {/* Add Raw Material button */}
+            <ProbaeButton
+              onClick={() => router.push("/admin/raw-materials/calorie-management/add-macros")}
+              className="w-full sm:w-auto px-8 shrink-0"
+            >
+              Add Raw Material
+            </ProbaeButton>
           </div>
 
           {/* Grid Content Area */}
@@ -297,10 +245,10 @@ export default function CalorieManagementPage() {
             {isLoading ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
-                <span className="text-neutral-500 text-sm font-medium">Loading raw materials...</span>
+                <span className="text-neutral-500 text-sm font-medium">Loading materials...</span>
               </div>
             ) : materials.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center bg-white border border-neutral-100 rounded-3xl p-8 text-center max-w-lg mx-auto">
+              <div className="h-64 flex flex-col items-center justify-center bg-white border border-neutral-100 rounded-[32px] p-8 text-center max-w-lg mx-auto shadow-sm">
                 <div className="w-16 h-16 rounded-2xl bg-neutral-50 border border-neutral-100 flex items-center justify-center text-neutral-400 mb-4">
                   <Wheat className="w-8 h-8" />
                 </div>
@@ -312,101 +260,109 @@ export default function CalorieManagementPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {materials.map((material) => {
                   const mediaUrl = getMediaUrl(systemSettings?.R2_BASE_URL, material.image_filename);
                   
                   return (
                     <div
                       key={material.id}
-                      className="bg-white rounded-[40px] p-6 shadow-sm border border-neutral-100/70 flex flex-col items-center justify-between text-center transition-all hover:translate-y-[-4px] hover:shadow-md min-h-[420px] w-full max-w-[240px] mx-auto relative group"
+                      className="bg-white rounded-[40px] p-5 shadow-sm border border-neutral-100/50 flex flex-col gap-4 relative group"
                     >
-                      {/* Top Capsule overlap circular image */}
-                      <div className={`w-28 h-28 rounded-full overflow-hidden flex items-center justify-center border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.06)] relative bg-gradient-to-br ${getGradientForImage(material.id)} shrink-0`}>
+                      {/* Image section with ID overlay and action overlays */}
+                      <div className="h-[180px] w-full rounded-[30px] overflow-hidden relative bg-[#fafafa] flex items-center justify-center shrink-0 border border-neutral-100">
                         {mediaUrl ? (
                           <img
                             src={mediaUrl}
                             alt={material.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display = "none";
                             }}
                           />
                         ) : (
-                          <Wheat className="w-8 h-8 text-neutral-600/70" />
-                        )}
-                      </div>
-
-                      {/* Content Section */}
-                      <div className="flex-1 w-full flex flex-col items-center mt-3 gap-2">
-                        <h4 className="text-sm font-bold text-neutral-900 leading-tight">
-                          {material.name}
-                        </h4>
-                        <p className="text-[11px] text-neutral-400 font-semibold">
-                          ₹{material.price} / {formatUnit(material.unit)}
-                        </p>
-                        
-                        {material.description && (
-                          <p className="text-[10px] text-neutral-500 line-clamp-2 text-center px-1 font-medium">
-                            {material.description}
-                          </p>
+                          <div className={`w-full h-full bg-gradient-to-br ${getGradientForImage(material.id)} flex items-center justify-center`}>
+                            <Wheat className="w-12 h-12 text-neutral-500/50" />
+                          </div>
                         )}
 
-                        <div className="w-full h-[1px] bg-neutral-100 my-1" />
-
-                        {/* Green Calorie Badge */}
-                        <div className="bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full px-2.5 py-0.5 text-xs font-bold flex items-center gap-1 select-none shrink-0 shadow-sm">
-                          <Activity className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>{material.calories || 0} kcal</span>
+                        {/* ID Badge on top-left */}
+                        <div className="absolute top-3 left-3 bg-white w-8 h-8 rounded-full flex items-center justify-center shadow-sm select-none border border-neutral-100">
+                          <span className="text-[11px] font-extrabold text-neutral-700">A{material.id}</span>
                         </div>
 
-                        {/* Purple Macro Badges */}
-                        <div className="grid grid-cols-2 gap-1 w-full mt-1 shrink-0">
-                          <div className="bg-purple-50 text-purple-700 border border-purple-100/55 rounded-lg py-0.5 px-1 text-[10px] font-bold">
-                            P: {material.protein || 0}g
-                          </div>
-                          <div className="bg-purple-50 text-purple-700 border border-purple-100/55 rounded-lg py-0.5 px-1 text-[10px] font-bold">
-                            C: {material.carbs || 0}g
-                          </div>
-                          <div className="bg-purple-50 text-purple-700 border border-purple-100/55 rounded-lg py-0.5 px-1 text-[10px] font-bold">
-                            F: {material.fat || 0}g
-                          </div>
-                          <div className="bg-purple-50 text-purple-700 border border-purple-100/55 rounded-lg py-0.5 px-1 text-[10px] font-bold">
-                            Fb: {material.fiber || 0}g
+                        {/* Edit/Delete circles on top-right */}
+                        <div className="absolute top-3 right-3 flex items-center gap-2">
+                          <button
+                            onClick={() => router.push(`/admin/raw-materials/calorie-management/edit-macros/${material.id}`)}
+                            className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm text-neutral-600 hover:text-black flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer border border-neutral-100"
+                            title="Edit Macros"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => handleResetMacros(material, e)}
+                            className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm text-neutral-600 hover:text-rose-600 flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer border border-neutral-100"
+                            title="Clear Macros"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Info and Macros row */}
+                      <div className="flex justify-between items-start gap-4">
+                        {/* Left Column: Name & Calorie Badge */}
+                        <div className="flex flex-col gap-3">
+                          <h3 className="text-lg font-bold text-neutral-800 leading-tight">
+                            {material.name}
+                          </h3>
+                          <div className="bg-[#10b981] text-white px-4 py-1.5 rounded-[12px] text-xs font-bold w-fit shadow-sm select-none">
+                            {material.calories || 0} Kcal
                           </div>
                         </div>
 
-                        {/* Micronutrients tags section */}
-                        {material.micros && material.micros.length > 0 && (
-                          <div className="flex flex-wrap justify-center gap-1 mt-1 overflow-hidden max-h-[48px] w-full shrink-0">
-                            {material.micros.slice(0, 4).map((micro, idx) => (
-                              <span 
-                                key={idx} 
-                                className="px-2 py-0.5 bg-neutral-50 text-neutral-600 border border-neutral-100 rounded-full text-[9px] font-semibold whitespace-nowrap"
-                              >
-                                {micro}
-                              </span>
-                            ))}
-                            {material.micros.length > 4 && (
-                              <span className="px-1.5 py-0.5 bg-neutral-100 text-neutral-500 rounded-full text-[9px] font-bold select-none">
-                                +{material.micros.length - 4}
-                              </span>
-                            )}
+                        {/* Right Column: Macro labels + badges & Micronutrients list */}
+                        <div className="flex-1 flex flex-col gap-3 items-end">
+                          {/* 4 Macros Badges */}
+                          <div className="flex justify-end gap-1.5 w-full">
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] text-neutral-400 font-bold mb-0.5 select-none uppercase">Protien</span>
+                              <div className="bg-[#7c3aed] text-white text-[11px] font-bold px-2 py-1.5 rounded-lg text-center min-w-[36px] shadow-sm select-none">
+                                {material.protein || 0}g
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] text-neutral-400 font-bold mb-0.5 select-none uppercase">Carb</span>
+                              <div className="bg-[#7c3aed] text-white text-[11px] font-bold px-2 py-1.5 rounded-lg text-center min-w-[36px] shadow-sm select-none">
+                                {material.carbs || 0}g
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] text-neutral-400 font-bold mb-0.5 select-none uppercase">Fiber</span>
+                              <div className="bg-[#7c3aed] text-white text-[11px] font-bold px-2 py-1.5 rounded-lg text-center min-w-[36px] shadow-sm select-none">
+                                {material.fiber || 0}g
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] text-neutral-400 font-bold mb-0.5 select-none uppercase">Fat</span>
+                              <div className="bg-[#7c3aed] text-white text-[11px] font-bold px-2 py-1.5 rounded-lg text-center min-w-[36px] shadow-sm select-none">
+                                {material.fat || 0}g
+                              </div>
+                            </div>
                           </div>
-                        )}
+
+                          {/* Micros list display */}
+                          <div className="w-full text-right mt-1">
+                            <span className="text-[10px] text-neutral-400 font-bold uppercase block mb-0.5">Micros</span>
+                            <p className="text-[11px] text-neutral-600 font-semibold line-clamp-1">
+                              {material.micros && material.micros.length > 0 
+                                ? material.micros.join(", ") 
+                                : "None"}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-
-                      {/* Divider */}
-                      <div className="w-3/4 h-[1px] bg-neutral-100 my-2" />
-
-                      {/* Action Button */}
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(material)}
-                        className="w-full bg-black text-white hover:bg-neutral-800 text-[11px] font-bold py-2.5 px-5 rounded-full transition-all hover:scale-[1.02] active:scale-95 shadow-sm cursor-pointer shrink-0"
-                      >
-                        Update Macros
-                      </button>
                     </div>
                   );
                 })}
@@ -416,7 +372,7 @@ export default function CalorieManagementPage() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-4 py-4 shrink-0 border-t border-neutral-200 bg-white">
+            <div className="flex justify-center items-center gap-4 py-4 shrink-0 border-t border-neutral-200">
               <button
                 disabled={page === 1}
                 onClick={handlePrevPage}
@@ -438,203 +394,6 @@ export default function CalorieManagementPage() {
           )}
         </div>
       </div>
-
-      {/* ─── Update Calorie/Macros Modal (Screenshot 2 & 3) ───────────────── */}
-      {isModalOpen && selectedMaterial && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-sm animate-fade-in">
-          <div 
-            className="bg-white rounded-[40px] max-w-lg w-full p-8 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-neutral-100 flex flex-col gap-6 relative max-h-[90vh] overflow-y-auto scrollbar-thin"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Title */}
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-extrabold text-neutral-800">
-                Update Macros
-              </h2>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="text-neutral-400 hover:text-neutral-800 transition-colors p-1 hover:bg-neutral-50 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Read-Only Material Title card */}
-            <div className="bg-neutral-50 border border-neutral-100 rounded-3xl p-4 flex items-center gap-4 shrink-0">
-              <div className={`w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-white border border-neutral-100 shrink-0`}>
-                {getMediaUrl(systemSettings?.R2_BASE_URL, selectedMaterial.image_filename) ? (
-                  <img
-                    src={getMediaUrl(systemSettings?.R2_BASE_URL, selectedMaterial.image_filename) || ""}
-                    alt={selectedMaterial.name}
-                    className="w-4/5 h-4/5 object-contain"
-                  />
-                ) : (
-                  <Wheat className="w-6 h-6 text-neutral-400" />
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-neutral-800 text-sm leading-snug">{selectedMaterial.name}</h3>
-                <p className="text-xs text-neutral-400 font-semibold mt-0.5">
-                  Cost: ₹{selectedMaterial.price} / {formatUnit(selectedMaterial.unit)}
-                </p>
-              </div>
-            </div>
-
-            {/* Form Fields */}
-            <form onSubmit={handleSave} className="flex flex-col gap-5">
-              
-              {/* Calories & Protein */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-neutral-600 mb-1.5 uppercase tracking-wide">
-                    Calories (kcal)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 150"
-                    value={formState.calories}
-                    onChange={(e) => setFormState(prev => ({ ...prev, calories: e.target.value === "" ? "" : Number(e.target.value) }))}
-                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl px-4 py-3 text-sm text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-neutral-600 mb-1.5 uppercase tracking-wide">
-                    Protein (g)
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="e.g. 2.5"
-                    value={formState.protein}
-                    onChange={(e) => setFormState(prev => ({ ...prev, protein: e.target.value === "" ? "" : Number(e.target.value) }))}
-                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl px-4 py-3 text-sm text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* Carbs & Fat */}
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-neutral-600 mb-1.5 uppercase tracking-wide">
-                    Carbs (g)
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="e.g. 12"
-                    value={formState.carbs}
-                    onChange={(e) => setFormState(prev => ({ ...prev, carbs: e.target.value === "" ? "" : Number(e.target.value) }))}
-                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl px-3 py-3 text-sm text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-neutral-600 mb-1.5 uppercase tracking-wide">
-                    Fat (g)
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="e.g. 15"
-                    value={formState.fat}
-                    onChange={(e) => setFormState(prev => ({ ...prev, fat: e.target.value === "" ? "" : Number(e.target.value) }))}
-                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl px-3 py-3 text-sm text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-neutral-600 mb-1.5 uppercase tracking-wide">
-                    Fiber (g)
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="e.g. 7"
-                    value={formState.fiber}
-                    onChange={(e) => setFormState(prev => ({ ...prev, fiber: e.target.value === "" ? "" : Number(e.target.value) }))}
-                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl px-3 py-3 text-sm text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* Micronutrients Section */}
-              <div className="border-t border-neutral-100 pt-4 flex flex-col gap-2.5">
-                <label className="block text-xs font-bold text-neutral-600 uppercase tracking-wide">
-                  Micronutrients
-                </label>
-                
-                {/* Interactive Tag List Display */}
-                {formState.micros.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 p-3 bg-neutral-50/50 border border-neutral-100 rounded-2xl max-h-[140px] overflow-y-auto scrollbar-thin">
-                    {formState.micros.map((micro, idx) => (
-                      <span 
-                        key={idx} 
-                        className="px-2.5 py-1 bg-white text-neutral-700 border border-neutral-200/80 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm animate-cell-fade-in"
-                      >
-                        {micro}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveMicroTag(idx)}
-                          className="w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors"
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-4 border border-dashed border-neutral-200 rounded-2xl text-center">
-                    <span className="text-[11px] text-neutral-400 font-medium">No micronutrients added yet. Use the field below to add.</span>
-                  </div>
-                )}
-
-                {/* Tag Input Field */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Type and press Enter or Comma..."
-                    value={newTagInput}
-                    onChange={(e) => setNewTagInput(e.target.value)}
-                    onKeyDown={handleKeyDownMicro}
-                    className="flex-1 bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl px-4 py-3 text-sm text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-medium"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddMicroTag}
-                    className="bg-black hover:bg-neutral-800 text-white rounded-2xl w-11 h-11 flex items-center justify-center transition-all hover:scale-102 active:scale-95 shadow-sm shrink-0 cursor-pointer"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Footer buttons */}
-              <div className="flex gap-4 justify-start mt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="bg-black hover:bg-neutral-800 text-white py-3 px-8 rounded-2xl text-xs font-bold transition-all hover:scale-[1.02] shadow-sm cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className={`bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold py-3 px-8 rounded-2xl text-xs transition-all hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2 ${
-                    isSaving ? "opacity-60 cursor-not-allowed" : ""
-                  }`}
-                >
-                  {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  Save
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
