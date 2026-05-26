@@ -32,6 +32,13 @@ export interface RawMaterial {
   price: number;
   unit: UnitType;
   image_filename?: string | null;
+  background_image_filename?: string | null;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fiber: number;
+  fat: number;
+  micros: string[];
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +49,13 @@ export interface RawMaterialCreateInput {
   price: number;
   unit: UnitType;
   image_filename?: string | null;
+  background_image_filename?: string | null;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fiber?: number;
+  fat?: number;
+  micros?: string[];
 }
 
 export interface RawMaterialUpdateInput {
@@ -50,6 +64,13 @@ export interface RawMaterialUpdateInput {
   price?: number;
   unit?: UnitType;
   image_filename?: string | null;
+  background_image_filename?: string | null;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fiber?: number;
+  fat?: number;
+  micros?: string[];
 }
 
 export interface PaginatedRawMaterials {
@@ -57,6 +78,15 @@ export interface PaginatedRawMaterials {
   total: number;
   page: number;
   size: number;
+}
+
+export interface MacrosUpdatePayload {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fiber: number;
+  fat: number;
+  micros: string[];
 }
 
 // export interface Product {

@@ -6,7 +6,7 @@
  * in-memory token storage (per architecture rules), automatic token refresh
  * on 401 Unauthorized responses (with queueing logic), and standardized error handling.
  */
-import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials } from "./types";
+import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload } from "./types";
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
@@ -310,6 +310,9 @@ export const endpoints = {
     },
     updateRawMaterial: async (id: number, data: RawMaterialUpdateInput): Promise<RawMaterial> => {
       return await api.patch<RawMaterial>(`/raw-materials/${id}`, data);
+    },
+    updateMacros: async (id: number, data: MacrosUpdatePayload): Promise<RawMaterial> => {
+      return await api.patch<RawMaterial>(`/raw-materials/${id}/macros`, data);
     },
     deleteRawMaterial: async (id: number): Promise<void> => {
       return await api.del<void>(`/raw-materials/${id}`);

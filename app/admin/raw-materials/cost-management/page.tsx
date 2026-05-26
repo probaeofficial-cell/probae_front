@@ -42,19 +42,34 @@ export default function CostManagementPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
-  const [editingMaterial, setEditingMaterial] = useState<RawMaterial | null>(null);
 
-  // Form State
-  const [formName, setFormName] = useState("");
-  const [formPrice, setFormPrice] = useState<number | "">("");
-  const [formUnit, setFormUnit] = useState<UnitType>("kg");
-  const [formDescription, setFormDescription] = useState("");
-  const [formImageFilename, setFormImageFilename] = useState<string | null>(null);
+  // Form State (Task 1 & 3)
+  const [formState, setFormState] = useState({
+    name: "",
+    price: "" as number | "",
+    unit: "kg" as UnitType,
+    description: "",
+    image_filename: null as string | null,
+    background_image_filename: null as string | null,
+    calories: "" as number | "",
+    protein: "" as number | "",
+    carbs: "" as number | "",
+    fiber: "" as number | "",
+    fat: "" as number | "",
+    microsString: "",
+  });
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewBackgroundUrl, setPreviewBackgroundUrl] = useState<string | null>(null);
+  const [isUploadingPrimary, setIsUploadingPrimary] = useState(false);
+  const [isUploadingBackground, setIsUploadingBackground] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   // Image Upload State
-  const [isUploading, setIsUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragActivePrimary, setDragActivePrimary] = useState(false);
+  const [dragActiveBackground, setDragActiveBackground] = useState(false);
+  const fileInputPrimaryRef = useRef<HTMLInputElement>(null);
+  const fileInputBackgroundRef = useRef<HTMLInputElement>(null);
 
   // Detail View State
   const [selectedMaterial, setSelectedMaterial] = useState<RawMaterial | null>(null);
@@ -62,7 +77,6 @@ export default function CostManagementPage() {
 
   // Notifications State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ─── Side Effects ──────────────────────────────────────────────────────────
   // Auth validation
@@ -137,112 +151,197 @@ export default function CostManagementPage() {
     if (page < totalPages) setPage(page + 1);
   };
 
-  // Drag and drop event handlers
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+  // Drag and drop event handlers are defined separately below for Primary and Background zones.
+
+  // Define local apiService (Task 2 & 4)
+  const apiService = {
+    uploadDocument: endpoints.documents.upload,
   };
+  const updateRawMaterial = endpoints.rawMaterials.updateRawMaterial;
+  const createRawMaterial = endpoints.rawMaterials.createRawMaterial;
 
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      await uploadFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      await uploadFile(e.target.files[0]);
-    }
-  };
-
-  const uploadFile = async (file: File) => {
+  // The Upload Handler Logic (Task 2)
+  const handleImageDrop = async (file: File, type: "primary" | "background") => {
     if (!file.type.startsWith("image/")) {
       showToast("Please select a valid image file", "error");
       return;
     }
-    setIsUploading(true);
+    
+    const objUrl = URL.createObjectURL(file);
+    if (type === "primary") {
+      setPreviewUrl(objUrl);
+      setIsUploadingPrimary(true);
+    } else {
+      setPreviewBackgroundUrl(objUrl);
+      setIsUploadingBackground(true);
+    }
+
     try {
-      const result = await endpoints.documents.upload(file);
-      if (result && result.filename) {
-        setFormImageFilename(result.filename);
-        showToast("Image uploaded successfully", "success");
-      } else {
-        throw new Error("Invalid response from upload API");
-      }
+      const response = await apiService.uploadDocument(file);
+      // CRITICAL: Extract only the filename from the response
+      const newFilename = response.filename;
+      
+      setFormState((prev) => ({
+        ...prev,
+        [type === "primary" ? "image_filename" : "background_image_filename"]: newFilename,
+      }));
+      showToast(`${type === "primary" ? "Primary image" : "Background image"} uploaded successfully`, "success");
     } catch (error: any) {
       console.error("Error uploading file:", error);
       showToast(error.message || "Failed to upload image", "error");
+      if (type === "primary") {
+        setPreviewUrl(null);
+      } else {
+        setPreviewBackgroundUrl(null);
+      }
     } finally {
-      setIsUploading(false);
+      if (type === "primary") {
+        setIsUploadingPrimary(false);
+      } else {
+        setIsUploadingBackground(false);
+      }
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
+  const handleDropPrimary = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActivePrimary(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      await handleImageDrop(e.dataTransfer.files[0], "primary");
+    }
   };
 
-  // Open Modals
+  const handleFileChangePrimary = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      await handleImageDrop(e.target.files[0], "primary");
+    }
+  };
+
+  const handleDragPrimary = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActivePrimary(true);
+    } else if (e.type === "dragleave") {
+      setDragActivePrimary(false);
+    }
+  };
+
+  const handleDropBackground = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActiveBackground(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      await handleImageDrop(e.dataTransfer.files[0], "background");
+    }
+  };
+
+  const handleFileChangeBackground = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      await handleImageDrop(e.target.files[0], "background");
+    }
+  };
+
+  const handleDragBackground = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActiveBackground(true);
+    } else if (e.type === "dragleave") {
+      setDragActiveBackground(false);
+    }
+  };
+
+  // Modal Initialization (Task 3)
   const openAddModal = () => {
     setModalMode("add");
-    setEditingMaterial(null);
-    setFormName("");
-    setFormPrice("");
-    setFormUnit("kg");
-    setFormDescription("");
-    setFormImageFilename(null);
+    setEditingId(null);
+    setFormState({
+      name: "",
+      price: "",
+      unit: "kg",
+      description: "",
+      image_filename: null,
+      background_image_filename: null,
+      calories: "",
+      protein: "",
+      carbs: "",
+      fiber: "",
+      fat: "",
+      microsString: "",
+    });
+    setPreviewUrl(null);
+    setPreviewBackgroundUrl(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (material: RawMaterial, e: React.MouseEvent) => {
     e.stopPropagation(); // Avoid triggering detail view
     setModalMode("edit");
-    setEditingMaterial(material);
-    setFormName(material.name);
-    setFormPrice(material.price);
-    setFormUnit(material.unit);
-    setFormDescription(material.description || "");
-    setFormImageFilename(material.image_filename || null);
+    setEditingId(material.id);
+    setFormState({
+      name: material.name,
+      price: material.price,
+      unit: material.unit,
+      description: material.description || "",
+      image_filename: material.image_filename || null,
+      background_image_filename: material.background_image_filename || null,
+      calories: material.calories !== undefined && material.calories !== null ? material.calories : "",
+      protein: material.protein !== undefined && material.protein !== null ? material.protein : "",
+      carbs: material.carbs !== undefined && material.carbs !== null ? material.carbs : "",
+      fiber: material.fiber !== undefined && material.fiber !== null ? material.fiber : "",
+      fat: material.fat !== undefined && material.fat !== null ? material.fat : "",
+      microsString: material.micros?.join(", ") || "",
+    });
+    setPreviewUrl(getMediaUrl(systemSettings?.R2_BASE_URL, material.image_filename));
+    setPreviewBackgroundUrl(getMediaUrl(systemSettings?.R2_BASE_URL, material.background_image_filename));
     setIsModalOpen(true);
   };
 
-  // Submit Modal
-  const handleSaveMaterial = async (e: React.FormEvent) => {
+  // Form Submission (Task 4)
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName.trim()) {
+    if (isUploadingPrimary || isUploadingBackground) return; // Ensure isUploading is false (prevent saving mid-upload)
+    
+    if (!formState.name.trim()) {
       showToast("Please enter a name", "error");
       return;
     }
-    if (formPrice === "" || Number(formPrice) <= 0) {
+    if (formState.price === "" || Number(formState.price) <= 0) {
       showToast("Please enter a valid price greater than 0", "error");
       return;
     }
 
-    setIsSubmitting(true);
+    setIsSaving(true);
+    
+    // CRITICAL DATA FORMATTING (Task 3)
+    const formattedMicros = formState.microsString.split(',').map(s => s.trim()).filter(Boolean);
+
     const payload = {
-      name: formName.trim(),
-      price: Number(formPrice),
-      unit: formUnit,
-      description: formDescription.trim() || null,
-      image_filename: formImageFilename
+      name: formState.name.trim(),
+      price: Number(formState.price),
+      unit: formState.unit,
+      description: formState.description.trim() || null,
+      image_filename: formState.image_filename,
+      background_image_filename: formState.background_image_filename,
+      calories: formState.calories !== "" ? Number(formState.calories) : 0,
+      protein: formState.protein !== "" ? Number(formState.protein) : 0,
+      carbs: formState.carbs !== "" ? Number(formState.carbs) : 0,
+      fiber: formState.fiber !== "" ? Number(formState.fiber) : 0,
+      fat: formState.fat !== "" ? Number(formState.fat) : 0,
+      micros: formattedMicros,
     };
 
     try {
-      if (modalMode === "add") {
-        await endpoints.rawMaterials.createRawMaterial(payload);
-        showToast(`${payload.name} created successfully`, "success");
-      } else {
-        if (!editingMaterial) return;
-        await endpoints.rawMaterials.updateRawMaterial(editingMaterial.id, payload);
+      if (editingId) {
+        await updateRawMaterial(editingId, payload);
         showToast(`${payload.name} updated successfully`, "success");
+      } else {
+        await createRawMaterial(payload);
+        showToast(`${payload.name} created successfully`, "success");
       }
       setIsModalOpen(false);
       fetchMaterials();
@@ -250,7 +349,7 @@ export default function CostManagementPage() {
       console.error("Error saving raw material:", error);
       showToast(error.detail || error.message || "Failed to save raw material", "error");
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
@@ -503,16 +602,19 @@ export default function CostManagementPage() {
           /* ─── Detail/Preview View (Screenshot 1) ─── */
           <div className="flex-1 w-full rounded-2xl overflow-hidden relative flex flex-col justify-center items-center p-6">
             
-            {/* Background Image: sharp, clear, full screen background */}
-            {selectedMaterial?.image_filename && (
-              <div 
-                className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat w-full h-full"
-                style={{ backgroundImage: `url(${getMediaUrl(systemSettings?.R2_BASE_URL, selectedMaterial.image_filename)})` }}
+            {/* Background Image: sharp, clear, full screen background (Task 4) */}
+            {selectedMaterial?.background_image_filename && (
+              <img 
+                src={getMediaUrl(systemSettings.R2_BASE_URL, selectedMaterial.background_image_filename) || undefined} 
+                className="absolute inset-0 w-full h-full object-cover z-0" 
+                alt="Background"
               />
             )}
-            
+
             {/* Absolute overlay over the background to dim it slightly without blurring */}
-            <div className="absolute inset-0 z-0 bg-black/10" />
+            {selectedMaterial?.background_image_filename && (
+              <div className="absolute inset-0 z-0 bg-black/10" />
+            )}
 
             {/* Back Button and Item Name floating above background on top-left */}
             <div className="absolute top-6 left-6 flex items-center gap-3 z-20">
@@ -528,7 +630,7 @@ export default function CostManagementPage() {
             </div>
 
             {/* Floating White Card Layout */}
-            <div className="bg-white rounded-[50px] max-w-4xl w-full p-8 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-neutral-100/50 flex flex-col md:flex-row gap-8 items-center z-10 relative animate-cell-fade-in my-auto">
+            <div className="bg-white rounded-[50px] max-w-4xl w-full p-8 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-neutral-100/50 flex flex-col md:flex-row gap-8 items-center z-10 relative animate-cell-fade-in my-auto max-h-[90%] overflow-y-auto scrollbar-thin">
               
               {/* Left Side: Circular Oval Shape Image Crop */}
               <div className="w-full md:w-1/2 flex items-center justify-center">
@@ -546,23 +648,23 @@ export default function CostManagementPage() {
               </div>
 
               {/* Right Side: Read-Only Form Fields */}
-              <div className="w-full md:w-1/2 flex flex-col gap-5">
+              <div className="w-full md:w-1/2 flex flex-col gap-4">
                 {/* Name field */}
                 <div>
-                  <label className="block text-[13px] font-semibold text-neutral-500 mb-1.5">
+                  <label className="block text-[13px] font-semibold text-neutral-500 mb-1">
                     Name
                   </label>
                   <input
                     type="text"
                     value={selectedMaterial?.name || ""}
                     readOnly
-                    className="w-full bg-[#f3f4f6] border border-transparent rounded-xl px-4 py-3 text-sm text-neutral-800 font-medium cursor-default focus:outline-none"
+                    className="w-full bg-[#f3f4f6] border border-transparent rounded-xl px-4 py-2.5 text-sm text-neutral-800 font-medium cursor-default focus:outline-none"
                   />
                 </div>
 
                 {/* Price + Unit field */}
                 <div>
-                  <label className="block text-[13px] font-semibold text-neutral-500 mb-1.5">
+                  <label className="block text-[13px] font-semibold text-neutral-500 mb-1">
                     Price
                   </label>
                   <div className="flex items-center gap-3">
@@ -572,7 +674,7 @@ export default function CostManagementPage() {
                         type="text"
                         value={selectedMaterial ? `₹${selectedMaterial.price}` : ""}
                         readOnly
-                        className="w-full py-3 bg-[#f3f4f6] border border-transparent rounded-xl text-sm font-semibold text-neutral-800 text-center cursor-default focus:outline-none"
+                        className="w-full py-2.5 bg-[#f3f4f6] border border-transparent rounded-xl text-sm font-semibold text-neutral-800 text-center cursor-default focus:outline-none"
                       />
                     </div>
 
@@ -582,7 +684,7 @@ export default function CostManagementPage() {
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        className={`py-3 px-6 rounded-xl text-xs font-bold transition-all border ${
+                        className={`py-2.5 px-6 rounded-xl text-xs font-bold transition-all border ${
                           selectedMaterial?.unit === "kg" 
                             ? "bg-[#6b21a8] text-white border-transparent shadow-sm" 
                             : "bg-white text-[#6b21a8] border-[#6b21a8]"
@@ -592,7 +694,7 @@ export default function CostManagementPage() {
                       </button>
                       <button
                         type="button"
-                        className={`py-3 px-6 rounded-xl text-xs font-bold transition-all border ${
+                        className={`py-2.5 px-6 rounded-xl text-xs font-bold transition-all border ${
                           selectedMaterial?.unit === "l" 
                             ? "bg-[#6b21a8] text-white border-transparent shadow-sm" 
                             : "bg-white text-[#6b21a8] border-[#6b21a8]"
@@ -606,16 +708,63 @@ export default function CostManagementPage() {
 
                 {/* Description field */}
                 <div>
-                  <label className="block text-[13px] font-semibold text-neutral-500 mb-1.5">
+                  <label className="block text-[13px] font-semibold text-neutral-500 mb-1">
                     Description
                   </label>
                   <textarea
                     value={selectedMaterial?.description || ""}
                     readOnly
-                    rows={4}
-                    className="w-full bg-[#f3f4f6] border border-transparent rounded-xl px-4 py-3 text-sm text-neutral-600 cursor-default resize-none focus:outline-none"
+                    rows={2}
+                    className="w-full bg-[#f3f4f6] border border-transparent rounded-xl px-4 py-2.5 text-sm text-neutral-600 cursor-default resize-none focus:outline-none"
                   />
                 </div>
+
+                {/* Calories + Macronutrients (Read-only) */}
+                {selectedMaterial?.calories !== undefined && selectedMaterial?.calories !== null && (
+                  <div>
+                    <label className="block text-[13px] font-semibold text-neutral-500 mb-1">
+                      Nutritional Value
+                    </label>
+                    <div className="grid grid-cols-5 gap-2 text-center">
+                      <div className="bg-[#f3f4f6] rounded-xl p-1.5">
+                        <span className="block text-[9px] font-semibold text-neutral-400">Calories</span>
+                        <span className="text-xs font-bold text-neutral-700">{selectedMaterial.calories}</span>
+                      </div>
+                      <div className="bg-[#f3f4f6] rounded-xl p-1.5">
+                        <span className="block text-[9px] font-semibold text-neutral-400">Protein</span>
+                        <span className="text-xs font-bold text-neutral-700">{selectedMaterial.protein}g</span>
+                      </div>
+                      <div className="bg-[#f3f4f6] rounded-xl p-1.5">
+                        <span className="block text-[9px] font-semibold text-neutral-400">Carbs</span>
+                        <span className="text-xs font-bold text-neutral-700">{selectedMaterial.carbs}g</span>
+                      </div>
+                      <div className="bg-[#f3f4f6] rounded-xl p-1.5">
+                        <span className="block text-[9px] font-semibold text-neutral-400">Fat</span>
+                        <span className="text-xs font-bold text-neutral-700">{selectedMaterial.fat}g</span>
+                      </div>
+                      <div className="bg-[#f3f4f6] rounded-xl p-1.5">
+                        <span className="block text-[9px] font-semibold text-neutral-400">Fiber</span>
+                        <span className="text-xs font-bold text-neutral-700">{selectedMaterial.fiber}g</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Micronutrients (Read-only) */}
+                {selectedMaterial?.micros && selectedMaterial.micros.length > 0 && (
+                  <div>
+                    <label className="block text-[13px] font-semibold text-neutral-500 mb-1">
+                      Micronutrients
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedMaterial.micros.map((micro, idx) => (
+                        <span key={idx} className="px-2.5 py-1 bg-[#f3f4f6] text-neutral-600 rounded-full text-xs font-semibold">
+                          {micro}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -643,61 +792,127 @@ export default function CostManagementPage() {
             </button>
           </div>
 
-          {/* Drag & Drop Image Upload Zone */}
-          <div 
-            onDragEnter={handleDrag}
-            onDragOver={handleDrag}
-            onDragLeave={handleDrag}
-            onDrop={handleDrop}
-            onClick={triggerFileInput}
-            className={`border-2 border-dashed rounded-[30px] p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all relative overflow-hidden group min-h-[160px] ${
-              dragActive 
-                ? "border-[#6b21a8] bg-[#6b21a8]/5" 
-                : "border-neutral-300 bg-neutral-50/50 hover:bg-neutral-50 hover:border-purple-400"
-            }`}
-          >
-            {/* Hidden File Input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept="image/*"
-              onChange={handleFileChange}
-            />
-
-            {isUploading ? (
-              <div className="flex flex-col items-center gap-2">
-                <Loader2 className="w-8 h-8 text-[#6b21a8] animate-spin" />
-                <span className="text-xs text-neutral-500 font-semibold">Uploading document...</span>
-              </div>
-            ) : formImageFilename ? (
-              /* Uploaded Image Preview */
-              <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-neutral-100">
-                <img
-                  src={getMediaUrl(systemSettings?.R2_BASE_URL, formImageFilename) || ""}
-                  alt="Upload Preview"
-                  className="w-full h-full object-cover"
+          {/* Two Drag & Drop Image Upload Zones (Task 2) */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Primary Thumbnail Zone */}
+            <div className="flex flex-col gap-2">
+              <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wide">
+                Primary Thumbnail
+              </label>
+              <div 
+                onDragEnter={handleDragPrimary}
+                onDragOver={handleDragPrimary}
+                onDragLeave={handleDragPrimary}
+                onDrop={handleDropPrimary}
+                onClick={() => fileInputPrimaryRef.current?.click()}
+                className={`border-2 border-dashed rounded-[24px] p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all relative overflow-hidden group min-h-[140px] ${
+                  dragActivePrimary 
+                    ? "border-[#6b21a8] bg-[#6b21a8]/5" 
+                    : "border-neutral-300 bg-neutral-50/50 hover:bg-neutral-50 hover:border-purple-400"
+                }`}
+              >
+                {/* Hidden File Input */}
+                <input
+                  ref={fileInputPrimaryRef}
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileChangePrimary}
                 />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-xs font-bold gap-2">
-                  <UploadCloud className="w-4 h-4" /> Replace Image
-                </div>
+
+                {isUploadingPrimary ? (
+                  <div className="flex flex-col items-center gap-1.5 text-center">
+                    <Loader2 className="w-6 h-6 text-[#6b21a8] animate-spin" />
+                    <span className="text-[10px] text-neutral-500 font-semibold">Uploading...</span>
+                  </div>
+                ) : previewUrl ? (
+                  /* Uploaded Image Preview */
+                  <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-neutral-100">
+                    <img
+                      src={previewUrl}
+                      alt="Thumbnail Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold gap-1.5">
+                      <UploadCloud className="w-3.5 h-3.5" /> Replace
+                    </div>
+                  </div>
+                ) : (
+                  /* Empty upload instructions state */
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-8 h-8 rounded-full bg-[#fafafa] shadow-inner flex items-center justify-center text-neutral-800 mb-1.5 border border-neutral-100">
+                      <svg className="w-4 h-4 text-neutral-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                    </div>
+                    <span className="text-[10px] font-bold text-neutral-800">Primary Image</span>
+                    <span className="text-[9px] text-neutral-400 font-medium">Drag or Click</span>
+                  </div>
+                )}
               </div>
-            ) : (
-              /* Empty upload instructions state */
-              <div className="flex flex-col items-center text-center">
-                <div className="w-10 h-10 rounded-full bg-[#fafafa] shadow-inner flex items-center justify-center text-neutral-800 mb-2 border border-neutral-100">
-                  <svg className="w-5 h-5 text-neutral-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                </div>
-                <span className="text-xs font-semibold text-neutral-800">Drag image</span>
-                <span className="text-[10px] text-neutral-400 font-medium">to Upload</span>
+            </div>
+
+            {/* Detail Background Zone */}
+            <div className="flex flex-col gap-2">
+              <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wide">
+                Detail Background
+              </label>
+              <div 
+                onDragEnter={handleDragBackground}
+                onDragOver={handleDragBackground}
+                onDragLeave={handleDragBackground}
+                onDrop={handleDropBackground}
+                onClick={() => fileInputBackgroundRef.current?.click()}
+                className={`border-2 border-dashed rounded-[24px] p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all relative overflow-hidden group min-h-[140px] ${
+                  dragActiveBackground 
+                    ? "border-[#6b21a8] bg-[#6b21a8]/5" 
+                    : "border-neutral-300 bg-neutral-50/50 hover:bg-neutral-50 hover:border-purple-400"
+                }`}
+              >
+                {/* Hidden File Input */}
+                <input
+                  ref={fileInputBackgroundRef}
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileChangeBackground}
+                />
+
+                {isUploadingBackground ? (
+                  <div className="flex flex-col items-center gap-1.5 text-center">
+                    <Loader2 className="w-6 h-6 text-[#6b21a8] animate-spin" />
+                    <span className="text-[10px] text-neutral-500 font-semibold">Uploading...</span>
+                  </div>
+                ) : previewBackgroundUrl ? (
+                  /* Uploaded Image Preview */
+                  <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-neutral-100">
+                    <img
+                      src={previewBackgroundUrl}
+                      alt="Background Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold gap-1.5">
+                      <UploadCloud className="w-3.5 h-3.5" /> Replace
+                    </div>
+                  </div>
+                ) : (
+                  /* Empty upload instructions state */
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-8 h-8 rounded-full bg-[#fafafa] shadow-inner flex items-center justify-center text-neutral-800 mb-1.5 border border-neutral-100">
+                      <svg className="w-4 h-4 text-neutral-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                    </div>
+                    <span className="text-[10px] font-bold text-neutral-800">Background Image</span>
+                    <span className="text-[9px] text-neutral-400 font-medium">Drag or Click</span>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Form Fields */}
-          <form onSubmit={handleSaveMaterial} className="flex flex-col gap-4">
+          <form onSubmit={handleSave} className="flex flex-col gap-4">
             {/* Name */}
             <div>
               <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
@@ -706,8 +921,8 @@ export default function CostManagementPage() {
               <input
                 type="text"
                 placeholder="e.g. Avocado"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
+                value={formState.name}
+                onChange={(e) => setFormState(prev => ({ ...prev, name: e.target.value }))}
                 required
                 className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl px-4 py-3.5 text-sm text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400"
               />
@@ -728,8 +943,8 @@ export default function CostManagementPage() {
                     type="number"
                     step="any"
                     placeholder="155"
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                    value={formState.price}
+                    onChange={(e) => setFormState(prev => ({ ...prev, price: e.target.value === "" ? "" : Number(e.target.value) }))}
                     required
                     className="w-full pl-8 pr-4 py-3.5 bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl text-sm text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
                   />
@@ -741,9 +956,9 @@ export default function CostManagementPage() {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => setFormUnit("kg")}
+                    onClick={() => setFormState(prev => ({ ...prev, unit: "kg" }))}
                     className={`py-3.5 px-6 rounded-2xl text-xs font-bold border-2 transition-all cursor-pointer ${
-                      formUnit === "kg" 
+                      formState.unit === "kg" 
                         ? "bg-[#6b21a8] text-white border-transparent shadow-sm" 
                         : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"
                     }`}
@@ -752,9 +967,9 @@ export default function CostManagementPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFormUnit("l")}
+                    onClick={() => setFormState(prev => ({ ...prev, unit: "l" }))}
                     className={`py-3.5 px-6 rounded-2xl text-xs font-bold border-2 transition-all cursor-pointer ${
-                      formUnit === "l" 
+                      formState.unit === "l" 
                         ? "bg-[#6b21a8] text-white border-transparent shadow-sm" 
                         : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"
                     }`}
@@ -772,10 +987,103 @@ export default function CostManagementPage() {
               </label>
               <textarea
                 placeholder="Provide short details about the material..."
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
+                value={formState.description}
+                onChange={(e) => setFormState(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
                 className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl px-4 py-3.5 text-sm text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 resize-none"
+              />
+            </div>
+
+            {/* Nutritional Info Section (Task 3) */}
+            <div className="border-t border-neutral-100 pt-4">
+              <h3 className="text-xs font-bold text-neutral-800 uppercase tracking-wider mb-3">
+                Nutritional & Calorie Info
+              </h3>
+              
+              <div className="grid grid-cols-5 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 mb-1 uppercase text-center">
+                    Cals
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formState.calories}
+                    onChange={(e) => setFormState(prev => ({ ...prev, calories: e.target.value === "" ? "" : Number(e.target.value) }))}
+                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-2 py-2 text-xs text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 mb-1 uppercase text-center">
+                    Prot (g)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    placeholder="0"
+                    value={formState.protein}
+                    onChange={(e) => setFormState(prev => ({ ...prev, protein: e.target.value === "" ? "" : Number(e.target.value) }))}
+                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-2 py-2 text-xs text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 mb-1 uppercase text-center">
+                    Carbs (g)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    placeholder="0"
+                    value={formState.carbs}
+                    onChange={(e) => setFormState(prev => ({ ...prev, carbs: e.target.value === "" ? "" : Number(e.target.value) }))}
+                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-2 py-2 text-xs text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 mb-1 uppercase text-center">
+                    Fat (g)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    placeholder="0"
+                    value={formState.fat}
+                    onChange={(e) => setFormState(prev => ({ ...prev, fat: e.target.value === "" ? "" : Number(e.target.value) }))}
+                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-2 py-2 text-xs text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 mb-1 uppercase text-center">
+                    Fiber (g)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    placeholder="0"
+                    value={formState.fiber}
+                    onChange={(e) => setFormState(prev => ({ ...prev, fiber: e.target.value === "" ? "" : Number(e.target.value) }))}
+                    className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-2 py-2 text-xs text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Micronutrients (Task 3) */}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
+                Micronutrients (comma separated)
+              </label>
+              <input
+                type="text"
+                placeholder="Vitamin B12, Iron, Zinc"
+                value={formState.microsString}
+                onChange={(e) => setFormState(prev => ({ ...prev, microsString: e.target.value }))}
+                className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl px-4 py-3.5 text-sm text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400"
               />
             </div>
 
@@ -790,12 +1098,12 @@ export default function CostManagementPage() {
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isUploadingPrimary || isUploadingBackground || isSaving}
                 className={`bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold py-3.5 px-8 rounded-2xl text-sm transition-all hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2 ${
-                  isSubmitting ? "opacity-60" : ""
+                  (isUploadingPrimary || isUploadingBackground || isSaving) ? "opacity-60 cursor-not-allowed" : ""
                 }`}
               >
-                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                 Save
               </button>
             </div>
