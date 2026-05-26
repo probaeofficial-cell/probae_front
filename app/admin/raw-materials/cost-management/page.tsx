@@ -98,12 +98,12 @@ export default function CostManagementPage() {
     }
   }, [user]);
 
-  // Search Debouncing
+  // Search Debouncing (Debounce for 3 seconds)
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchQuery);
       setPage(1); // Reset page to 1 when search query changes
-    }, 450);
+    }, 3000);
 
     return () => clearTimeout(handler);
   }, [searchQuery]);
