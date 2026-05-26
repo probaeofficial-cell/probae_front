@@ -32,7 +32,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     icon: Wheat,
     active: true, // For demo purposes, matching the screenshot
     subItems: {
-      costMgt: { label: "Cost MGT", dotColor: "bg-yellow-500", path: "/admin/raw-materials/cost" },
+      costMgt: { label: "Cost MGT", dotColor: "bg-yellow-500", path: "/admin/raw-materials/cost-management" },
       stockMgt: { label: "Stock MGT", dotColor: "bg-green-500", badge: 3, path: "/admin/raw-materials/stock" },
     },
   },

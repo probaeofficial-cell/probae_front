@@ -22,6 +22,43 @@ export interface UserProfile {
   profile_picture?: Document | null;
 }
 
+// ─── Raw Material Types ──────────────────────────────────────────────────────
+export type UnitType = "kg" | "l" | "g" | "ml";
+
+export interface RawMaterial {
+  id: number;
+  name: string;
+  description?: string | null;
+  price: number;
+  unit: UnitType;
+  image_filename?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RawMaterialCreateInput {
+  name: string;
+  description?: string | null;
+  price: number;
+  unit: UnitType;
+  image_filename?: string | null;
+}
+
+export interface RawMaterialUpdateInput {
+  name?: string;
+  description?: string | null;
+  price?: number;
+  unit?: UnitType;
+  image_filename?: string | null;
+}
+
+export interface PaginatedRawMaterials {
+  items: RawMaterial[];
+  total: number;
+  page: number;
+  size: number;
+}
+
 // export interface Product {
 //   id: string;
 //   name: string;

@@ -6,7 +6,7 @@
  * in-memory token storage (per architecture rules), automatic token refresh
  * on 401 Unauthorized responses (with queueing logic), and standardized error handling.
  */
-import { LoginResponse, UserProfile } from "./types";
+import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials } from "./types";
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
@@ -293,7 +293,26 @@ export const endpoints = {
     upload: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      return await api.post<{ id: number; file_url: string }>("/documents/upload", formData);
+      return await api.post<{ id: number; filename: string; content_type: string; size_bytes: number; created_at: string }>("/documents/upload", formData);
+    },
+  },
+
+  rawMaterials: {
+    getRawMaterials: async (page: number, size: number, search?: string): Promise<PaginatedRawMaterials> => {
+      let query = `?page=${page}&size=${size}`;
+      if (search) {
+        query += `&search=${encodeURIComponent(search)}`;
+      }
+      return await api.get<PaginatedRawMaterials>(`/raw-materials/${query}`);
+    },
+    createRawMaterial: async (data: RawMaterialCreateInput): Promise<RawMaterial> => {
+      return await api.post<RawMaterial>("/raw-materials/", data);
+    },
+    updateRawMaterial: async (id: number, data: RawMaterialUpdateInput): Promise<RawMaterial> => {
+      return await api.patch<RawMaterial>(`/raw-materials/${id}`, data);
+    },
+    deleteRawMaterial: async (id: number): Promise<void> => {
+      return await api.del<void>(`/raw-materials/${id}`);
     },
   },
 
