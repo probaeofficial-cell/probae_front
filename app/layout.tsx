@@ -1,18 +1,27 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Poppins, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 import { Providers } from "@/components/Providers";
 
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800", "900"],
+  variable: "--font-poppins",
+  display: "swap",
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-plus-jakarta",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "probae — Admin Login",
-  description: "Sign in to the probae admin panel.",
+  title: "Probae — Smart Café & Food-Tracking ERP",
+  description:
+    "Engineered nutrition. Data-driven meals. Fuel your vitality with absolute transparency — every calorie, every rupee, every gram.",
 };
 
 export default function RootLayout({
@@ -21,7 +30,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html
+      lang="en"
+      className={`${poppins.variable} ${plusJakartaSans.variable}`}
+    >
       <body>
         <Providers>{children}</Providers>
       </body>

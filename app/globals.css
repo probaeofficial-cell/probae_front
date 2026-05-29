@@ -1,31 +1,108 @@
 @import "tailwindcss";
 
+/* ─── Design Tokens ─────────────────────────────────────────────── */
 :root {
   --background: #1a1a1a;
   --foreground: #ededed;
+
+  /* Brand palette */
+  --color-pro-purple: #6a0fad;
+  --color-bae-green: #4caf50;
+  --color-carbon-black: #222222;
+  --color-lab-white: #f5f5f5;
+  --color-solar-gold: #ffd700;
+  --color-active-orange: #ff751f;
 }
 
+/* ─── Tailwind v4 Theme ──────────────────────────────────────────── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Register brand colours as Tailwind utilities */
+  --color-pro-purple: #6a0fad;
+  --color-bae-green: #4caf50;
+  --color-carbon-black: #222222;
+  --color-lab-white: #f5f5f5;
+  --color-solar-gold: #ffd700;
+  --color-active-orange: #ff751f;
+
+  /* Register font families so font-poppins / font-plus-jakarta work */
+  --font-poppins: var(--font-poppins), "Poppins", system-ui, sans-serif;
+  --font-plus-jakarta: var(--font-plus-jakarta), "Plus Jakarta Sans", system-ui,
+    sans-serif;
+}
+
+/* ─── Base Reset ─────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html,
 body {
   margin: 0;
   padding: 0;
-  height: 100%;
   background: var(--background);
   color: var(--foreground);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Admin / app shell: prevent scrolling */
+body {
   overflow: hidden;
+  height: 100%;
 }
 
+/* Landing page: restore normal scrolling */
+body.landing-page {
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: auto;
+}
+
+/* ─── Custom Scrollbar ───────────────────────────────────────────── */
 * {
-  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #7c26d9 transparent;
 }
 
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #7c26d9;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #6b1fc4;
+}
+
+/* ─── Utility Classes ────────────────────────────────────────────── */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Keyframes ──────────────────────────────────────────────────── */
 @keyframes cellFadeIn {
   from {
     opacity: 0;
@@ -41,43 +118,39 @@ body {
   animation: cellFadeIn 0.7s ease forwards;
 }
 
-/* Custom scrollbars styling */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #7c26d9 transparent;
+/* Gentle floating animation for decorative badges/images */
+@keyframes float-badge {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+  }
 }
 
-/* For Chrome, Safari, and newer Edge browsers */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.animate-float-badge {
+  animation: float-badge 3.5s ease-in-out infinite;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+/* Pulse-ring glow for active indicators */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(106, 15, 173, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(106, 15, 173, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(106, 15, 173, 0);
+  }
 }
 
-::-webkit-scrollbar-thumb {
-  background-color: #7c26d9;
-  border-radius: 9999px;
-  border: 1px solid transparent;
+.animate-pulse-ring {
+  animation: pulse-ring 2.5s ease-in-out infinite;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background-color: #6b1fc4;
+/* ─── Landing Page Section Transitions ───────────────────────────── */
+.section-transition {
+  transition: background-color 0.6s ease, color 0.6s ease;
 }
-
-/* Custom utility classes */
-.scrollbar-thin {
-  scrollbar-width: thin;
-}
-
-.scrollbar-none {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
-}
-
-.scrollbar-none::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
-}
-
