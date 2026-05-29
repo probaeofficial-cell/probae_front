@@ -269,8 +269,8 @@ function HeroSection({ onEnter }: { onEnter: () => void }) {
         style={{ filter: "drop-shadow(0 40px 80px rgba(0,0,0,0.8))" }}
       >
         <Image
-          src="https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&q=90"
-          alt="Sliced Avocado"
+          src="/images/banner/img-1.JPG"
+          alt="Probae Signature 1"
           fill
           sizes="(max-width: 768px) 224px, 384px"
           className="object-cover scale-110 opacity-70 mix-blend-luminosity hover:mix-blend-normal transition-all duration-1000"
@@ -283,8 +283,8 @@ function HeroSection({ onEnter }: { onEnter: () => void }) {
         style={{ filter: "drop-shadow(0 40px 80px rgba(0,0,0,0.8))" }}
       >
         <Image
-          src="https://images.unsplash.com/photo-1596591606975-97ee5cef3a1e?w=600&q=90"
-          alt="Dragonfruit"
+          src="/images/banner/img-2.JPG"
+          alt="Probae Signature 2"
           fill
           sizes="(max-width: 768px) 192px, 320px"
           className="object-cover scale-110 opacity-70 mix-blend-luminosity hover:mix-blend-normal transition-all duration-1000"
@@ -536,13 +536,33 @@ function AccessTerminalSection({ onEnter }: { onEnter: () => void }) {
   const borderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    ScrollTrigger.create({
-      trigger: sectionRef.current,
-      start: "top center",
-      end: "bottom center",
-      onEnter,
-      onEnterBack: onEnter,
-    });
+    const ctx = gsap.context(() => {
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: "top center",
+        end: "bottom center",
+        onEnter,
+        onEnterBack: onEnter,
+      });
+
+      gsap.fromTo(
+        ".terminal-reveal",
+        { y: 50, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 1,
+          stagger: 0.2,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 75%",
+          },
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
   }, [onEnter]);
 
   const handleInputFocus = () => {
@@ -563,15 +583,15 @@ function AccessTerminalSection({ onEnter }: { onEnter: () => void }) {
       style={{ backgroundColor: "#222222", color: "#F5F5F5" }}
     >
       <div className="max-w-4xl mx-auto w-full flex flex-col items-center text-center">
-        <div className="w-4 h-4 mb-8" style={{ backgroundColor: "#FFD700" }} />
+        <div className="terminal-reveal w-4 h-4 mb-8" style={{ backgroundColor: "#FFD700" }} />
         <h2
-          className="font-extrabold text-[clamp(2.5rem,5vw,5rem)] leading-[1.1] tracking-tight mb-16"
+          className="terminal-reveal font-extrabold text-[clamp(2.5rem,5vw,5rem)] leading-[1.1] tracking-tight mb-16"
           style={{ fontFamily: FONT_POPPINS }}
         >
           Secure initial node access.
         </h2>
 
-        <form className="w-full max-w-2xl flex flex-col gap-12" onSubmit={(e) => e.preventDefault()}>
+        <form className="terminal-reveal w-full max-w-2xl flex flex-col gap-12" onSubmit={(e) => e.preventDefault()}>
           <div className="relative w-full">
             <input
               ref={inputRef}
@@ -642,6 +662,21 @@ function FooterSection({ onEnter }: { onEnter: () => void }) {
           },
         }
       );
+
+      gsap.fromTo(
+        ".footer-reveal",
+        { y: 20, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 1.2,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 80%",
+          },
+        }
+      );
     }, sectionRef);
 
     return () => ctx.revert();
@@ -664,7 +699,7 @@ function FooterSection({ onEnter }: { onEnter: () => void }) {
       </h1>
 
       <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none">
-        <p className="text-xs uppercase tracking-widest font-bold opacity-30" style={{ fontFamily: FONT_JAKARTA, color: "#F5F5F5" }}>
+        <p className="footer-reveal text-xs uppercase tracking-widest font-bold opacity-30" style={{ fontFamily: FONT_JAKARTA, color: "#F5F5F5" }}>
           © 2026 Probae Initiative Inc. // Access Restricted.
         </p>
       </div>
