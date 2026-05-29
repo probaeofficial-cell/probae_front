@@ -1,9 +1,6 @@
-import { redirect } from "next/navigation";
+import LandingPage from "./landing/page";
 
-/**
- * Root page — redirects to the admin login screen.
- */
 export default function RootPage() {
-  redirect("/landing");
+  return <LandingPage />;
 }
 
