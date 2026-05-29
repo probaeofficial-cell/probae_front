@@ -262,7 +262,6 @@ function HeroSection({ onEnter }: { onEnter: () => void }) {
         </p>
       </div>
 
-      {/* Floating Ingredients */}
       <div
         ref={orb1Ref}
         className="absolute top-[15%] right-[5%] w-56 h-56 md:w-96 md:h-96 rounded-full overflow-hidden z-0 pointer-events-none"
