@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
+import Link from "next/link";
 import Lenis from "lenis";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -14,8 +15,15 @@ const FONT_JAKARTA = "var(--font-plus-jakarta), 'Plus Jakarta Sans', sans-serif"
 export default function LandingPage() {
   const [activeSection, setActiveSection] = useState(0);
 
+  const handleEnter0 = useCallback(() => setActiveSection(0), []);
+  const handleEnter1 = useCallback(() => setActiveSection(1), []);
+  const handleEnter2 = useCallback(() => setActiveSection(2), []);
+  const handleEnter3 = useCallback(() => setActiveSection(3), []);
+  const handleEnter4 = useCallback(() => setActiveSection(4), []);
+
   useEffect(() => {
     document.body.classList.add("landing-page");
+    ScrollTrigger.config({ ignoreMobileResize: true });
 
     const lenis = new Lenis({
       duration: 2.5,
@@ -51,11 +59,11 @@ export default function LandingPage() {
     >
       <NoiseOverlay />
       <Navbar activeSection={activeSection} />
-      <HeroSection onEnter={() => setActiveSection(0)} />
-      <EngineTeaserSection onEnter={() => setActiveSection(1)} />
-      <EndorsementsSection onEnter={() => setActiveSection(2)} />
-      <AccessTerminalSection onEnter={() => setActiveSection(3)} />
-      <FooterSection onEnter={() => setActiveSection(4)} />
+      <HeroSection onEnter={handleEnter0} />
+      <EngineTeaserSection onEnter={handleEnter1} />
+      <EndorsementsSection onEnter={handleEnter2} />
+      <AccessTerminalSection onEnter={handleEnter3} />
+      <FooterSection onEnter={handleEnter4} />
     </main>
   );
 }
@@ -92,9 +100,9 @@ function Navbar({ activeSection }: { activeSection: number }) {
           boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
         }}
       >
-        <div className="relative select-none flex items-center">
+        <Link href="/" className="relative select-none flex items-center">
           {/* Mobile LogoMark */}
-          <div className="relative h-10 w-10 block md:hidden">
+          <div className="relative h-8 w-8 block md:hidden">
             <Image
               src="/images/logos/PB_Probae - LogoMark.png"
               alt="Probae LogoMark"
@@ -111,7 +119,7 @@ function Navbar({ activeSection }: { activeSection: number }) {
               className="object-contain object-left"
             />
           </div>
-        </div>
+        </Link>
 
         {/* Section Track Indicator */}
         <div className="hidden md:flex items-center gap-2">
@@ -130,7 +138,7 @@ function Navbar({ activeSection }: { activeSection: number }) {
         <div>
           <button
             onClick={handleJoinClick}
-            className="group relative inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold overflow-hidden transition-transform duration-500 hover:scale-105 active:scale-95"
+            className="group relative inline-flex items-center gap-2 px-4 md:px-6 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold overflow-hidden transition-transform duration-500 hover:scale-105 active:scale-95"
             style={{ fontFamily: FONT_JAKARTA, backgroundColor: "#4CAF50", color: "#222222" }}
           >
             <span
@@ -232,7 +240,7 @@ function HeroSection({ onEnter }: { onEnter: () => void }) {
         <div style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0% 100%)" }}>
           <span
             ref={(el) => { if (el) textRefs.current[0] = el; }}
-            className="block font-extrabold text-[clamp(4rem,10vw,12rem)] leading-[0.85] tracking-tighter"
+            className="block font-extrabold text-[clamp(2.5rem,10vw,12rem)] leading-[0.85] tracking-tighter"
             style={{ fontFamily: FONT_POPPINS, color: "#F5F5F5" }}
           >
             Eat Proper.
@@ -241,7 +249,7 @@ function HeroSection({ onEnter }: { onEnter: () => void }) {
         <div style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0% 100%)" }}>
           <span
             ref={(el) => { if (el) textRefs.current[1] = el; }}
-            className="block font-extrabold text-[clamp(4rem,10vw,12rem)] leading-[0.85] tracking-tighter"
+            className="block font-extrabold text-[clamp(2.5rem,10vw,12rem)] leading-[0.85] tracking-tighter"
             style={{
               fontFamily: FONT_POPPINS,
               color: "transparent",
@@ -254,7 +262,7 @@ function HeroSection({ onEnter }: { onEnter: () => void }) {
 
         <p
           ref={subtextRef}
-          className="mt-8 text-xl md:text-3xl max-w-3xl leading-snug font-medium"
+          className="mt-8 text-lg md:text-3xl max-w-3xl leading-snug font-medium"
           style={{ fontFamily: FONT_JAKARTA, color: "rgba(245,245,245,0.7)" }}
         >
           The Biometric Food Engine is initializing. <br />
@@ -310,39 +318,73 @@ function EngineTeaserSection({ onEnter }: { onEnter: () => void }) {
         onEnterBack: onEnter,
       });
 
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top top",
-          end: "+=400%",
-          scrub: 1,
-          pin: true,
-        },
+      let mm = gsap.matchMedia();
+
+      mm.add("(min-width: 768px)", () => {
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top top",
+            end: "+=400%",
+            scrub: 1,
+            pin: true,
+          },
+        });
+
+        // Bowl enter
+        tl.fromTo(
+          bowlRef.current,
+          { x: "-50vw", y: "50vh", rotation: -45, scale: 0.8 },
+          { x: 0, y: 0, rotation: 0, scale: 1, duration: 2.7, ease: "none" },
+          0
+        );
+
+        // HUD 1 (Cost Teaser)
+        tl.fromTo(
+          card1Ref.current,
+          { x: "-80vw", y: "-20vh", opacity: 0 },
+          { x: 0, y: 0, opacity: 1, duration: 1.5, ease: "none" },
+          0.8
+        );
+
+        // HUD 2 (Merged Stats)
+        tl.fromTo(
+          card2Ref.current,
+          { x: "80vw", y: "40vh", opacity: 0 },
+          { x: 0, y: 0, opacity: 1, duration: 1.5, ease: "none" },
+          1.2
+        );
       });
 
-      // Bowl enter
-      tl.fromTo(
-        bowlRef.current,
-        { x: "-50vw", y: "50vh", rotation: -45, scale: 0.8 },
-        { x: 0, y: 0, rotation: 0, scale: 1, duration: 2.7, ease: "none" },
-        0
-      );
+      mm.add("(max-width: 767px)", () => {
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 80%",
+            end: "bottom center",
+            scrub: 1,
+          },
+        });
 
-      // HUD 1 (Cost Teaser)
-      tl.fromTo(
-        card1Ref.current,
-        { x: "-80vw", y: "-20vh", opacity: 0 },
-        { x: 0, y: 0, opacity: 1, duration: 1.5, ease: "none" },
-        0.8
-      );
-
-      // HUD 2 (Merged Stats)
-      tl.fromTo(
-        card2Ref.current,
-        { x: "80vw", y: "40vh", opacity: 0 },
-        { x: 0, y: 0, opacity: 1, duration: 1.5, ease: "none" },
-        1.2
-      );
+        tl.fromTo(
+          bowlRef.current,
+          { y: 100, rotation: -15, scale: 0.9, opacity: 0 },
+          { y: 0, rotation: 0, scale: 1, opacity: 1, duration: 1 },
+          0
+        );
+        tl.fromTo(
+          card1Ref.current,
+          { x: -30, opacity: 0 },
+          { x: 0, opacity: 1, duration: 1 },
+          0.2
+        );
+        tl.fromTo(
+          card2Ref.current,
+          { x: 30, opacity: 0 },
+          { x: 0, opacity: 1, duration: 1 },
+          0.4
+        );
+      });
     }, sectionRef);
     return () => ctx.revert();
   }, [onEnter]);
@@ -353,9 +395,9 @@ function EngineTeaserSection({ onEnter }: { onEnter: () => void }) {
       className="relative w-full min-h-[100svh] md:min-h-screen flex flex-col md:flex-row items-center justify-between py-24 md:py-0 px-8 lg:px-20 overflow-visible"
       style={{ backgroundColor: "#F5F5F5", color: "#222222" }}
     >
-      <div className="w-full md:w-1/3 z-20 mt-32 md:mt-0 flex flex-col gap-6">
+      <div className="w-full md:w-1/3 z-20 mt-24 md:mt-0 flex flex-col gap-6">
         <h2
-          className="font-extrabold text-[clamp(2.5rem,4vw,4rem)] leading-tight tracking-tight"
+          className="font-extrabold text-[clamp(2.5rem,8vw,4rem)] leading-tight tracking-tight"
           style={{ fontFamily: FONT_POPPINS }}
         >
           Radical Transparency As A Love Language.
@@ -369,7 +411,7 @@ function EngineTeaserSection({ onEnter }: { onEnter: () => void }) {
         </p>
       </div>
 
-      <div ref={containerRef} className="relative w-full md:w-2/3 h-full flex items-center justify-center">
+      <div ref={containerRef} className="relative w-full md:w-2/3 h-[450px] md:h-full flex items-center justify-center mt-12 md:mt-0">
         {/* The Bowl */}
         <div
           ref={bowlRef}
@@ -491,14 +533,14 @@ function EndorsementsSection({ onEnter }: { onEnter: () => void }) {
     >
       <div className="max-w-7xl mx-auto">
         <h2
-          className="animate-up font-extrabold text-[clamp(2.5rem,5vw,5rem)] leading-tight tracking-tight mb-24 max-w-4xl"
+          className="animate-up opacity-0 font-extrabold text-[clamp(2.5rem,5vw,5rem)] leading-tight tracking-tight mb-16 md:mb-24 max-w-4xl"
           style={{ fontFamily: FONT_POPPINS }}
         >
           Verified by Early Beta Nodes.
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-32">
-          <div className="animate-up flex flex-col gap-8">
+          <div className="animate-up opacity-0 flex flex-col gap-8">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 11L8 15H11V18H5V15L7 11H5V6H10V11ZM19 11L17 15H20V18H14V15L16 11H14V6H19V11Z" fill="#6A0FAD" />
             </svg>
@@ -511,7 +553,7 @@ function EndorsementsSection({ onEnter }: { onEnter: () => void }) {
             </div>
           </div>
 
-          <div className="animate-up flex flex-col gap-8">
+          <div className="animate-up opacity-0 flex flex-col gap-8">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 11L8 15H11V18H5V15L7 11H5V6H10V11ZM19 11L17 15H20V18H14V15L16 11H14V6H19V11Z" fill="#4CAF50" />
             </svg>
@@ -582,21 +624,21 @@ function AccessTerminalSection({ onEnter }: { onEnter: () => void }) {
       style={{ backgroundColor: "#222222", color: "#F5F5F5" }}
     >
       <div className="max-w-4xl mx-auto w-full flex flex-col items-center text-center">
-        <div className="terminal-reveal w-4 h-4 mb-8" style={{ backgroundColor: "#FFD700" }} />
+        <div className="terminal-reveal opacity-0 w-4 h-4 mb-8" style={{ backgroundColor: "#FFD700" }} />
         <h2
-          className="terminal-reveal font-extrabold text-[clamp(2.5rem,5vw,5rem)] leading-[1.1] tracking-tight mb-16"
+          className="terminal-reveal opacity-0 font-extrabold text-[clamp(2.5rem,5vw,5rem)] leading-[1.1] tracking-tight mb-16"
           style={{ fontFamily: FONT_POPPINS }}
         >
           Secure initial node access.
         </h2>
 
-        <form className="terminal-reveal w-full max-w-2xl flex flex-col gap-12" onSubmit={(e) => e.preventDefault()}>
+        <form className="terminal-reveal opacity-0 w-full max-w-2xl flex flex-col gap-12" onSubmit={(e) => e.preventDefault()}>
           <div className="relative w-full">
             <input
               ref={inputRef}
               type="email"
               placeholder="Enter primary email..."
-              className="w-full bg-transparent text-xl md:text-2xl outline-none placeholder:text-white/20 pb-4 text-center"
+              className="w-full bg-transparent text-lg md:text-2xl outline-none placeholder:text-white/20 pb-4 text-center"
               style={{ fontFamily: FONT_JAKARTA, color: "#F5F5F5" }}
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}
@@ -667,7 +709,7 @@ function FooterSection({ onEnter }: { onEnter: () => void }) {
         { y: 20, opacity: 0 },
         {
           y: 0,
-          opacity: 1,
+          opacity: 0.3,
           duration: 1.2,
           ease: "power3.out",
           scrollTrigger: {
@@ -698,7 +740,7 @@ function FooterSection({ onEnter }: { onEnter: () => void }) {
       </h1>
 
       <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none">
-        <p className="footer-reveal text-xs uppercase tracking-widest font-bold opacity-30" style={{ fontFamily: FONT_JAKARTA, color: "#F5F5F5" }}>
+        <p className="footer-reveal text-xs uppercase tracking-widest font-bold opacity-0" style={{ fontFamily: FONT_JAKARTA, color: "#F5F5F5" }}>
           © 2026 Probae Initiative Inc. // Access Restricted.
         </p>
       </div>
