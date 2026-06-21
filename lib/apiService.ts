@@ -305,21 +305,22 @@ export const endpoints = {
       }
       return await api.get<PaginatedRawMaterials>(`/raw-materials/${query}`);
     },
-    getRawMaterial: async (id: number): Promise<RawMaterial> => {
-      return await api.get<RawMaterial>(`/raw-materials/${id}`);
+    getRawMaterial: async (ulid: string): Promise<RawMaterial> => {
+      return await api.get<RawMaterial>(`/raw-materials/${ulid}`);
     },
     createRawMaterial: async (data: RawMaterialCreateInput): Promise<RawMaterial> => {
       return await api.post<RawMaterial>("/raw-materials/", data);
     },
-    updateRawMaterial: async (id: number, data: RawMaterialUpdateInput): Promise<RawMaterial> => {
-      return await api.patch<RawMaterial>(`/raw-materials/${id}`, data);
+    updateRawMaterial: async (ulid: string, data: RawMaterialUpdateInput): Promise<RawMaterial> => {
+      return await api.patch<RawMaterial>(`/raw-materials/${ulid}`, data);
     },
-    updateMacros: async (id: number, data: MacrosUpdatePayload): Promise<RawMaterial> => {
-      return await api.patch<RawMaterial>(`/raw-materials/${id}/macros`, data);
+    updateMacros: async (ulid: string, data: MacrosUpdatePayload): Promise<RawMaterial> => {
+      return await api.patch<RawMaterial>(`/raw-materials/${ulid}/macros`, data);
     },
-    deleteRawMaterial: async (id: number): Promise<void> => {
-      return await api.del<void>(`/raw-materials/${id}`);
+    deleteRawMaterial: async (ulid: string): Promise<void> => {
+      return await api.del<void>(`/raw-materials/${ulid}`);
     },
+
   },
 
   settings: {

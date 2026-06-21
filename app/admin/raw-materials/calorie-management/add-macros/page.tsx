@@ -179,7 +179,7 @@ export default function AddMacrosPage() {
     };
 
     try {
-      await endpoints.rawMaterials.updateMacros(selectedMaterial.id, payload);
+      await endpoints.rawMaterials.updateMacros(selectedMaterial.ulid, payload);
       showToast(`Nutritional macros for ${selectedMaterial.name} updated successfully`, "success");
       // Redirect back to listing view
       router.push("/admin/raw-materials/calorie-management");

@@ -20,16 +20,16 @@ export default function MacrosPreviewPage({ params }: PageProps) {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
-  const [materialId, setMaterialId] = useState<number | null>(null);
   const [material, setMaterial] = useState<RawMaterial | null>(null);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
+  const [materialUlid, setMaterialUlid] = useState<string | null>(null);
 
   // Resolve params asynchronously (consistent with Next.js 15+)
   useEffect(() => {
     async function resolveParams() {
       const resolved = await (params as any);
-      setMaterialId(Number(resolved.id));
+      setMaterialUlid(resolved.id);
     }
     resolveParams();
   }, [params]);
@@ -37,7 +37,7 @@ export default function MacrosPreviewPage({ params }: PageProps) {
   // Load raw material details and settings
   useEffect(() => {
     async function loadData() {
-      if (!user || materialId === null || isNaN(materialId)) return;
+      if (!user || !materialUlid) return;
       setIsLoading(true);
       try {
         const settings = await endpoints.settings.getSystemSettings();
@@ -45,7 +45,7 @@ export default function MacrosPreviewPage({ params }: PageProps) {
           setSystemSettings({ R2_BASE_URL: settings.R2_BASE_URL });
         }
 
-        const data = await endpoints.rawMaterials.getRawMaterial(materialId);
+        const data = await endpoints.rawMaterials.getRawMaterial(materialUlid);
         setMaterial(data);
       } catch (error) {
         console.error("Error loading raw material for preview:", error);
@@ -54,7 +54,7 @@ export default function MacrosPreviewPage({ params }: PageProps) {
       }
     }
     loadData();
-  }, [user, materialId]);
+  }, [user, materialUlid]);
 
   // Auth check redirect
   useEffect(() => {

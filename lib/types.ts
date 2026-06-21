@@ -9,12 +9,14 @@ export interface LoginResponse {
 
 export interface Document {
   id: number;
+  ulid: string;
   filename: string;
   file_url?: string;
 }
 
 export interface UserProfile {
   id: string | number;
+  ulid?: string;
   email: string;
   role: string;
   two_factor_enabled: boolean;
@@ -27,6 +29,7 @@ export type UnitType = "kg" | "l" | "g" | "ml";
 
 export interface RawMaterial {
   id: number;
+  ulid: string;
   name: string;
   description?: string | null;
   price: number;
@@ -42,6 +45,7 @@ export interface RawMaterial {
   created_at: string;
   updated_at: string;
 }
+
 
 export interface RawMaterialCreateInput {
   name: string;

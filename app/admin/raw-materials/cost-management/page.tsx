@@ -46,7 +46,7 @@ export default function CostManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [materialToDelete, setMaterialToDelete] = useState<{ id: number; name: string } | null>(null);
+  const [materialToDelete, setMaterialToDelete] = useState<{ ulid: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Form State (Task 1 & 3)
@@ -63,7 +63,7 @@ export default function CostManagementPage() {
   const [isUploadingPrimary, setIsUploadingPrimary] = useState(false);
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingUlid, setEditingUlid] = useState<string | null>(null);
 
   // Image Upload State
   const [dragActivePrimary, setDragActivePrimary] = useState(false);
@@ -258,7 +258,7 @@ export default function CostManagementPage() {
   // Modal Initialization (Task 3)
   const openAddModal = () => {
     setModalMode("add");
-    setEditingId(null);
+    setEditingUlid(null);
     setFormState({
       name: "",
       price: "",
@@ -275,7 +275,7 @@ export default function CostManagementPage() {
   const openEditModal = (material: RawMaterial, e: React.MouseEvent) => {
     e.stopPropagation(); // Avoid triggering detail view
     setModalMode("edit");
-    setEditingId(material.id);
+    setEditingUlid(material.ulid);
     setFormState({
       name: material.name,
       price: material.price,
@@ -315,8 +315,8 @@ export default function CostManagementPage() {
     };
 
     try {
-      if (editingId) {
-        await updateRawMaterial(editingId, payload);
+      if (editingUlid) {
+        await updateRawMaterial(editingUlid, payload);
         showToast(`${payload.name} updated successfully`, "success");
       } else {
         await createRawMaterial(payload);
@@ -333,9 +333,9 @@ export default function CostManagementPage() {
   };
 
   // Delete Handler
-  const handleDeleteMaterial = (materialId: number, name: string, e: React.MouseEvent) => {
+  const handleDeleteMaterial = (materialUlid: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Avoid triggering detail view
-    setMaterialToDelete({ id: materialId, name });
+    setMaterialToDelete({ ulid: materialUlid, name });
     setIsDeleteModalOpen(true);
   };
 
@@ -343,7 +343,7 @@ export default function CostManagementPage() {
     if (!materialToDelete) return;
     setIsDeleting(true);
     try {
-      await endpoints.rawMaterials.deleteRawMaterial(materialToDelete.id);
+      await endpoints.rawMaterials.deleteRawMaterial(materialToDelete.ulid);
       showToast(`${materialToDelete.name} deleted successfully`, "success");
       // Adjust page if deleting last item on current page
       if (materials.length === 1 && page > 1) {
@@ -548,7 +548,7 @@ export default function CostManagementPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={(e) => handleDeleteMaterial(material.id, material.name, e)}
+                            onClick={(e) => handleDeleteMaterial(material.ulid, material.name, e)}
                             className="w-7 h-7 rounded-full bg-black text-white hover:bg-neutral-800 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 active:scale-95 transition-all shrink-0"
                             title="Delete Material"
                           >

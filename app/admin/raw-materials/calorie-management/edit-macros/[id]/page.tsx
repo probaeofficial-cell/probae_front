@@ -27,12 +27,12 @@ export default function EditMacrosPage({ params }: PageProps) {
   const router = useRouter();
   
   // Resolve dynamic parameters asynchronously (Next.js 15+)
-  const [materialId, setMaterialId] = useState<number | null>(null);
+  const [materialUlid, setMaterialUlid] = useState<string | null>(null);
 
   useEffect(() => {
     async function resolveParams() {
       const resolved = await (params as any);
-      setMaterialId(Number(resolved.id));
+      setMaterialUlid(resolved.id);
     }
     resolveParams();
   }, [params]);
@@ -67,7 +67,7 @@ export default function EditMacrosPage({ params }: PageProps) {
   // Load system settings and the raw material by ID
   useEffect(() => {
     async function loadData() {
-      if (!user || materialId === null || isNaN(materialId)) return;
+      if (!user || !materialUlid) return;
       setIsLoading(true);
       try {
         // Load settings
@@ -77,7 +77,7 @@ export default function EditMacrosPage({ params }: PageProps) {
         }
 
         // Fetch target raw material
-        const materialData = await endpoints.rawMaterials.getRawMaterial(materialId);
+        const materialData = await endpoints.rawMaterials.getRawMaterial(materialUlid);
         setMaterial(materialData);
         setFormState({
           calories: materialData.calories !== undefined && materialData.calories !== null ? materialData.calories : "",
@@ -95,7 +95,7 @@ export default function EditMacrosPage({ params }: PageProps) {
       }
     }
     loadData();
-  }, [user, materialId]);
+  }, [user, materialUlid]);
 
   // ─── Toast Helper ─────────────────────────────────────────────────────────
   const showToast = (message: string, type: "success" | "error") => {
@@ -126,7 +126,7 @@ export default function EditMacrosPage({ params }: PageProps) {
     };
 
     try {
-      await endpoints.rawMaterials.updateMacros(material.id, payload);
+      await endpoints.rawMaterials.updateMacros(material.ulid, payload);
       showToast(`Nutritional macros for ${material.name} updated successfully`, "success");
       // Redirect back to listing view
       router.push("/admin/raw-materials/calorie-management");
@@ -138,7 +138,7 @@ export default function EditMacrosPage({ params }: PageProps) {
     }
   };
 
-  if (authLoading || isLoading || materialId === null) {
+  if (authLoading || isLoading || materialUlid === null) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#fafafa]">
         <div className="animate-pulse text-neutral-500 font-medium">Loading details...</div>

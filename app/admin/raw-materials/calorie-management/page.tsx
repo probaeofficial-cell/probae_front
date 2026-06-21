@@ -139,7 +139,7 @@ export default function CalorieManagementPage() {
     if (!materialToClear) return;
     setIsClearing(true);
     try {
-      await endpoints.rawMaterials.updateMacros(materialToClear.id, {
+      await endpoints.rawMaterials.updateMacros(materialToClear.ulid, {
         calories: 0,
         protein: 0,
         carbs: 0,
@@ -257,7 +257,7 @@ export default function CalorieManagementPage() {
                   return (
                     <div
                       key={material.id}
-                      onClick={() => router.push(`/admin/raw-materials/calorie-management/preview/${material.id}`)}
+                      onClick={() => router.push(`/admin/raw-materials/calorie-management/preview/${material.ulid}`)}
                       className="bg-white rounded-[32px] p-6 shadow-sm border border-neutral-100/50 flex flex-col gap-4 relative group cursor-pointer hover:shadow-md transition-shadow"
                     >
                       {/* Image section with ID overlay and action overlays */}
@@ -287,7 +287,7 @@ export default function CalorieManagementPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              router.push(`/admin/raw-materials/calorie-management/edit-macros/${material.id}`);
+                              router.push(`/admin/raw-materials/calorie-management/edit-macros/${material.ulid}`);
                             }}
                             className="w-8 h-8 rounded-full bg-white/80 text-neutral-700 hover:bg-white flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
                             title="Edit Macros"
