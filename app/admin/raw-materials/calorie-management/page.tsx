@@ -261,7 +261,7 @@ export default function CalorieManagementPage() {
                       className="bg-white rounded-[32px] p-6 shadow-sm border border-neutral-100/50 flex flex-col gap-4 relative group cursor-pointer hover:shadow-md transition-shadow"
                     >
                       {/* Image section with ID overlay and action overlays */}
-                      <div className="h-[110px] w-full rounded-[24px] overflow-hidden relative bg-[#fafafa] flex items-center justify-center shrink-0 border border-neutral-100">
+                      <div className="h-[120px] w-full rounded-[20px] overflow-hidden relative bg-[#fafafa] flex items-center justify-center shrink-0 border border-neutral-100">
                         {mediaUrl ? (
                           <img
                             src={mediaUrl}
@@ -278,8 +278,8 @@ export default function CalorieManagementPage() {
                         )}
 
                         {/* ID Badge on top-left (dynamic width capsule) */}
-                        <div className="absolute top-3 left-3 bg-white h-7 px-3 rounded-full flex items-center justify-center shadow-sm select-none border border-neutral-100">
-                          <span className="text-[11px] font-extrabold text-neutral-700">A{material.id}</span>
+                        <div className="absolute top-3 left-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm select-none">
+                          <span className="text-[12px] font-bold text-neutral-800">A{material.id}</span>
                         </div>
 
                         {/* Edit/Delete semi-transparent circles on top-right */}
@@ -289,17 +289,17 @@ export default function CalorieManagementPage() {
                               e.stopPropagation();
                               router.push(`/admin/raw-materials/calorie-management/edit-macros/${material.ulid}`);
                             }}
-                            className="w-8 h-8 rounded-full bg-white/80 text-neutral-700 hover:bg-white flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                            className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-md text-white hover:bg-white/40 flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
                             title="Edit Macros"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-3.5 h-3.5 fill-current" />
                           </button>
                           <button
                             onClick={(e) => handleResetMacros(material, e)}
-                            className="w-8 h-8 rounded-full bg-white/80 text-neutral-700 hover:bg-white flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                            className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-md text-white hover:bg-white/40 flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
                             title="Clear Macros"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3.5 h-3.5 fill-current" />
                           </button>
                         </div>
                       </div>
@@ -307,49 +307,49 @@ export default function CalorieManagementPage() {
                       {/* Info and Macros row */}
                       <div className="flex justify-between items-start gap-4">
                         {/* Left Column: Name & Calorie Badge */}
-                        <div className="flex flex-col justify-between min-h-[85px] w-[35%] shrink-0">
-                          <h3 className="text-xl font-extrabold text-neutral-800 leading-tight">
+                        <div className="flex flex-col justify-start w-[38%] shrink-0 pt-1">
+                          <h3 className="text-[22px] font-bold text-[#111111] leading-tight">
                             {material.name}
                           </h3>
-                          <div className="bg-[#22C55E] text-white px-4 py-2 rounded-xl text-xs font-bold w-fit shadow-sm select-none mt-2">
+                          <div className="bg-[#4CAF50] text-white px-3 py-1.5 rounded-lg text-[13px] font-bold w-fit shadow-sm select-none mt-2">
                             {material.calories || 0} Kcal
                           </div>
                         </div>
 
                         {/* Right Column: Macro labels + badges & Micronutrients list */}
-                        <div className="flex-1 flex flex-col gap-3 items-start pl-2">
+                        <div className="flex-1 flex flex-col items-start pt-1">
                           {/* 4 Macros Badges */}
-                          <div className="flex justify-start gap-2 w-full">
-                            <div className="flex flex-col items-center">
-                              <span className="text-[10px] text-neutral-400 font-bold mb-1 select-none">Protien</span>
-                              <div className="bg-[var(--color-pro-purple)] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
+                          <div className="flex justify-between w-full pr-1">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-[11px] text-[#333333] font-medium select-none">Protien</span>
+                              <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                                 {material.protein || 0}g
                               </div>
                             </div>
-                            <div className="flex flex-col items-center">
-                              <span className="text-[10px] text-neutral-400 font-bold mb-1 select-none">Carb</span>
-                              <div className="bg-[var(--color-pro-purple)] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-[11px] text-[#333333] font-medium select-none">Carb</span>
+                              <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                                 {material.carbs || 0}g
                               </div>
                             </div>
-                            <div className="flex flex-col items-center">
-                              <span className="text-[10px] text-neutral-400 font-bold mb-1 select-none">Fiber</span>
-                              <div className="bg-[var(--color-pro-purple)] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-[11px] text-[#333333] font-medium select-none">Fiber</span>
+                              <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                                 {material.fiber || 0}g
                               </div>
                             </div>
-                            <div className="flex flex-col items-center">
-                              <span className="text-[10px] text-neutral-400 font-bold mb-1 select-none">Fat</span>
-                              <div className="bg-[var(--color-pro-purple)] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-[11px] text-[#333333] font-medium select-none">Fat</span>
+                              <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                                 {material.fat || 0}g
                               </div>
                             </div>
                           </div>
 
                           {/* Micros list display */}
-                          <div className="w-full text-left mt-1">
-                            <span className="text-[10px] text-neutral-400 font-bold block mb-0.5">Micros</span>
-                            <p className="text-[11px] text-neutral-500 font-semibold line-clamp-1">
+                          <div className="w-full text-left mt-3">
+                            <span className="text-[11px] text-[#111111] font-bold block mb-0.5">Micros</span>
+                            <p className="text-[11px] text-neutral-500 font-medium line-clamp-1">
                               {material.micros && material.micros.length > 0 
                                 ? material.micros.join(",") 
                                 : "None"}
