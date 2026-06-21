@@ -21,6 +21,7 @@ import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { RawMaterial } from "@/lib/types";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function CalorieManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -38,6 +39,11 @@ export default function CalorieManagementPage() {
 
   // Notifications State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  // Modal State
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [materialToClear, setMaterialToClear] = useState<RawMaterial | null>(null);
+  const [isClearing, setIsClearing] = useState(false);
 
   // ─── Side Effects ──────────────────────────────────────────────────────────
   // Auth validation
@@ -122,24 +128,33 @@ export default function CalorieManagementPage() {
   };
 
   // Delete/Reset Macros handler
-  const handleResetMacros = async (material: RawMaterial, e: React.MouseEvent) => {
+  const handleResetMacros = (material: RawMaterial, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(`Are you sure you want to clear macros for ${material.name}?`)) {
-      try {
-        await endpoints.rawMaterials.updateMacros(material.id, {
-          calories: 0,
-          protein: 0,
-          carbs: 0,
-          fiber: 0,
-          fat: 0,
-          micros: []
-        });
-        showToast(`Nutritional macros for ${material.name} cleared successfully`, "success");
-        fetchMaterials();
-      } catch (error: any) {
-        console.error("Error clearing macros:", error);
-        showToast(error.message || "Failed to clear macros", "error");
-      }
+    setMaterialToClear(material);
+    setIsClearModalOpen(true);
+  };
+
+  const confirmResetMacros = async () => {
+    if (!materialToClear) return;
+    setIsClearing(true);
+    try {
+      await endpoints.rawMaterials.updateMacros(materialToClear.id, {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fiber: 0,
+        fat: 0,
+        micros: []
+      });
+      showToast(`Nutritional macros for ${materialToClear.name} cleared successfully`, "success");
+      fetchMaterials();
+    } catch (error: any) {
+      console.error("Error clearing macros:", error);
+      showToast(error.message || "Failed to clear macros", "error");
+    } finally {
+      setIsClearing(false);
+      setIsClearModalOpen(false);
+      setMaterialToClear(null);
     }
   };
 
@@ -394,6 +409,26 @@ export default function CalorieManagementPage() {
           )}
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={confirmResetMacros}
+        title="Clear Macros"
+        message={
+          materialToClear ? (
+            <>
+              Are you sure you want to clear macros for <span className="font-semibold text-white">{materialToClear.name}</span>? This will reset all nutritional values to zero.
+            </>
+          ) : (
+            "Are you sure you want to clear macros for this material?"
+          )
+        }
+        type="warning"
+        confirmText="Yes, Clear Macros"
+        cancelText="Cancel"
+        isLoading={isClearing}
+      />
     </div>
   );
 }

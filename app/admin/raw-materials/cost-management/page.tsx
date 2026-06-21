@@ -25,6 +25,7 @@ import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { RawMaterial, UnitType } from "@/lib/types";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function CostManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -43,6 +44,9 @@ export default function CostManagementPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [materialToDelete, setMaterialToDelete] = useState<{ id: number; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form State (Task 1 & 3)
   const [formState, setFormState] = useState({
@@ -328,22 +332,31 @@ export default function CostManagementPage() {
   };
 
   // Delete Handler
-  const handleDeleteMaterial = async (materialId: number, name: string, e: React.MouseEvent) => {
+  const handleDeleteMaterial = (materialId: number, name: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Avoid triggering detail view
-    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      try {
-        await endpoints.rawMaterials.deleteRawMaterial(materialId);
-        showToast(`${name} deleted successfully`, "success");
-        // Adjust page if deleting last item on current page
-        if (materials.length === 1 && page > 1) {
-          setPage(page - 1);
-        } else {
-          fetchMaterials();
-        }
-      } catch (error: any) {
-        console.error("Error deleting raw material:", error);
-        showToast(error.message || "Failed to delete raw material", "error");
+    setMaterialToDelete({ id: materialId, name });
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteMaterial = async () => {
+    if (!materialToDelete) return;
+    setIsDeleting(true);
+    try {
+      await endpoints.rawMaterials.deleteRawMaterial(materialToDelete.id);
+      showToast(`${materialToDelete.name} deleted successfully`, "success");
+      // Adjust page if deleting last item on current page
+      if (materials.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchMaterials();
       }
+    } catch (error: any) {
+      console.error("Error deleting raw material:", error);
+      showToast(error.message || "Failed to delete raw material", "error");
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+      setMaterialToDelete(null);
     }
   };
 
@@ -398,14 +411,32 @@ export default function CostManagementPage() {
             ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
             : "bg-rose-50 border-rose-200 text-rose-800"
         }`}>
-          {toast.type === "success" ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          ) : (
-            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
-          )}
-          <span className="text-sm font-semibold">{toast.message}</span>
+          <div className="flex gap-2">
+            {toast.type === "success" ? <CheckCircle2 className="h-5 w-5 text-[var(--color-bae-green)]" /> : <AlertTriangle className="h-5 w-5 text-red-500" />}
+            <span className="font-medium text-[var(--color-lab-white)]">{toast.message}</span>
+          </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteMaterial}
+        title="Delete Raw Material"
+        message={
+          materialToDelete ? (
+            <>
+              Are you sure you want to delete <span className="font-semibold text-white">{materialToDelete.name}</span>? This action cannot be undone and will permanently remove it from your inventory.
+            </>
+          ) : (
+            "Are you sure you want to delete this raw material?"
+          )
+        }
+        type="delete"
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+      />
 
       {/* Main Page Layout */}
       <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden">
