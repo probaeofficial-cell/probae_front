@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
+import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { RawMaterial } from "@/lib/types";
@@ -183,7 +184,7 @@ export default function CalorieManagementPage() {
   if (!user) return null;
 
   return (
-    <div className="flex flex-col flex-1 h-full bg-[#f3f4f6]">
+    <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
       {/* Toast Alert */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl transition-all border animate-fade-in ${
@@ -201,7 +202,7 @@ export default function CalorieManagementPage() {
       )}
 
       {/* Main Page Layout */}
-      <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-[#f3f4f6] overflow-hidden">
+      <div className="p-4 sm:p-8 h-full flex flex-col bg-[#E6E6E6] overflow-hidden">
         {/* Header Bar */}
         <Header />
 
@@ -213,40 +214,14 @@ export default function CalorieManagementPage() {
         <div className="flex-1 flex flex-col overflow-hidden p-1 sm:p-2">
           {/* Sub Header / Search Filters Bar */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center shrink-0">
-            {/* Search Input with Gradient Border */}
-            <div 
-              className="flex-1 w-full max-w-[800px] flex items-center bg-white rounded-[24px] px-3.5 py-2.5 shadow-sm transition-all"
-              style={{
-                border: "1px solid transparent",
-                backgroundImage: "linear-gradient(white, white), linear-gradient(135deg, #EA580C 0%, #7C3AED 100%)",
-                backgroundOrigin: "border-box",
-                backgroundClip: "padding-box, border-box"
-              }}
-            >
-              {/* Gradient Search circle */}
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#EA580C] to-[#7C3AED] flex items-center justify-center text-white shrink-0 shadow-sm mr-3">
-                <Search className="w-4 h-4 text-white" />
-              </div>
-              {/* Vertical line separator after search circle */}
-              <div className="h-5 w-[1px] bg-neutral-200 mr-3 shrink-0" />
-              <input
-                type="text"
-                placeholder="Search for your order"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none font-medium"
-              />
-              <div className="flex items-center gap-3 shrink-0 pr-1 select-none">
-                {/* Vertical line separator before A to Z */}
-                <div className="h-5 w-[1px] bg-neutral-200" />
-                <span className="text-xs text-neutral-400 font-bold tracking-wider">A to Z</span>
-                {/* Vertical line separator before filter icon */}
-                <div className="h-5 w-[1px] bg-neutral-200" />
-                <Filter className="w-4 h-4 text-neutral-400 hover:text-[#7C3AED] cursor-pointer transition-colors" />
-              </div>
-            </div>
+            {/* Search Input using ProbaeSearch Component */}
+            <ProbaeSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search for your order"
+            />
 
-            {/* Add Raw Material button */}
+            {/* Add Raw Material button using ProbaeButton */}
             <ProbaeButton
               onClick={() => router.push("/admin/raw-materials/calorie-management/add-macros")}
               className="w-full sm:w-auto px-8 shrink-0"
@@ -282,10 +257,11 @@ export default function CalorieManagementPage() {
                   return (
                     <div
                       key={material.id}
-                      className="bg-white rounded-[32px] p-6 shadow-sm border border-neutral-100/50 flex flex-col gap-4 relative group"
+                      onClick={() => router.push(`/admin/raw-materials/calorie-management/preview/${material.id}`)}
+                      className="bg-white rounded-[32px] p-6 shadow-sm border border-neutral-100/50 flex flex-col gap-4 relative group cursor-pointer hover:shadow-md transition-shadow"
                     >
                       {/* Image section with ID overlay and action overlays */}
-                      <div className="h-[150px] w-full rounded-[24px] overflow-hidden relative bg-[#fafafa] flex items-center justify-center shrink-0 border border-neutral-100">
+                      <div className="h-[110px] w-full rounded-[24px] overflow-hidden relative bg-[#fafafa] flex items-center justify-center shrink-0 border border-neutral-100">
                         {mediaUrl ? (
                           <img
                             src={mediaUrl}
@@ -309,15 +285,18 @@ export default function CalorieManagementPage() {
                         {/* Edit/Delete semi-transparent circles on top-right */}
                         <div className="absolute top-3 right-3 flex items-center gap-2">
                           <button
-                            onClick={() => router.push(`/admin/raw-materials/calorie-management/edit-macros/${material.id}`)}
-                            className="w-8 h-8 rounded-full bg-black/40 text-white hover:bg-black/60 flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/admin/raw-materials/calorie-management/edit-macros/${material.id}`);
+                            }}
+                            className="w-8 h-8 rounded-full bg-white/80 text-neutral-700 hover:bg-white flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
                             title="Edit Macros"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={(e) => handleResetMacros(material, e)}
-                            className="w-8 h-8 rounded-full bg-black/40 text-white hover:bg-rose-600/80 flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                            className="w-8 h-8 rounded-full bg-white/80 text-neutral-700 hover:bg-white flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
                             title="Clear Macros"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -328,47 +307,47 @@ export default function CalorieManagementPage() {
                       {/* Info and Macros row */}
                       <div className="flex justify-between items-start gap-4">
                         {/* Left Column: Name & Calorie Badge */}
-                        <div className="flex flex-col justify-between min-h-[85px]">
+                        <div className="flex flex-col justify-between min-h-[85px] w-[35%] shrink-0">
                           <h3 className="text-xl font-extrabold text-neutral-800 leading-tight">
                             {material.name}
                           </h3>
-                          <div className="bg-[#16A34A] text-white px-4 py-2 rounded-xl text-xs font-bold w-fit shadow-sm select-none mt-2">
+                          <div className="bg-[#22C55E] text-white px-4 py-2 rounded-xl text-xs font-bold w-fit shadow-sm select-none mt-2">
                             {material.calories || 0} Kcal
                           </div>
                         </div>
 
                         {/* Right Column: Macro labels + badges & Micronutrients list */}
-                        <div className="flex-1 flex flex-col gap-3 items-end">
+                        <div className="flex-1 flex flex-col gap-3 items-start pl-2">
                           {/* 4 Macros Badges */}
-                          <div className="flex justify-end gap-2 w-full">
+                          <div className="flex justify-start gap-2 w-full">
                             <div className="flex flex-col items-center">
                               <span className="text-[10px] text-neutral-400 font-bold mb-1 select-none">Protien</span>
-                              <div className="bg-[#7C3AED] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
+                              <div className="bg-[var(--color-pro-purple)] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
                                 {material.protein || 0}g
                               </div>
                             </div>
                             <div className="flex flex-col items-center">
                               <span className="text-[10px] text-neutral-400 font-bold mb-1 select-none">Carb</span>
-                              <div className="bg-[#7C3AED] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
+                              <div className="bg-[var(--color-pro-purple)] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
                                 {material.carbs || 0}g
                               </div>
                             </div>
                             <div className="flex flex-col items-center">
                               <span className="text-[10px] text-neutral-400 font-bold mb-1 select-none">Fiber</span>
-                              <div className="bg-[#7C3AED] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
+                              <div className="bg-[var(--color-pro-purple)] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
                                 {material.fiber || 0}g
                               </div>
                             </div>
                             <div className="flex flex-col items-center">
                               <span className="text-[10px] text-neutral-400 font-bold mb-1 select-none">Fat</span>
-                              <div className="bg-[#7C3AED] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
+                              <div className="bg-[var(--color-pro-purple)] text-white text-xs font-bold w-9 h-9 rounded-xl flex items-center justify-center shadow-sm select-none">
                                 {material.fat || 0}g
                               </div>
                             </div>
                           </div>
 
                           {/* Micros list display */}
-                          <div className="w-full text-right mt-1">
+                          <div className="w-full text-left mt-1">
                             <span className="text-[10px] text-neutral-400 font-bold block mb-0.5">Micros</span>
                             <p className="text-[11px] text-neutral-500 font-semibold line-clamp-1">
                               {material.micros && material.micros.length > 0 

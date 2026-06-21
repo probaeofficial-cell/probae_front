@@ -206,7 +206,7 @@ export default function AddMacrosPage() {
     : null;
 
   return (
-    <div className="flex flex-col flex-1 h-full bg-[#f3f4f6] relative overflow-hidden text-neutral-800">
+    <div className="flex flex-col flex-1 h-full bg-[#E6E6E6] relative overflow-hidden text-neutral-800">
 
       {/* Toast Alert */}
       {toast && (
@@ -243,7 +243,7 @@ export default function AddMacrosPage() {
           
           {/* Left Column: Vertical Oval Image */}
           <div className="w-full lg:w-[42%] flex items-center justify-center shrink-0">
-            <div className="w-72 h-[480px] rounded-full overflow-hidden bg-white border-4 border-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] relative flex items-center justify-center shrink-0">
+            <div className="w-72 h-[480px] rounded-full overflow-hidden bg-white border border-black/30 relative flex items-center justify-center shrink-0">
               {backgroundUrl ? (
                 <img
                   src={backgroundUrl}
@@ -264,7 +264,7 @@ export default function AddMacrosPage() {
             
             {/* Name selection (Custom Scroll Paginated Dropdown with Search) */}
             <div className="relative w-full" ref={dropdownRef}>
-              <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+              <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                 Name
               </label>
               
@@ -335,7 +335,7 @@ export default function AddMacrosPage() {
             {/* Code, Price, Unit (Read Only / Styled Badges) */}
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                   Code
                 </label>
                 <div className="w-full py-4 bg-white border border-neutral-100 rounded-2xl text-[15px] font-bold text-neutral-500 text-center shadow-sm select-none">
@@ -344,7 +344,7 @@ export default function AddMacrosPage() {
               </div>
               
               <div>
-                <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                   Price
                 </label>
                 <div className="w-full py-4 bg-white border border-neutral-100 rounded-2xl text-[15px] font-bold text-neutral-500 text-center shadow-sm select-none">
@@ -353,20 +353,20 @@ export default function AddMacrosPage() {
               </div>
 
               <div>
-                <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                   Unit
                 </label>
-                <div className="w-full py-4 bg-[#7C3AED] border border-transparent rounded-2xl text-[15px] font-extrabold text-white text-center shadow-sm select-none">
+                <div className="w-full py-4 bg-[var(--color-pro-purple)] border border-transparent rounded-2xl text-[15px] font-extrabold text-white text-center shadow-sm select-none">
                   {selectedMaterial ? selectedMaterial.unit.toUpperCase() : "—"}
                 </div>
               </div>
             </div>
 
             {/* White container card for calorie inputs */}
-            <div className="bg-white rounded-[32px] p-6 sm:p-8 border border-neutral-100/50 shadow-[0_15px_40px_rgba(0,0,0,0.04)] flex flex-col gap-5">
+            <div className="bg-white rounded-[24px] p-6 sm:p-8 border border-neutral-100/50 shadow-sm flex flex-col gap-5">
               {/* Calorie */}
               <div>
-                <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                   Calorie
                 </label>
                 <input
@@ -380,11 +380,11 @@ export default function AddMacrosPage() {
                   className="w-full bg-[#f3f4f6] border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-5 py-4 text-[14px] text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold shadow-sm"
                 />
               </div>
-
+ 
               {/* Protien & Carb */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                  <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                     Protien
                   </label>
                   <input
@@ -398,9 +398,9 @@ export default function AddMacrosPage() {
                     className="w-full bg-[#f3f4f6] border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-5 py-4 text-[14px] text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold shadow-sm"
                   />
                 </div>
-
+ 
                 <div>
-                  <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                  <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                     Carb
                   </label>
                   <input
@@ -415,11 +415,11 @@ export default function AddMacrosPage() {
                   />
                 </div>
               </div>
-
+ 
               {/* Fiber & Fat */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                  <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                     Fiber
                   </label>
                   <input
@@ -433,9 +433,9 @@ export default function AddMacrosPage() {
                     className="w-full bg-[#f3f4f6] border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-5 py-4 text-[14px] text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold shadow-sm"
                   />
                 </div>
-
+ 
                 <div>
-                  <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                  <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                     Fat
                   </label>
                   <input
@@ -450,10 +450,10 @@ export default function AddMacrosPage() {
                   />
                 </div>
               </div>
-
+ 
               {/* Micros */}
               <div>
-                <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                   Micros
                 </label>
                 <input
@@ -467,22 +467,22 @@ export default function AddMacrosPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-4 mt-2">
+            <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
                 onClick={() => router.push("/admin/raw-materials/calorie-management")}
-                className="flex-1 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-500 font-bold py-4 px-8 rounded-2xl shadow-sm cursor-pointer transition-colors text-center"
+                className="w-36 py-3.5 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-500 font-semibold rounded-[20px] shadow-sm cursor-pointer transition-colors text-center text-[15px]"
               >
                 Cancel
               </button>
               
-              <div className="flex-1">
+              <div className="w-36">
                 <ProbaeButton 
                   type="submit" 
                   disabled={isSaving || !selectedMaterial}
-                  className="py-4 rounded-2xl"
+                  className="py-3.5 rounded-[20px] text-[15px]"
                 >
-                  {isSaving && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+                  {isSaving && <Loader2 className="w-4 h-4 animate-spin text-white mr-1.5" />}
                   Save
                 </ProbaeButton>
               </div>

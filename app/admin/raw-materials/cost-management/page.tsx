@@ -26,6 +26,7 @@ import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { RawMaterial, UnitType } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 
 export default function CostManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -452,37 +453,12 @@ export default function CostManagementPage() {
             {/* Sub Header / Filters and Buttons Bar */}
             <div className="flex flex-col sm:flex-row gap-4 mb-8 justify-between items-center shrink-0">
               {/* Search inputs */}
-              <div 
-                className="flex-1 w-full max-w-[800px] flex items-center bg-white rounded-[24px] px-3.5 py-2.5 shadow-sm transition-all"
-                style={{
-                  border: "1px solid transparent",
-                  backgroundImage: "linear-gradient(white, white), linear-gradient(135deg, #EA580C 0%, #7C3AED 100%)",
-                  backgroundOrigin: "border-box",
-                  backgroundClip: "padding-box, border-box"
-                }}
-              >
-                {/* Gradient Search circle */}
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#EA580C] to-[#7C3AED] flex items-center justify-center text-white shrink-0 shadow-sm mr-3">
-                  <Search className="w-4 h-4 text-white" />
-                </div>
-                {/* Vertical line separator after search circle */}
-                <div className="h-5 w-[1px] bg-neutral-200 mr-3 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Search for your order"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none font-medium"
-                />
-                <div className="flex items-center gap-3 shrink-0 pr-1 select-none">
-                  {/* Vertical line separator before A to Z */}
-                  <div className="h-5 w-[1px] bg-neutral-200" />
-                  <span className="text-xs text-neutral-400 font-bold tracking-wider">A to Z</span>
-                  {/* Vertical line separator before filter icon */}
-                  <div className="h-5 w-[1px] bg-neutral-200" />
-                  <Filter className="w-4 h-4 text-neutral-400 hover:text-[#7C3AED] cursor-pointer transition-colors" />
-                </div>
-              </div>
+              {/* Search Input using ProbaeSearch Component */}
+              <ProbaeSearch
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search for your order"
+              />
 
               {/* Actions */}
               <ProbaeButton

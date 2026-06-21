@@ -151,7 +151,7 @@ export default function EditMacrosPage({ params }: PageProps) {
   const backgroundUrl = getMediaUrl(systemSettings.R2_BASE_URL, material.background_image_filename);
 
   return (
-    <div className="flex flex-col flex-1 h-full bg-[#f3f4f6] relative overflow-hidden text-neutral-800">
+    <div className="flex flex-col flex-1 h-full bg-[#E6E6E6] relative overflow-hidden text-neutral-800">
 
       {/* Toast Alert */}
       {toast && (
@@ -188,7 +188,7 @@ export default function EditMacrosPage({ params }: PageProps) {
           
           {/* Left Column: Vertical Oval Image */}
           <div className="w-full lg:w-[42%] flex items-center justify-center shrink-0">
-            <div className="w-72 h-[480px] rounded-full overflow-hidden bg-white border-4 border-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] relative flex items-center justify-center shrink-0">
+            <div className="w-72 h-[480px] rounded-full overflow-hidden bg-white border border-black/30 relative flex items-center justify-center shrink-0">
               {backgroundUrl ? (
                 <img
                   src={backgroundUrl}
@@ -209,21 +209,21 @@ export default function EditMacrosPage({ params }: PageProps) {
             
             {/* Name selection (Disabled in Edit Mode) */}
             <div>
-              <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+              <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                 Name
               </label>
               <input
                 type="text"
                 value={material.name}
                 disabled
-                className="w-full bg-white border border-neutral-100 rounded-2xl px-5 py-4 text-[15px] font-bold text-neutral-400 focus:outline-none shadow-sm cursor-not-allowed"
+                className="w-full bg-white border border-neutral-100 rounded-2xl px-5 py-4 text-[15px] font-bold text-neutral-800 focus:outline-none shadow-sm cursor-not-allowed"
               />
             </div>
 
             {/* Code, Price, Unit (Read Only / Styled Badges) */}
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                   Code
                 </label>
                 <div className="w-full py-4 bg-white border border-neutral-100 rounded-2xl text-[15px] font-bold text-neutral-500 text-center shadow-sm select-none">
@@ -232,7 +232,7 @@ export default function EditMacrosPage({ params }: PageProps) {
               </div>
               
               <div>
-                <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                   Price
                 </label>
                 <div className="w-full py-4 bg-white border border-neutral-100 rounded-2xl text-[15px] font-bold text-neutral-500 text-center shadow-sm select-none">
@@ -241,20 +241,20 @@ export default function EditMacrosPage({ params }: PageProps) {
               </div>
 
               <div>
-                <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                   Unit
                 </label>
-                <div className="w-full py-4 bg-[#7C3AED] border border-transparent rounded-2xl text-[15px] font-extrabold text-white text-center shadow-sm select-none">
+                <div className="w-full py-4 bg-[var(--color-pro-purple)] border border-transparent rounded-2xl text-[15px] font-extrabold text-white text-center shadow-sm select-none">
                   {material.unit.toUpperCase()}
                 </div>
               </div>
             </div>
 
             {/* White container card for calorie inputs */}
-            <div className="bg-white rounded-[32px] p-6 sm:p-8 border border-neutral-100/50 shadow-[0_15px_40px_rgba(0,0,0,0.04)] flex flex-col gap-5">
+            <div className="bg-white rounded-[24px] p-6 sm:p-8 border border-neutral-100/50 shadow-sm flex flex-col gap-5">
               {/* Calorie */}
               <div>
-                <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                   Calorie
                 </label>
                 <input
@@ -272,7 +272,7 @@ export default function EditMacrosPage({ params }: PageProps) {
               {/* Protien & Carb */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                  <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                     Protien
                   </label>
                   <input
@@ -288,7 +288,7 @@ export default function EditMacrosPage({ params }: PageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                  <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                     Carb
                   </label>
                   <input
@@ -307,7 +307,7 @@ export default function EditMacrosPage({ params }: PageProps) {
               {/* Fiber & Fat */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                  <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                     Fiber
                   </label>
                   <input
@@ -323,7 +323,7 @@ export default function EditMacrosPage({ params }: PageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                  <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                     Fat
                   </label>
                   <input
@@ -341,7 +341,7 @@ export default function EditMacrosPage({ params }: PageProps) {
 
               {/* Micros */}
               <div>
-                <label className="block text-[13px] font-bold text-neutral-500 mb-1.5 uppercase tracking-wide">
+                <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
                   Micros
                 </label>
                 <input
@@ -355,22 +355,22 @@ export default function EditMacrosPage({ params }: PageProps) {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-4 mt-2">
+            <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
                 onClick={() => router.push("/admin/raw-materials/calorie-management")}
-                className="flex-1 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-500 font-bold py-4 px-8 rounded-2xl shadow-sm cursor-pointer transition-colors text-center"
+                className="w-36 py-3.5 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-500 font-semibold rounded-[20px] shadow-sm cursor-pointer transition-colors text-center text-[15px]"
               >
                 Cancel
               </button>
               
-              <div className="flex-1">
+              <div className="w-36">
                 <ProbaeButton 
                   type="submit" 
                   disabled={isSaving}
-                  className="py-4 rounded-2xl"
+                  className="py-3.5 rounded-[20px] text-[15px]"
                 >
-                  {isSaving && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+                  {isSaving && <Loader2 className="w-4 h-4 animate-spin text-white mr-1.5" />}
                   Save
                 </ProbaeButton>
               </div>
