@@ -6,7 +6,7 @@
  * in-memory token storage (per architecture rules), automatic token refresh
  * on 401 Unauthorized responses (with queueing logic), and standardized error handling.
  */
-import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload } from "./types";
+import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients } from "./types";
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
@@ -321,6 +321,28 @@ export const endpoints = {
       return await api.del<void>(`/raw-materials/${ulid}`);
     },
 
+  },
+
+  ingredients: {
+    getIngredients: async (page: number, size: number, search?: string): Promise<PaginatedIngredients> => {
+      let query = `?page=${page}&page_size=${size}`;
+      if (search) {
+        query += `&search=${encodeURIComponent(search)}`;
+      }
+      return await api.get<PaginatedIngredients>(`/ingredients/${query}`);
+    },
+    getIngredient: async (ulid: string): Promise<Ingredient> => {
+      return await api.get<Ingredient>(`/ingredients/${ulid}`);
+    },
+    createIngredient: async (data: IngredientCreateInput): Promise<Ingredient> => {
+      return await api.post<Ingredient>("/ingredients/", data);
+    },
+    updateIngredient: async (ulid: string, data: IngredientUpdateInput): Promise<Ingredient> => {
+      return await api.put<Ingredient>(`/ingredients/${ulid}`, data);
+    },
+    deleteIngredient: async (ulid: string): Promise<void> => {
+      return await api.del<void>(`/ingredients/${ulid}`);
+    },
   },
 
   settings: {

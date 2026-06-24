@@ -98,3 +98,63 @@ export interface MacrosUpdatePayload {
 //   name: string;
 //   price: number;
 // }
+
+// ─── Ingredient Types ────────────────────────────────────────────────────────
+
+export interface RawMaterialWeightInput {
+  raw_material_id: number;
+  weight_g_or_ml: number;
+}
+
+export interface IngredientRawMaterialResponse {
+  id: number;
+  raw_material_id: number;
+  weight_g_or_ml: number;
+}
+
+export interface Ingredient {
+  id: number;
+  ulid: string;
+  code?: string;
+  name: string;
+  description?: string;
+  image_filename?: string;
+  background_image_filename?: string;
+  total_weight: number;
+  total_price: number;
+  total_calories: number;
+  total_protein: number;
+  total_carbs: number;
+  total_fat: number;
+  total_fiber: number;
+  created_at: string;
+  updated_at: string;
+  raw_materials: IngredientRawMaterialResponse[];
+}
+
+export interface IngredientCreateInput {
+  code?: string;
+  name: string;
+  description?: string;
+  image_filename?: string;
+  background_image_filename?: string;
+  raw_materials: RawMaterialWeightInput[];
+}
+
+export interface IngredientUpdateInput {
+  code?: string;
+  name?: string;
+  description?: string;
+  image_filename?: string;
+  background_image_filename?: string;
+  raw_materials?: RawMaterialWeightInput[];
+}
+
+export interface PaginatedIngredients {
+  items: Ingredient[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+

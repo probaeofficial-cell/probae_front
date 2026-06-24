@@ -8,7 +8,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Search,
-  ChevronDown
+  ChevronDown,
+  ArrowLeft
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
@@ -236,7 +237,15 @@ export default function AddMacrosPage() {
         {/* Scrollable Content container */}
         <div className="flex-1 overflow-y-auto pr-1 pb-6 scrollbar-thin">
           {/* Title */}
-          <h1 className="text-xl font-extrabold text-neutral-800 pl-1 mb-8 select-none">Add Macros</h1>
+          <div className="flex items-center gap-4 mb-8 pl-1">
+            <button 
+              onClick={() => router.push("/admin/raw-materials/calorie-management")} 
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm border border-neutral-200 text-neutral-600 hover:bg-neutral-50 transition-colors shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-xl font-extrabold text-neutral-800 select-none m-0">Add Macros</h1>
+          </div>
 
           {/* Flex layout columns (directly on grey background) */}
           <div className="w-full max-w-5xl mx-auto flex flex-col lg:flex-row gap-12 items-start mt-4 pb-12">
