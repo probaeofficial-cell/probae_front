@@ -24,6 +24,33 @@ export interface UserProfile {
   profile_picture?: Document | null;
 }
 
+// ─── Raw Material Category Types ────────────────────────────────────────────────
+export interface RawMaterialCategory {
+  id: number;
+  ulid: string;
+  name: string;
+  description?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RawMaterialCategoryCreateInput {
+  name: string;
+  description?: string | null;
+}
+
+export interface RawMaterialCategoryUpdateInput {
+  name?: string;
+  description?: string | null;
+}
+
+export interface PaginatedRawMaterialCategories {
+  items: RawMaterialCategory[];
+  total: number;
+  page: number;
+  size: number;
+}
+
 // ─── Raw Material Types ──────────────────────────────────────────────────────
 export type UnitType = "kg" | "l" | "g" | "ml";
 
@@ -42,6 +69,7 @@ export interface RawMaterial {
   fiber: number;
   fat: number;
   micros: string[];
+  category?: RawMaterialCategory | null;
   created_at: string;
   updated_at: string;
 }
@@ -60,6 +88,7 @@ export interface RawMaterialCreateInput {
   fiber?: number;
   fat?: number;
   micros?: string[];
+  category_ulid?: string | null;
 }
 
 export interface RawMaterialUpdateInput {
@@ -75,6 +104,7 @@ export interface RawMaterialUpdateInput {
   fiber?: number;
   fat?: number;
   micros?: string[];
+  category_ulid?: string | null;
 }
 
 export interface PaginatedRawMaterials {

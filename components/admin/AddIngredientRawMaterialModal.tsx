@@ -113,7 +113,9 @@ export function AddIngredientRawMaterialModal({ isOpen, onClose, onAdd, initialM
                       <h4 className={`font-semibold ${selectedMaterial?.id === m.id ? "text-[#7c3aed]" : "text-neutral-800"}`}>
                         {m.name}
                       </h4>
-                      <p className="text-sm text-neutral-500">{m.unit}</p>
+                      <p className="text-sm text-neutral-500">
+                        {m.category?.name ? `${m.category.name} • ` : ""}{m.unit}
+                      </p>
                     </div>
                     {selectedMaterial?.id === m.id && (
                       <div className="w-4 h-4 rounded-full bg-[#7c3aed]" />

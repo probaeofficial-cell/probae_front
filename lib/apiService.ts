@@ -6,7 +6,7 @@
  * in-memory token storage (per architecture rules), automatic token refresh
  * on 401 Unauthorized responses (with queueing logic), and standardized error handling.
  */
-import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients } from "./types";
+import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories } from "./types";
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
@@ -321,6 +321,28 @@ export const endpoints = {
       return await api.del<void>(`/raw-materials/${ulid}`);
     },
 
+  },
+
+  rawMaterialCategories: {
+    getCategories: async (page: number, size: number, search?: string): Promise<PaginatedRawMaterialCategories> => {
+      let query = `?page=${page}&size=${size}`;
+      if (search) {
+        query += `&search=${encodeURIComponent(search)}`;
+      }
+      return await api.get<PaginatedRawMaterialCategories>(`/raw-material-categories/${query}`);
+    },
+    getCategory: async (ulid: string): Promise<RawMaterialCategory> => {
+      return await api.get<RawMaterialCategory>(`/raw-material-categories/${ulid}`);
+    },
+    createCategory: async (data: RawMaterialCategoryCreateInput): Promise<RawMaterialCategory> => {
+      return await api.post<RawMaterialCategory>("/raw-material-categories/", data);
+    },
+    updateCategory: async (ulid: string, data: RawMaterialCategoryUpdateInput): Promise<RawMaterialCategory> => {
+      return await api.patch<RawMaterialCategory>(`/raw-material-categories/${ulid}`, data);
+    },
+    deleteCategory: async (ulid: string): Promise<void> => {
+      return await api.del<void>(`/raw-material-categories/${ulid}`);
+    },
   },
 
   ingredients: {

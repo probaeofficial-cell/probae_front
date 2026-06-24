@@ -380,8 +380,8 @@ export default function IngredientsPage() {
           )
         }
         confirmText="Delete"
-        confirmButtonClass="bg-rose-600 hover:bg-rose-700 text-white"
-        isProcessing={isDeleting}
+        type="delete"
+        isLoading={isDeleting}
       />
     </div>
   );

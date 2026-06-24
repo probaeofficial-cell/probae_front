@@ -24,9 +24,10 @@ import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
-import { RawMaterial, UnitType } from "@/lib/types";
+import { RawMaterial, UnitType, RawMaterialCategory } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
+import { SelectCategoryModal } from "@/components/admin/SelectCategoryModal";
 
 export default function CostManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -57,6 +58,8 @@ export default function CostManagementPage() {
     description: "",
     image_filename: null as string | null,
     background_image_filename: null as string | null,
+    category_ulid: null as string | null,
+    category_name: null as string | null,
   });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBackgroundUrl, setPreviewBackgroundUrl] = useState<string | null>(null);
@@ -77,6 +80,9 @@ export default function CostManagementPage() {
 
   // Notifications State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  // Categories State
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
   // ─── Side Effects ──────────────────────────────────────────────────────────
   // Auth validation
@@ -130,8 +136,10 @@ export default function CostManagementPage() {
   }, [user, page, pageSize, debouncedSearch]);
 
   useEffect(() => {
-    fetchMaterials();
-  }, [fetchMaterials]);
+    if (user) {
+      fetchMaterials();
+    }
+  }, [fetchMaterials, user]);
 
   // ─── Toast Helper ─────────────────────────────────────────────────────────
   const showToast = (message: string, type: "success" | "error") => {
@@ -266,6 +274,8 @@ export default function CostManagementPage() {
       description: "",
       image_filename: null,
       background_image_filename: null,
+      category_ulid: null,
+      category_name: null,
     });
     setPreviewUrl(null);
     setPreviewBackgroundUrl(null);
@@ -283,8 +293,10 @@ export default function CostManagementPage() {
       description: material.description || "",
       image_filename: material.image_filename || null,
       background_image_filename: material.background_image_filename || null,
+      category_ulid: material.category?.ulid || null,
+      category_name: material.category?.name || null,
     });
-    setPreviewUrl(getMediaUrl(systemSettings?.R2_BASE_URL, material.image_filename));
+    setPreviewUrl(material.image_filename ? getMediaUrl(systemSettings.R2_BASE_URL, material.image_filename) : null);
     setPreviewBackgroundUrl(getMediaUrl(systemSettings?.R2_BASE_URL, material.background_image_filename));
     setIsModalOpen(true);
   };
@@ -306,12 +318,13 @@ export default function CostManagementPage() {
     setIsSaving(true);
     
     const payload = {
-      name: formState.name.trim(),
+      name: formState.name,
       price: Number(formState.price),
       unit: formState.unit,
-      description: formState.description.trim() || null,
+      description: formState.description || null,
       image_filename: formState.image_filename,
       background_image_filename: formState.background_image_filename,
+      category_ulid: formState.category_ulid || null,
     };
 
     try {
@@ -434,8 +447,7 @@ export default function CostManagementPage() {
           )
         }
         type="delete"
-        confirmText="Yes, Delete"
-        cancelText="Cancel"
+        confirmText={isDeleting ? "Deleting..." : "Delete"}
         isLoading={isDeleting}
       />
 
@@ -525,6 +537,11 @@ export default function CostManagementPage() {
 
                         {/* Content Section */}
                         <div className="flex-1 flex flex-col items-center mt-3">
+                          {material.category?.name && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-[#6b21a8]/10 text-[#6b21a8] text-[9px] font-bold uppercase tracking-wider mb-1">
+                              {material.category.name}
+                            </span>
+                          )}
                           <h4 className="text-sm font-bold text-neutral-900 group-hover:text-[#6b21a8] transition-colors leading-tight">
                             {material.name}
                           </h4>
@@ -870,6 +887,27 @@ export default function CostManagementPage() {
               />
             </div>
 
+            {/* Category Dropdown */}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
+                Category
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(true)}
+                className="w-full bg-neutral-100/70 border border-transparent hover:border-neutral-200 hover:bg-white rounded-2xl px-4 py-3.5 text-sm text-neutral-800 text-left transition-all flex items-center justify-between group"
+              >
+                {formState.category_name ? (
+                  <span className="font-semibold">{formState.category_name}</span>
+                ) : (
+                  <span className="text-neutral-400 font-medium">Select a category</span>
+                )}
+                <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center border border-neutral-200 shadow-sm group-hover:border-neutral-300 transition-colors">
+                  <Search className="w-3 h-3 text-neutral-500" />
+                </div>
+              </button>
+            </div>
+
             {/* Price & Unit Toggle */}
             <div>
               <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
@@ -961,6 +999,19 @@ export default function CostManagementPage() {
         </div>
       </div>
     )}
+
+    <SelectCategoryModal
+      isOpen={isCategoryModalOpen}
+      onClose={() => setIsCategoryModalOpen(false)}
+      selectedCategoryUlid={formState.category_ulid}
+      onSelect={(cat) => {
+        setFormState(prev => ({
+          ...prev,
+          category_ulid: cat?.ulid || null,
+          category_name: cat?.name || null,
+        }));
+      }}
+    />
   </div>
   );
 }
