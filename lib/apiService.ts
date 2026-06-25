@@ -320,6 +320,12 @@ export const endpoints = {
     deleteRawMaterial: async (ulid: string): Promise<void> => {
       return await api.del<void>(`/raw-materials/${ulid}`);
     },
+    adjustStock: async (ulid: string, data: { quantity_change: number; description?: string }): Promise<RawMaterial> => {
+      return await api.post<RawMaterial>(`/raw-materials/${ulid}/stock`, data);
+    },
+    getStockLogs: async (ulid: string): Promise<any[]> => {
+      return await api.get<any[]>(`/raw-materials/${ulid}/stock-logs`);
+    },
 
   },
 

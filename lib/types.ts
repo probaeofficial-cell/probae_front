@@ -70,6 +70,8 @@ export interface RawMaterial {
   fat: number;
   micros: string[];
   category?: RawMaterialCategory | null;
+  current_stock: number;
+  stock_threshold: number;
   created_at: string;
   updated_at: string;
 }
