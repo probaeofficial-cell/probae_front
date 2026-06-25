@@ -39,7 +39,14 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     },
   },
   ingredients: { label: "Ingredients", icon: Layers, path: "/admin/ingredients" },
-  bowls: { label: "Bowls", icon: Coffee, path: "/admin/bowls" },
+  bowls: {
+    label: "Bowls",
+    icon: Coffee,
+    subItems: {
+      categories: { label: "Categories", dotColor: "bg-blue-500", path: "/admin/bowls/categories" },
+      list: { label: "Bowl List", dotColor: "bg-purple-500", path: "/admin/bowls" },
+    },
+  },
   orders: { label: "Orders", icon: Package, path: "/admin/orders" },
   customers: { label: "Customers", icon: Users, badge: 3, path: "/admin/customers" },
 };

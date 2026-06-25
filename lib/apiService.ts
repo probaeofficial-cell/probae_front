@@ -6,7 +6,7 @@
  * in-memory token storage (per architecture rules), automatic token refresh
  * on 401 Unauthorized responses (with queueing logic), and standardized error handling.
  */
-import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories, StockLog } from "./types";
+import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories, StockLog, BowlCategory, BowlCategoryCreateInput, BowlCategoryUpdateInput, PaginatedBowlCategories } from "./types";
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
@@ -385,6 +385,28 @@ export const endpoints = {
     },
     updateSystemSettings: async (payload: Record<string, string>): Promise<Record<string, string>> => {
       return await api.put<Record<string, string>>("/settings", payload);
+    },
+  },
+
+  bowlCategories: {
+    getBowlCategories: async (page: number, size: number, search?: string): Promise<PaginatedBowlCategories> => {
+      let query = `?page=${page}&page_size=${size}`;
+      if (search) {
+        query += `&search=${encodeURIComponent(search)}`;
+      }
+      return await api.get<PaginatedBowlCategories>(`/bowl-categories${query}`);
+    },
+    getBowlCategory: async (ulid: string): Promise<BowlCategory> => {
+      return await api.get<BowlCategory>(`/bowl-categories/${ulid}`);
+    },
+    createBowlCategory: async (data: BowlCategoryCreateInput): Promise<BowlCategory> => {
+      return await api.post<BowlCategory>("/bowl-categories", data);
+    },
+    updateBowlCategory: async (ulid: string, data: BowlCategoryUpdateInput): Promise<BowlCategory> => {
+      return await api.put<BowlCategory>(`/bowl-categories/${ulid}`, data);
+    },
+    deleteBowlCategory: async (ulid: string): Promise<void> => {
+      return await api.del<void>(`/bowl-categories/${ulid}`);
     },
   },
 };

@@ -205,3 +205,47 @@ export interface PaginatedIngredients {
   pages: number;
 }
 
+export interface Bowl {
+  id: number;
+  ulid: string;
+  code?: string;
+  name: string;
+  category_id: number;
+}
+
+export interface BowlCategory {
+  id: number;
+  ulid: string;
+  code?: string;
+  name: string;
+  description?: string;
+  image_filename?: string;
+  background_image_filename?: string;
+  created_at: string;
+  updated_at: string;
+  bowls: Bowl[];
+}
+
+export interface BowlCategoryCreateInput {
+  code?: string;
+  name: string;
+  description?: string;
+  image_filename?: string;
+  background_image_filename?: string;
+}
+
+export interface BowlCategoryUpdateInput {
+  code?: string;
+  name?: string;
+  description?: string;
+  image_filename?: string;
+  background_image_filename?: string;
+}
+
+export interface PaginatedBowlCategories {
+  items: BowlCategory[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
