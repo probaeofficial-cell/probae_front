@@ -241,7 +241,7 @@ export default function IngredientsPage() {
                   return (
                     <div
                       key={item.id}
-                      onClick={() => router.push(`/admin/ingredients/${item.ulid}`)}
+                      onClick={() => router.push(`/admin/ingredients/preview/${item.ulid}`)}
                       className="bg-white rounded-[32px] p-6 shadow-sm border border-neutral-100/50 flex flex-col gap-4 relative group cursor-pointer hover:shadow-md transition-shadow"
                     >
                       {/* Image section with ID overlay and action overlays */}
