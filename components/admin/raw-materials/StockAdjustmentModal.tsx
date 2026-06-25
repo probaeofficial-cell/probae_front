@@ -158,9 +158,9 @@ export function StockAdjustmentModal({ isOpen, onClose, material, onSuccess, sys
                   <Plus className="w-6 h-6" />
                 </button>
             </div>
-            <div className="text-sm font-bold mt-2">
-              <span className="text-neutral-400">Total Stock: </span>
-              <span className={totalStock < 0 ? "text-red-500" : "text-[#6b21a8]"}>{totalStock}{material.unit}</span>
+            <div className="text-lg font-bold mt-4 flex items-center justify-center gap-1.5">
+              <span className="text-neutral-400">Total Stock:</span>
+              <span className={totalStock < 0 ? "text-red-500 font-black" : "text-[#6b21a8] font-black"}>{totalStock}{material.unit}</span>
             </div>
           </div>
 
