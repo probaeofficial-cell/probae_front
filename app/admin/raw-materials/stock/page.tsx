@@ -64,13 +64,12 @@ export default function StockManagementPage() {
 
   const fetchSystemSettings = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1"}/system/settings`);
-      if (response.ok) {
-        const data = await response.json();
-        setSystemSettings(data);
+      const data = await endpoints.settings.getSystemSettings();
+      if (data && data.R2_BASE_URL !== undefined) {
+        setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
       }
     } catch (error) {
-      console.error("Failed to fetch settings", error);
+      console.error("Failed to fetch system settings:", error);
     }
   };
 
@@ -169,7 +168,11 @@ export default function StockManagementPage() {
                     <div
                       key={material.id}
                       onClick={(e) => handleOpenAdjustment(material, e)}
-                      className="bg-white rounded-[100px] p-6 shadow-sm border border-neutral-100/50 flex flex-col items-center justify-between text-center cursor-pointer transition-all hover:translate-y-[-4px] hover:shadow-md aspect-[10/16] min-h-[360px] w-full max-w-[210px] mx-auto relative group"
+                      className={`bg-white rounded-[100px] p-6 flex flex-col items-center justify-between text-center cursor-pointer transition-all hover:translate-y-[-4px] aspect-[10/16] min-h-[360px] w-full max-w-[210px] mx-auto relative group ${
+                        isRunningLow 
+                          ? 'border-2 border-red-500 shadow-[0_4px_20px_rgba(239,68,68,0.15)] hover:shadow-[0_8px_30px_rgba(239,68,68,0.25)]' 
+                          : 'border border-neutral-100/50 shadow-sm hover:shadow-md'
+                      }`}
                     >
                       {/* Top Capsule overlap circular image */}
                       <div className={`w-32 h-32 rounded-full overflow-hidden flex items-center justify-center border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.06)] relative bg-gradient-to-br ${getGradientForImage(material.id)} shrink-0`}>
@@ -194,7 +197,7 @@ export default function StockManagementPage() {
                         </h4>
                         
                         {/* Status Pill */}
-                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide mb-3 ${isRunningLow ? "bg-black text-white" : "bg-neutral-100 text-neutral-500"}`}>
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide mb-3 ${isRunningLow ? "bg-red-500 text-white" : "bg-neutral-100 text-neutral-500"}`}>
                           {isRunningLow ? "Running Low" : "In Stock"}
                         </div>
 

@@ -298,6 +298,9 @@ export const endpoints = {
   },
 
   rawMaterials: {
+    getLowStockCount: async (): Promise<{ count: number }> => {
+      return await api.get<{ count: number }>("/raw-materials/metrics/low-stock-count");
+    },
     getRawMaterials: async (page: number, size: number, search?: string): Promise<PaginatedRawMaterials> => {
       let query = `?page=${page}&size=${size}`;
       if (search) {
@@ -322,6 +325,9 @@ export const endpoints = {
     },
     adjustStock: async (ulid: string, data: { quantity_change: number; description?: string }): Promise<RawMaterial> => {
       return await api.post<RawMaterial>(`/raw-materials/${ulid}/stock`, data);
+    },
+    updateStockThreshold: async (ulid: string, data: { stock_threshold: number }): Promise<RawMaterial> => {
+      return await api.patch<RawMaterial>(`/raw-materials/${ulid}/stock-threshold`, data);
     },
     getStockLogs: async (ulid: string): Promise<any[]> => {
       return await api.get<any[]>(`/raw-materials/${ulid}/stock-logs`);

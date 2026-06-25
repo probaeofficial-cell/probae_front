@@ -10,6 +10,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
+import { endpoints } from "@/lib/apiService";
 
 export function Sidebar() {
   const router = useRouter();
@@ -27,6 +28,19 @@ export function Sidebar() {
         setRawMaterialsOpen(true);
       }
     }
+  }, [pathname]);
+
+  const [lowStockCount, setLowStockCount] = useState<number>(0);
+  useEffect(() => {
+    const fetchLowStockCount = async () => {
+      try {
+        const data = await endpoints.rawMaterials.getLowStockCount();
+        setLowStockCount(data.count);
+      } catch (err) {
+        console.error("Failed to fetch low stock count", err);
+      }
+    };
+    fetchLowStockCount();
   }, [pathname]);
 
   const BowlIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -198,11 +212,14 @@ export function Sidebar() {
                                 />
                                 <span className="text-sm">{sub.label}</span>
                               </div>
-                              {sub.badge && (
-                                <span className="bg-white text-black text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                                  {sub.badge}
-                                </span>
-                              )}
+                              {(() => {
+                                const currentBadge = subKey === "stockMgt" ? (lowStockCount > 0 ? lowStockCount : undefined) : sub.badge;
+                                return currentBadge !== undefined ? (
+                                  <span className="bg-white text-black text-[10px] font-bold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center">
+                                    {currentBadge}
+                                  </span>
+                                ) : null;
+                              })()}
                             </button>
                           </li>
                         );

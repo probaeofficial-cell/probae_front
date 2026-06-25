@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Minus, Plus, Loader2 } from "lucide-react";
+import { X, Minus, Plus, Loader2, Edit2, Check } from "lucide-react";
 import { RawMaterial } from "@/lib/types";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
@@ -17,8 +17,26 @@ export function StockAdjustmentModal({ isOpen, onClose, material, onSuccess, sys
   const [adjustment, setAdjustment] = useState<number>(0);
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditingThreshold, setIsEditingThreshold] = useState(false);
+  const [thresholdValue, setThresholdValue] = useState(Number(material.stock_threshold || 0));
+  const [isUpdatingThreshold, setIsUpdatingThreshold] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleUpdateThreshold = async () => {
+    setIsUpdatingThreshold(true);
+    try {
+      const updated = await endpoints.rawMaterials.updateStockThreshold(material.ulid, {
+        stock_threshold: thresholdValue
+      });
+      onSuccess(updated);
+      setIsEditingThreshold(false);
+    } catch (err) {
+      console.error("Failed to update threshold", err);
+    } finally {
+      setIsUpdatingThreshold(false);
+    }
+  };
 
   const handleIncrement = () => setAdjustment(prev => prev + 1);
   const handleDecrement = () => setAdjustment(prev => prev - 1);
@@ -80,9 +98,36 @@ export function StockAdjustmentModal({ isOpen, onClose, material, onSuccess, sys
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-green-50 rounded-2xl p-4 flex flex-col items-center justify-center border border-green-100/50">
+            <div className="bg-green-50 rounded-2xl p-4 flex flex-col items-center justify-center border border-green-100/50 relative group">
                 <span className="text-xs font-bold text-green-600/70 uppercase tracking-wider mb-1">Threshold</span>
-                <span className="text-xl font-black text-green-700">{Number(material.stock_threshold || 0)}{material.unit}</span>
+                
+                {isEditingThreshold ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input 
+                      type="number"
+                      value={thresholdValue}
+                      onChange={(e) => setThresholdValue(Number(e.target.value))}
+                      className="w-16 h-8 text-center font-black text-green-700 bg-white border border-green-200 rounded-lg focus:outline-none focus:border-green-400"
+                    />
+                    <button 
+                      onClick={handleUpdateThreshold}
+                      disabled={isUpdatingThreshold}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-200 text-green-700 hover:bg-green-300 disabled:opacity-50"
+                    >
+                      {isUpdatingThreshold ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-black text-green-700">{Number(material.stock_threshold || 0)}{material.unit}</span>
+                    <button 
+                      onClick={() => setIsEditingThreshold(true)}
+                      className="w-6 h-6 flex items-center justify-center rounded-md bg-green-100 text-green-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-green-200"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
             </div>
             <div className="bg-green-50 rounded-2xl p-4 flex flex-col items-center justify-center border border-green-100/50">
                 <span className="text-xs font-bold text-green-600/70 uppercase tracking-wider mb-1">Current Stock</span>
