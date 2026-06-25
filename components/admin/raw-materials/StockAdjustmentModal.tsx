@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Minus, Plus, Loader2, Edit2, Check } from "lucide-react";
 import { RawMaterial } from "@/lib/types";
 import { endpoints } from "@/lib/apiService";
@@ -20,6 +20,15 @@ export function StockAdjustmentModal({ isOpen, onClose, material, onSuccess, sys
   const [isEditingThreshold, setIsEditingThreshold] = useState(false);
   const [thresholdValue, setThresholdValue] = useState(Number(material.stock_threshold || 0));
   const [isUpdatingThreshold, setIsUpdatingThreshold] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setAdjustment(0);
+      setDescription("");
+      setIsEditingThreshold(false);
+      setThresholdValue(Number(material.stock_threshold || 0));
+    }
+  }, [isOpen, material]);
 
   if (!isOpen) return null;
 

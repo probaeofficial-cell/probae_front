@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Loader2, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
-import { RawMaterial } from "@/lib/types";
+import { RawMaterial, StockLog } from "@/lib/types";
 import { endpoints } from "@/lib/apiService";
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function StockLogModal({ isOpen, onClose, material }: Props) {
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<StockLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export function StockLogModal({ isOpen, onClose, material }: Props) {
                                                 {isPositive ? "Added Stock" : isNegative ? "Removed Stock" : "Adjusted Stock"}
                                             </p>
                                             <p className="text-xs font-medium text-neutral-400">
-                                                {new Date(log.created_at).toLocaleString()}
+                                                {new Date(log.created_at).toLocaleString()} {log.created_by ? `• by ${log.created_by.full_name || log.created_by.email}` : ""}
                                             </p>
                                             {log.description && (
                                                 <p className="text-[11px] font-medium text-neutral-500 mt-1">{log.description}</p>

@@ -6,7 +6,7 @@
  * in-memory token storage (per architecture rules), automatic token refresh
  * on 401 Unauthorized responses (with queueing logic), and standardized error handling.
  */
-import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories } from "./types";
+import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories, StockLog } from "./types";
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
@@ -329,8 +329,8 @@ export const endpoints = {
     updateStockThreshold: async (ulid: string, data: { stock_threshold: number }): Promise<RawMaterial> => {
       return await api.patch<RawMaterial>(`/raw-materials/${ulid}/stock-threshold`, data);
     },
-    getStockLogs: async (ulid: string): Promise<any[]> => {
-      return await api.get<any[]>(`/raw-materials/${ulid}/stock-logs`);
+    getStockLogs: async (ulid: string): Promise<StockLog[]> => {
+      return await api.get<StockLog[]>(`/raw-materials/${ulid}/stock-logs`);
     },
 
   },

@@ -76,6 +76,21 @@ export interface RawMaterial {
   updated_at: string;
 }
 
+export interface UserMini {
+  id: number;
+  full_name?: string | null;
+  email: string;
+}
+
+export interface StockLog {
+  ulid: string;
+  quantity_change: number;
+  previous_stock: number;
+  new_stock: number;
+  description?: string | null;
+  created_at: string;
+  created_by?: UserMini | null;
+}
 
 export interface RawMaterialCreateInput {
   name: string;
