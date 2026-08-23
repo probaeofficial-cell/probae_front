@@ -45,6 +45,7 @@ export function ProbaeWordmark() {
         height={45}
         priority
         className="object-contain select-none"
+        style={{ width: "auto", height: "auto" }}
       />
     </div>
   );

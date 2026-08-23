@@ -4,6 +4,7 @@ import {
   Layers,
   Coffee, // using Coffee or Salad for bowl as fallback if bowl doesn't exist
   Package,
+  Box,
   Users,
   CircleUser,
   Settings,
@@ -32,6 +33,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     icon: Wheat,
     active: true, // For demo purposes, matching the screenshot
     subItems: {
+      vendors: { label: "Vendors", dotColor: "bg-purple-500", path: "/admin/raw-materials/vendors" },
       categories: { label: "Categories", dotColor: "bg-blue-500", path: "/admin/raw-materials/categories" },
       costMgt: { label: "Cost MGT", dotColor: "bg-yellow-500", path: "/admin/raw-materials/cost-management" },
       calorieMgt: { label: "Calorie MGT", dotColor: "bg-red-500", path: "/admin/raw-materials/calorie-management" },
@@ -44,7 +46,16 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     icon: Coffee,
     subItems: {
       categories: { label: "Categories", dotColor: "bg-blue-500", path: "/admin/bowls/categories" },
+      builder: { label: "Bowl Builder", dotColor: "bg-pink-500", path: "/admin/bowls/builder" },
       list: { label: "Bowl List", dotColor: "bg-purple-500", path: "/admin/bowls" },
+    },
+  },
+  packaging: {
+    label: "Packaging",
+    icon: Box,
+    subItems: {
+      components: { label: "Components", dotColor: "bg-orange-500", path: "/admin/packaging/components" },
+      bundles: { label: "Bundles", dotColor: "bg-teal-500", path: "/admin/packaging/bundles" },
     },
   },
   orders: { label: "Orders", icon: Package, path: "/admin/orders" },

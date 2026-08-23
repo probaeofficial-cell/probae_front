@@ -24,6 +24,35 @@ export interface UserProfile {
   profile_picture?: Document | null;
 }
 
+// ─── Vendor Types ──────────────────────────────────────────────────────────────
+export interface Vendor {
+  id: number;
+  ulid: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorCreateInput {
+  name: string;
+  description?: string | null;
+}
+
+export interface VendorUpdateInput {
+  name?: string;
+  description?: string | null;
+}
+
+export interface PaginatedVendors {
+  items: Vendor[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
 // ─── Raw Material Category Types ────────────────────────────────────────────────
 export interface RawMaterialCategory {
   id: number;
@@ -60,6 +89,11 @@ export interface RawMaterial {
   name: string;
   description?: string | null;
   price: number;
+  standard_price?: number | null;
+  actual_price?: number | null;
+  yield_grams?: number | null;
+  yield_percentage?: number | null;
+  previous_price?: number | null;
   unit: UnitType;
   image_filename?: string | null;
   background_image_filename?: string | null;
@@ -70,6 +104,7 @@ export interface RawMaterial {
   fat: number;
   micros: string[];
   category?: RawMaterialCategory | null;
+  vendor?: Vendor | null;
   current_stock: number;
   stock_threshold: number;
   created_at: string;
@@ -96,22 +131,33 @@ export interface RawMaterialCreateInput {
   name: string;
   description?: string | null;
   price: number;
+  standard_price?: number | null;
+  actual_price?: number | null;
+  yield_grams?: number | null;
+  yield_percentage?: number | null;
+  previous_price?: number | null;
   unit: UnitType;
   image_filename?: string | null;
   background_image_filename?: string | null;
-  calories?: number;
-  protein?: number;
-  carbs?: number;
-  fiber?: number;
-  fat?: number;
-  micros?: string[];
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fiber?: number | null;
+  fat?: number | null;
+  micros?: string[] | null;
   category_ulid?: string | null;
+  vendor_ulid?: string | null;
 }
 
 export interface RawMaterialUpdateInput {
   name?: string;
   description?: string | null;
   price?: number;
+  standard_price?: number | null;
+  actual_price?: number | null;
+  yield_grams?: number | null;
+  yield_percentage?: number | null;
+  previous_price?: number | null;
   unit?: UnitType;
   image_filename?: string | null;
   background_image_filename?: string | null;
@@ -122,6 +168,19 @@ export interface RawMaterialUpdateInput {
   fat?: number;
   micros?: string[];
   category_ulid?: string | null;
+  vendor_ulid?: string | null;
+}
+
+export interface CostLog {
+  ulid: string;
+  previous_standard_price?: number | null;
+  new_standard_price?: number | null;
+  previous_actual_price?: number | null;
+  new_actual_price?: number | null;
+  previous_yield_grams?: number | null;
+  new_yield_grams?: number | null;
+  created_at: string;
+  created_by?: UserMini | null;
 }
 
 export interface PaginatedRawMaterials {
@@ -249,3 +308,145 @@ export interface PaginatedBowlCategories {
   page_size: number;
   total_pages: number;
 }
+
+// ─── Packaging Types ────────────────────────────────────────────────────────
+
+export interface PackagingComponent {
+  id: number;
+  ulid: string;
+  name: string;
+  cost: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PackagingComponentCreateInput {
+  name: string;
+  cost: number;
+}
+
+export interface PackagingComponentUpdateInput {
+  name?: string;
+  cost?: number;
+}
+
+export interface PaginatedPackagingComponents {
+  items: PackagingComponent[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
+export interface PackagingItemLink {
+  id: number;
+  packaging_id: number;
+  component_id: number;
+  quantity: number;
+  component: PackagingComponent;
+}
+
+export interface PackagingItemLinkInput {
+  component_id: number;
+  quantity: number;
+}
+
+export interface Packaging {
+  id: number;
+  ulid: string;
+  name: string;
+  total_cost: number;
+  created_at: string;
+  updated_at: string;
+  components: PackagingItemLink[];
+}
+
+export interface PackagingCreateInput {
+  name: string;
+  components: PackagingItemLinkInput[];
+}
+
+export interface PackagingUpdateInput {
+  name?: string;
+  components?: PackagingItemLinkInput[];
+}
+
+export interface PaginatedPackaging {
+  items: Packaging[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
+// ─── Updated Bowl Types ──────────────────────────────────────────────────────
+
+export type BowlType = "STANDARD" | "CUSTOM";
+export type BowlSection = "DRESSING" | "BLENDS" | "ADD_ONS" | "PROTEIN" | "CARB" | "FIBER" | "EXTRA_PROTEIN";
+
+export interface BowlIngredient {
+  id: number;
+  bowl_id: number;
+  ingredient_id: number;
+  section_name: BowlSection;
+  weight_g_or_ml: number;
+  ingredient?: Ingredient;
+}
+
+export interface BowlIngredientInput {
+  ingredient_id: number;
+  section_name: BowlSection;
+  weight_g_or_ml: number;
+}
+
+export interface Bowl {
+  id: number;
+  ulid: string;
+  code?: string;
+  name: string;
+  description?: string;
+  bowl_type: BowlType;
+  status: boolean;
+  raw_cost: number;
+  fixed_cost: number;
+  total_cost: number;
+  category_id: number;
+  packaging_id?: number | null;
+  created_at: string;
+  updated_at: string;
+  ingredients: BowlIngredient[];
+}
+
+export interface BowlCreateInput {
+  code?: string;
+  name: string;
+  description?: string;
+  bowl_type: BowlType;
+  status?: boolean;
+  fixed_cost?: number;
+  category_id: number;
+  packaging_id?: number | null;
+  ingredients: BowlIngredientInput[];
+}
+
+export interface BowlUpdateInput {
+  code?: string;
+  name?: string;
+  description?: string;
+  bowl_type?: BowlType;
+  status?: boolean;
+  fixed_cost?: number;
+  category_id?: number;
+  packaging_id?: number | null;
+  ingredients?: BowlIngredientInput[];
+}
+
+export interface PaginatedBowls {
+  items: Bowl[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
+export interface PaginatedCostLogs { items: CostLog[]; total: number; page: number; size: number; }

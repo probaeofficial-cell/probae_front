@@ -16,18 +16,28 @@ export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [rawMaterialsOpen, setRawMaterialsOpen] = useState(true);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
+    rawMaterials: true,
+  });
 
   // Auto-expand sections when an active sub-item is detected
   useEffect(() => {
-    if (MAIN_MENU.rawMaterials?.subItems) {
-      const hasActiveSub = Object.values(MAIN_MENU.rawMaterials.subItems).some(
-        (sub) => sub.path && (pathname === sub.path || pathname.startsWith(sub.path + "/"))
-      );
-      if (hasActiveSub) {
-        setRawMaterialsOpen(true);
-      }
-    }
+    setOpenMenus((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      Object.entries(MAIN_MENU).forEach(([menuKey, item]) => {
+        if (item.subItems) {
+          const hasActiveSub = Object.values(item.subItems).some(
+            (sub) => sub.path && (pathname === sub.path || pathname.startsWith(sub.path + "/"))
+          );
+          if (hasActiveSub && !next[menuKey]) {
+            next[menuKey] = true;
+            changed = true;
+          }
+        }
+      });
+      return changed ? next : prev;
+    });
   }, [pathname]);
 
   const [lowStockCount, setLowStockCount] = useState<number>(0);
@@ -75,6 +85,7 @@ export function Sidebar() {
               height={28}
               priority
               className="object-contain"
+              style={{ width: "auto", height: "auto" }}
             />
           </div>
         ) : (
@@ -124,7 +135,7 @@ export function Sidebar() {
             {Object.entries(MAIN_MENU).map(([menuKey, item]) => {
               const Icon = item.label === "Bowls" ? BowlIcon : item.icon;
               const hasSub = !!item.subItems;
-              const isOpen = hasSub && rawMaterialsOpen && !collapsed;
+              const isOpen = hasSub && openMenus[menuKey] && !collapsed;
 
               // Check if item path matches current path, or if any sub-items match
               const isItemActive = item.path
@@ -141,7 +152,7 @@ export function Sidebar() {
                     type="button"
                     onClick={() => {
                       if (hasSub && !collapsed) {
-                        setRawMaterialsOpen(!rawMaterialsOpen);
+                        setOpenMenus((prev) => ({ ...prev, [menuKey]: !prev[menuKey] }));
                       } else if (!hasSub && item.path) {
                         router.push(item.path);
                       }
@@ -165,12 +176,13 @@ export function Sidebar() {
                       )}
                     </div>
 
-                    {!collapsed && hasSub &&
-                      (isOpen ? (
-                        <ChevronUp className="w-4 h-4 text-neutral-300" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-neutral-400" />
-                      ))}
+                    {!collapsed && hasSub && (
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-300 ${
+                          isOpen ? "rotate-180 text-neutral-300" : "text-neutral-400"
+                        }`}
+                      />
+                    )}
 
                     {!collapsed && item.badge && !hasSub && (
                       <span className="bg-white text-black text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
@@ -187,44 +199,52 @@ export function Sidebar() {
                   )}
 
                   {/* Sub-items */}
-                  {hasSub && isOpen && !collapsed && (
-                    <ul className="mt-1 mb-2 space-y-1">
-                      {Object.entries(item.subItems!).map(([subKey, sub]) => {
-                        const isSubActive = sub.path
-                          ? pathname === sub.path || pathname.startsWith(sub.path + "/")
-                          : false;
-                        return (
-                          <li key={subKey}>
-                            <button
-                              type="button"
-                              onClick={() => sub.path && router.push(sub.path)}
-                              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors pl-11 ${
-                                isSubActive
-                                  ? "text-white bg-[#7c26d9]/15 font-semibold"
-                                  : "text-neutral-400 hover:text-white hover:bg-[#2a2a2a]"
-                              }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <span
-                                  className={`w-1.5 h-1.5 rounded-full ${sub.dotColor} ${
-                                    isSubActive ? "ring-2 ring-[#7c26d9]/30" : ""
+                  {hasSub && !collapsed && (
+                    <div
+                      className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                        isOpen ? "grid-rows-[1fr] opacity-100 mt-1 mb-2" : "grid-rows-[0fr] opacity-0"
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <ul className="space-y-1">
+                          {Object.entries(item.subItems!).map(([subKey, sub]) => {
+                            const isSubActive = sub.path
+                              ? pathname === sub.path || pathname.startsWith(sub.path + "/")
+                              : false;
+                            return (
+                              <li key={subKey}>
+                                <button
+                                  type="button"
+                                  onClick={() => sub.path && router.push(sub.path)}
+                                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors pl-11 ${
+                                    isSubActive
+                                      ? "text-white bg-[#7c26d9]/15 font-semibold"
+                                      : "text-neutral-400 hover:text-white hover:bg-[#2a2a2a]"
                                   }`}
-                                />
-                                <span className="text-sm">{sub.label}</span>
-                              </div>
-                              {(() => {
-                                const currentBadge = subKey === "stockMgt" ? (lowStockCount > 0 ? lowStockCount : undefined) : sub.badge;
-                                return currentBadge !== undefined ? (
-                                  <span className="bg-white text-black text-[10px] font-bold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center">
-                                    {currentBadge}
-                                  </span>
-                                ) : null;
-                              })()}
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full ${sub.dotColor} ${
+                                        isSubActive ? "ring-2 ring-[#7c26d9]/30" : ""
+                                      }`}
+                                    />
+                                    <span className="text-sm">{sub.label}</span>
+                                  </div>
+                                  {(() => {
+                                    const currentBadge = subKey === "stockMgt" ? (lowStockCount > 0 ? lowStockCount : undefined) : sub.badge;
+                                    return currentBadge !== undefined ? (
+                                      <span className="bg-white text-black text-[10px] font-bold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center">
+                                        {currentBadge}
+                                      </span>
+                                    ) : null;
+                                  })()}
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    </div>
                   )}
 
                   {/* Collapsed sub-items */}

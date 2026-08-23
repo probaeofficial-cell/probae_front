@@ -6,7 +6,7 @@
  * in-memory token storage (per architecture rules), automatic token refresh
  * on 401 Unauthorized responses (with queueing logic), and standardized error handling.
  */
-import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories, StockLog, BowlCategory, BowlCategoryCreateInput, BowlCategoryUpdateInput, PaginatedBowlCategories } from "./types";
+import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories, StockLog, BowlCategory, BowlCategoryCreateInput, BowlCategoryUpdateInput, PaginatedBowlCategories, PaginatedPackagingComponents, PackagingComponent, PackagingComponentCreateInput, PackagingComponentUpdateInput, PaginatedPackaging, Packaging, PackagingCreateInput, PackagingUpdateInput, PaginatedBowls, Bowl, BowlCreateInput, BowlUpdateInput, Vendor, VendorCreateInput, VendorUpdateInput, PaginatedVendors } from "./types";
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
@@ -332,7 +332,10 @@ export const endpoints = {
     getStockLogs: async (ulid: string): Promise<StockLog[]> => {
       return await api.get<StockLog[]>(`/raw-materials/${ulid}/stock-logs`);
     },
-
+    getCostLogs: async (ulid: string, page: number = 1, size: number = 20): Promise<import("./types").PaginatedCostLogs> => {
+      let query = `?page=${page}&size=${size}`;
+      return await api.get<import("./types").PaginatedCostLogs>(`/raw-materials/${ulid}/cost-logs${query}`);
+    },
   },
 
   rawMaterialCategories: {
@@ -407,6 +410,91 @@ export const endpoints = {
     },
     deleteBowlCategory: async (ulid: string): Promise<void> => {
       return await api.del<void>(`/bowl-categories/${ulid}`);
+    },
+  },
+
+  vendors: {
+    getVendors: async (page: number, size: number, search?: string): Promise<PaginatedVendors> => {
+      let query = `?page=${page}&page_size=${size}`;
+      if (search) {
+        query += `&search=${encodeURIComponent(search)}`;
+      }
+      return await api.get<PaginatedVendors>(`/vendors${query}`);
+    },
+    getVendor: async (ulid: string): Promise<Vendor> => {
+      return await api.get<Vendor>(`/vendors/${ulid}`);
+    },
+    createVendor: async (data: VendorCreateInput): Promise<Vendor> => {
+      return await api.post<Vendor>("/vendors", data);
+    },
+    updateVendor: async (ulid: string, data: VendorUpdateInput): Promise<Vendor> => {
+      return await api.put<Vendor>(`/vendors/${ulid}`, data);
+    },
+    deleteVendor: async (ulid: string): Promise<void> => {
+      return await api.del<void>(`/vendors/${ulid}`);
+    },
+  },
+
+  packagingComponents: {
+    getComponents: async (page: number, size: number, search?: string): Promise<PaginatedPackagingComponents> => {
+      let query = `?page=${page}&page_size=${size}`;
+      if (search) {
+        query += `&search=${encodeURIComponent(search)}`;
+      }
+      return await api.get<PaginatedPackagingComponents>(`/packaging/components${query}`);
+    },
+    createComponent: async (data: PackagingComponentCreateInput): Promise<PackagingComponent> => {
+      return await api.post<PackagingComponent>("/packaging/components", data);
+    },
+    updateComponent: async (ulid: string, data: PackagingComponentUpdateInput): Promise<PackagingComponent> => {
+      return await api.put<PackagingComponent>(`/packaging/components/${ulid}`, data);
+    },
+    deleteComponent: async (ulid: string): Promise<void> => {
+      return await api.del<void>(`/packaging/components/${ulid}`);
+    },
+  },
+
+  packaging: {
+    getBundles: async (page: number, size: number, search?: string): Promise<PaginatedPackaging> => {
+      let query = `?page=${page}&page_size=${size}`;
+      if (search) {
+        query += `&search=${encodeURIComponent(search)}`;
+      }
+      return await api.get<PaginatedPackaging>(`/packaging${query}`);
+    },
+    getBundle: async (ulid: string): Promise<Packaging> => {
+      return await api.get<Packaging>(`/packaging/${ulid}`);
+    },
+    createBundle: async (data: PackagingCreateInput): Promise<Packaging> => {
+      return await api.post<Packaging>("/packaging", data);
+    },
+    updateBundle: async (ulid: string, data: PackagingUpdateInput): Promise<Packaging> => {
+      return await api.put<Packaging>(`/packaging/${ulid}`, data);
+    },
+    deleteBundle: async (ulid: string): Promise<void> => {
+      return await api.del<void>(`/packaging/${ulid}`);
+    },
+  },
+
+  bowls: {
+    getBowls: async (page: number, size: number, search?: string): Promise<PaginatedBowls> => {
+      let query = `?page=${page}&page_size=${size}`;
+      if (search) {
+        query += `&search=${encodeURIComponent(search)}`;
+      }
+      return await api.get<PaginatedBowls>(`/bowls${query}`);
+    },
+    getBowl: async (ulid: string): Promise<Bowl> => {
+      return await api.get<Bowl>(`/bowls/${ulid}`);
+    },
+    createBowl: async (data: BowlCreateInput): Promise<Bowl> => {
+      return await api.post<Bowl>("/bowls", data);
+    },
+    updateBowl: async (ulid: string, data: BowlUpdateInput): Promise<Bowl> => {
+      return await api.put<Bowl>(`/bowls/${ulid}`, data);
+    },
+    deleteBowl: async (ulid: string): Promise<void> => {
+      return await api.del<void>(`/bowls/${ulid}`);
     },
   },
 };

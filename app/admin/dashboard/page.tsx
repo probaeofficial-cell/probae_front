@@ -71,8 +71,8 @@ function RetentionGauge({ value, dark = false }: { value: number; dark?: boolean
   const radius = 42;
   const cx = 56;
   const cy = 56;
-  const circumference = 2 * Math.PI * radius;
-  const filled = (value / 100) * circumference;
+  const circumference = Number((2 * Math.PI * radius).toFixed(2));
+  const filled = Number(((value / 100) * circumference).toFixed(2));
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: 120, height: 120 }}>
@@ -124,10 +124,10 @@ function SalesGauge({ value }: { value: number }) {
         {Array.from({ length: bars }).map((_, i) => {
           const angle = 180 - (i / (bars - 1)) * 180;
           const rad = (angle * Math.PI) / 180;
-          const x1 = cx + (radius - 14) * Math.cos(rad);
-          const y1 = cy - (radius - 14) * Math.sin(rad);
-          const x2 = cx + (radius + 2) * Math.cos(rad);
-          const y2 = cy - (radius + 2) * Math.sin(rad);
+          const x1 = Number((cx + (radius - 14) * Math.cos(rad)).toFixed(2));
+          const y1 = Number((cy - (radius - 14) * Math.sin(rad)).toFixed(2));
+          const x2 = Number((cx + (radius + 2) * Math.cos(rad)).toFixed(2));
+          const y2 = Number((cy - (radius + 2) * Math.sin(rad)).toFixed(2));
           const isActive = i / bars < value / 100;
           return (
             <line
@@ -325,10 +325,10 @@ function CategoryDonut() {
         const startRad = (seg.start * Math.PI) / 180;
         const endRad = (seg.end * Math.PI) / 180;
         
-        const x1 = cx + R * Math.cos(startRad);
-        const y1 = cy + R * Math.sin(startRad);
-        const x2 = cx + R * Math.cos(endRad);
-        const y2 = cy + R * Math.sin(endRad);
+        const x1 = Number((cx + R * Math.cos(startRad)).toFixed(2));
+        const y1 = Number((cy + R * Math.sin(startRad)).toFixed(2));
+        const x2 = Number((cx + R * Math.cos(endRad)).toFixed(2));
+        const y2 = Number((cy + R * Math.sin(endRad)).toFixed(2));
         
         const largeArc = (seg.end - seg.start) > 180 ? 1 : 0;
         

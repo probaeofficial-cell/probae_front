@@ -16,7 +16,9 @@ import {
   ChevronRight,
   Wheat,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
@@ -28,6 +30,7 @@ import { RawMaterial, UnitType, RawMaterialCategory } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { SelectCategoryModal } from "@/components/admin/SelectCategoryModal";
+import { SelectVendorModal } from "@/components/admin/SelectVendorModal";
 
 export default function CostManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -54,12 +57,18 @@ export default function CostManagementPage() {
   const [formState, setFormState] = useState({
     name: "",
     price: "" as number | "",
+    standard_price: "" as number | "",
+    actual_price: "" as number | "",
+    yield_grams: "" as number | "",
+    yield_percentage: "" as number | "",
     unit: "kg" as UnitType,
     description: "",
     image_filename: null as string | null,
     background_image_filename: null as string | null,
     category_ulid: null as string | null,
     category_name: null as string | null,
+    vendor_ulid: null as string | null,
+    vendor_name: null as string | null,
   });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBackgroundUrl, setPreviewBackgroundUrl] = useState<string | null>(null);
@@ -77,12 +86,18 @@ export default function CostManagementPage() {
   // Detail View State
   const [selectedMaterial, setSelectedMaterial] = useState<RawMaterial | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [costLogs, setCostLogs] = useState<import("@/lib/types").CostLog[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [costLogPage, setCostLogPage] = useState(1);
+  const [totalCostLogs, setTotalCostLogs] = useState(0);
+  const costLogPageSize = 10;
 
   // Notifications State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   // Categories State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
 
   // ─── Side Effects ──────────────────────────────────────────────────────────
   // Auth validation
@@ -118,6 +133,41 @@ export default function CostManagementPage() {
 
     return () => clearTimeout(handler);
   }, [searchQuery]);
+
+  // Auto-calculate Yield Percentage and Actual Price
+  useEffect(() => {
+    if (formState.standard_price !== "" && formState.yield_grams !== "") {
+      const sp = Number(formState.standard_price);
+      const yg = Number(formState.yield_grams);
+      // For kg/l base weight is 1000g/ml, for g/ml base weight is 1
+      const baseUnitWeight = formState.unit === "g" || formState.unit === "ml" ? 1 : 1000;
+      
+      if (sp > 0 && yg > 0) {
+        const yieldRatio = yg / baseUnitWeight;
+        const yieldPerc = yieldRatio * 100;
+        const actualP = sp / yieldRatio;
+        
+        setFormState(prev => {
+          if (prev.yield_percentage == yieldPerc.toFixed(2) && prev.actual_price == actualP.toFixed(2)) return prev;
+          return {
+            ...prev,
+            yield_percentage: yieldPerc.toFixed(2),
+            actual_price: actualP.toFixed(2)
+          };
+        });
+      }
+    } else {
+      // Clear calculated fields if inputs are empty
+      setFormState(prev => {
+        if (prev.yield_percentage === "" && prev.actual_price === "") return prev;
+        return {
+          ...prev,
+          yield_percentage: "",
+          actual_price: ""
+        };
+      });
+    }
+  }, [formState.standard_price, formState.yield_grams, formState.unit]);
 
   // Load Raw Materials
   const fetchMaterials = useCallback(async () => {
@@ -270,12 +320,18 @@ export default function CostManagementPage() {
     setFormState({
       name: "",
       price: "",
+      standard_price: "",
+      actual_price: "",
+      yield_grams: "",
+      yield_percentage: "",
       unit: "kg",
       description: "",
       image_filename: null,
       background_image_filename: null,
       category_ulid: null,
       category_name: null,
+      vendor_ulid: null,
+      vendor_name: null,
     });
     setPreviewUrl(null);
     setPreviewBackgroundUrl(null);
@@ -289,12 +345,18 @@ export default function CostManagementPage() {
     setFormState({
       name: material.name,
       price: material.price,
+      standard_price: material.standard_price ?? material.price,
+      actual_price: material.actual_price ?? "",
+      yield_grams: material.yield_grams ?? "",
+      yield_percentage: material.yield_percentage ?? "",
       unit: material.unit,
       description: material.description || "",
       image_filename: material.image_filename || null,
       background_image_filename: material.background_image_filename || null,
       category_ulid: material.category?.ulid || null,
       category_name: material.category?.name || null,
+      vendor_ulid: material.vendor?.ulid || null,
+      vendor_name: material.vendor?.name || null,
     });
     setPreviewUrl(material.image_filename ? getMediaUrl(systemSettings.R2_BASE_URL, material.image_filename) : null);
     setPreviewBackgroundUrl(getMediaUrl(systemSettings?.R2_BASE_URL, material.background_image_filename));
@@ -310,8 +372,9 @@ export default function CostManagementPage() {
       showToast("Please enter a name", "error");
       return;
     }
-    if (formState.price === "" || Number(formState.price) <= 0) {
-      showToast("Please enter a valid price greater than 0", "error");
+    // Note: We check formState.standard_price now.
+    if (formState.standard_price === "" || Number(formState.standard_price) <= 0) {
+      showToast("Please enter a valid standard price greater than 0", "error");
       return;
     }
 
@@ -319,12 +382,17 @@ export default function CostManagementPage() {
     
     const payload = {
       name: formState.name,
-      price: Number(formState.price),
+      price: Number(formState.standard_price), // Legacy
+      standard_price: Number(formState.standard_price),
+      actual_price: formState.actual_price !== "" ? Number(formState.actual_price) : null,
+      yield_grams: formState.yield_grams !== "" ? Number(formState.yield_grams) : null,
+      yield_percentage: formState.yield_percentage !== "" ? Number(formState.yield_percentage) : null,
       unit: formState.unit,
       description: formState.description || null,
       image_filename: formState.image_filename,
       background_image_filename: formState.background_image_filename,
       category_ulid: formState.category_ulid || null,
+      vendor_ulid: formState.vendor_ulid || null,
     };
 
     try {
@@ -375,14 +443,41 @@ export default function CostManagementPage() {
   };
 
   // Detail View toggle
-  const openDetailView = (material: RawMaterial) => {
+  const fetchCostLogs = useCallback(async (ulid: string, page: number) => {
+    setIsLoadingLogs(true);
+    try {
+      const paginatedLogs = await endpoints.rawMaterials.getCostLogs(ulid, page, costLogPageSize);
+      setCostLogs(paginatedLogs.items || []);
+      setTotalCostLogs(paginatedLogs.total || 0);
+    } catch (error) {
+      console.error("Failed to fetch cost logs:", error);
+      setCostLogs([]);
+      setTotalCostLogs(0);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  }, [costLogPageSize]);
+
+  // Detail View toggle
+  const openDetailView = async (material: RawMaterial) => {
     setSelectedMaterial(material);
     setIsDetailOpen(true);
+    setCostLogPage(1);
+    await fetchCostLogs(material.ulid, 1);
   };
+
+  useEffect(() => {
+    if (isDetailOpen && selectedMaterial) {
+      fetchCostLogs(selectedMaterial.ulid, costLogPage);
+    }
+  }, [costLogPage, isDetailOpen, selectedMaterial, fetchCostLogs]);
 
   const closeDetailView = () => {
     setSelectedMaterial(null);
     setIsDetailOpen(false);
+    setCostLogs([]);
+    setTotalCostLogs(0);
+    setCostLogPage(1);
   };
 
   // Format unit display helper
@@ -510,17 +605,17 @@ export default function CostManagementPage() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
                   {materials.map((material) => {
                     const mediaUrl = getMediaUrl(systemSettings?.R2_BASE_URL, material.image_filename);
                     return (
                       <div
                         key={material.id}
                         onClick={() => openDetailView(material)}
-                        className="bg-white rounded-[100px] p-6 shadow-sm border border-neutral-100/50 flex flex-col items-center justify-between text-center cursor-pointer transition-all hover:translate-y-[-4px] hover:shadow-md aspect-[10/16] min-h-[310px] w-full max-w-[210px] mx-auto relative group"
+                        className="bg-white rounded-3xl overflow-hidden shadow-sm border border-neutral-100 flex flex-col cursor-pointer transition-all hover:translate-y-[-4px] hover:shadow-md w-full relative group"
                       >
-                        {/* Top Capsule overlap circular image */}
-                        <div className={`w-32 h-32 rounded-full overflow-hidden flex items-center justify-center border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.06)] relative bg-gradient-to-br ${getGradientForImage(material.id)} shrink-0`}>
+                        {/* Top Image */}
+                        <div className="h-32 w-full bg-neutral-100 relative overflow-hidden shrink-0">
                           {mediaUrl ? (
                             <img
                               src={mediaUrl}
@@ -531,45 +626,109 @@ export default function CostManagementPage() {
                               }}
                             />
                           ) : (
-                            <Wheat className="w-10 h-10 text-neutral-600/70" />
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Wheat className="w-10 h-10 text-neutral-400" />
+                            </div>
                           )}
                         </div>
 
-                        {/* Content Section */}
-                        <div className="flex-1 flex flex-col items-center mt-3">
-                          {material.category?.name && (
-                            <span className="px-2.5 py-0.5 rounded-full bg-[#6b21a8]/10 text-[#6b21a8] text-[9px] font-bold uppercase tracking-wider mb-1">
-                              {material.category.name}
-                            </span>
-                          )}
-                          <h4 className="text-sm font-bold text-neutral-900 group-hover:text-[#6b21a8] transition-colors leading-tight">
-                            {material.name}
-                          </h4>
-                          <p className="text-[11px] text-neutral-400 font-semibold mt-1">
-                            ₹{material.price} / {formatUnit(material.unit)}
-                          </p>
+                        {/* Content padding */}
+                        <div className="p-5 flex flex-col flex-1">
+                          
+                          {/* Name and Category Row */}
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="text-[17px] font-bold text-neutral-900 leading-tight pr-2">
+                              {material.name}
+                            </h4>
+                            {material.category?.name && (
+                              <span className="px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-500 text-[10px] font-semibold tracking-wide shrink-0 whitespace-nowrap">
+                                {material.category.name}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Price and Variance Row */}
+                          <div className="flex justify-between items-center mb-4">
+                            <p className="text-base font-bold text-neutral-900 flex items-end">
+                              ₹{material.standard_price || material.price} <span className="text-xs font-semibold text-neutral-400 ml-1 pb-[1px]">/ {formatUnit(material.unit)}</span>
+                            </p>
+
+                            {/* Variance calculation */}
+                            {(() => {
+                              const actualPrice = material.actual_price || (material.standard_price || material.price);
+                              const prevPrice = material.previous_price || (material.standard_price || material.price);
+                              
+                              if (actualPrice && prevPrice && prevPrice > 0) {
+                                const variance = ((actualPrice - prevPrice) / prevPrice) * 100;
+                                if (Math.abs(variance) >= 0.01) {
+                                  return variance > 0 ? (
+                                    <span className="text-[11px] font-bold text-red-600 flex items-center gap-0.5 tracking-wide">
+                                      <ArrowUp className="w-3 h-3" strokeWidth={3} /> {variance.toFixed(1)}%
+                                    </span>
+                                  ) : (
+                                    <span className="text-[11px] font-bold text-green-600 flex items-center gap-0.5 tracking-wide">
+                                      <ArrowDown className="w-3 h-3" strokeWidth={3} /> {Math.abs(variance).toFixed(1)}%
+                                    </span>
+                                  );
+                                }
+                              }
+                              return null;
+                            })()}
+                          </div>
+
+                          {/* Effective Cost & Yield Box */}
+                          <div className="rounded-xl border border-[#6b21a8]/10 bg-[#fdfafF] flex overflow-hidden mb-5">
+                            <div className="flex-1 p-3 border-r border-[#6b21a8]/10 flex flex-col justify-center">
+                              <span className="text-[10px] font-semibold text-[#6b21a8]/60 mb-1 tracking-wide">Effective Cost</span>
+                              <div className="text-sm font-bold text-[#6b21a8]">
+                                {material.actual_price ? `₹${material.actual_price.toFixed(2)}` : "--"} <span className="text-[10px] font-semibold text-[#6b21a8]/80">/ {formatUnit(material.unit)}</span>
+                              </div>
+                            </div>
+                            <div className="flex-1 p-3 flex flex-col justify-center">
+                              <span className="text-[10px] font-semibold text-neutral-400 mb-1 tracking-wide">Yield</span>
+                              <div className="text-sm font-bold text-neutral-800">
+                                {material.yield_percentage ? `${material.yield_percentage}%` : "--%"}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Divider */}
+                          <div className="w-full h-[1px] bg-neutral-100 mb-4" />
+
+                          {/* Metadata Rows */}
+                          <div className="flex flex-col gap-2.5 mt-auto">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-neutral-400 font-medium">Previous:</span>
+                              <span className="text-neutral-600 font-semibold">{material.previous_price ? `₹${material.previous_price}/${formatUnit(material.unit)}` : "-"}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-neutral-400 font-medium">Vendor:</span>
+                              <span className="text-neutral-600 font-semibold truncate max-w-[120px] text-right">{material.vendor?.name || "-"}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-neutral-400 font-medium">Updated:</span>
+                              <span className="text-neutral-600 font-semibold">{new Date(material.updated_at).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                            </div>
+                          </div>
                         </div>
-
-                        {/* Divider */}
-                        <div className="w-3/4 h-[1px] bg-neutral-100/80 my-3" />
-
-                        {/* Action buttons */}
-                        <div className="flex gap-2.5 shrink-0 pb-1">
+                        
+                        {/* Action buttons (hover overlay) */}
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
                           <button
                             type="button"
                             onClick={(e) => openEditModal(material, e)}
-                            className="w-7 h-7 rounded-full bg-black text-white hover:bg-neutral-800 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 active:scale-95 transition-all shrink-0"
+                            className="w-8 h-8 rounded-full bg-white text-neutral-700 hover:text-black hover:bg-neutral-50 flex items-center justify-center shadow-md cursor-pointer transition-all shrink-0"
                             title="Edit Material"
                           >
-                            <Pencil className="w-3 h-3 text-white" />
+                            <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={(e) => handleDeleteMaterial(material.ulid, material.name, e)}
-                            className="w-7 h-7 rounded-full bg-black text-white hover:bg-neutral-800 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 active:scale-95 transition-all shrink-0"
+                            className="w-8 h-8 rounded-full bg-white text-red-500 hover:text-red-600 hover:bg-red-50 flex items-center justify-center shadow-md cursor-pointer transition-all shrink-0"
                             title="Delete Material"
                           >
-                            <Trash2 className="w-3 h-3 text-white" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -603,129 +762,295 @@ export default function CostManagementPage() {
             )}
           </div>
         ) : (
-          /* ─── Detail/Preview View (Screenshot 1) ─── */
-          <div className="flex-1 w-full rounded-2xl overflow-hidden relative flex flex-col justify-center items-center p-6">
+          /* ─── Detail/Preview View ─── */
+          <div className="flex-1 w-full rounded-2xl overflow-y-auto relative flex flex-col p-6 scrollbar-thin bg-[#fafafa]">
             
-            {/* Background Image: sharp, clear, full screen background (Task 4) */}
-            {selectedMaterial?.background_image_filename && (
-              <img 
-                src={getMediaUrl(systemSettings.R2_BASE_URL, selectedMaterial.background_image_filename) || undefined} 
-                className="absolute inset-0 w-full h-full object-cover z-0" 
-                alt="Background"
-              />
-            )}
+            {/* Background Image Header Banner */}
+            <div className="relative w-full h-[280px] rounded-3xl overflow-hidden shadow-sm mb-6 shrink-0 border border-neutral-100">
+              {selectedMaterial?.background_image_filename ? (
+                <img 
+                  src={getMediaUrl(systemSettings.R2_BASE_URL, selectedMaterial.background_image_filename) || undefined} 
+                  className="absolute inset-0 w-full h-full object-cover" 
+                  alt="Background"
+                />
+              ) : (
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-purple-100 to-indigo-100" />
+              )}
+              {/* Dark overlay for contrast */}
+              <div className="absolute inset-0 bg-black/30" />
 
-            {/* Absolute overlay over the background to dim it slightly without blurring */}
-            {selectedMaterial?.background_image_filename && (
-              <div className="absolute inset-0 z-0 bg-black/10" />
-            )}
-
-            {/* Back Button and Item Name floating above background on top-left */}
-            <div className="absolute top-6 left-6 flex items-center gap-3 z-20">
+              {/* Back Button */}
               <button 
                 onClick={closeDetailView}
-                className="w-12 h-12 rounded-full bg-white border border-neutral-200 flex items-center justify-center text-neutral-800 hover:text-black shadow-sm cursor-pointer hover:scale-105 active:scale-95 transition-all"
+                className="absolute top-6 left-6 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-all cursor-pointer"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div className="px-6 py-3 rounded-full bg-white border border-neutral-200 text-sm font-semibold text-neutral-800 shadow-sm flex items-center justify-center select-none">
-                {selectedMaterial?.name}
-              </div>
-            </div>
-
-            {/* Floating White Card Layout */}
-            <div className="bg-white rounded-[50px] max-w-4xl w-full p-8 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-neutral-100/50 flex flex-col md:flex-row gap-8 items-center z-10 relative animate-cell-fade-in my-auto max-h-[90%] overflow-y-auto scrollbar-thin">
               
-              {/* Left Side: Circular Oval Shape Image Crop */}
-              <div className="w-full md:w-1/2 flex items-center justify-center">
-                <div className="w-64 h-[320px] rounded-[140px] overflow-hidden bg-[#f3f4f6] flex items-center justify-center border-4 border-white shadow-md relative shrink-0">
+              {/* Title Area overlaid on banner */}
+              <div className="absolute bottom-6 left-8 flex items-end gap-6">
+                <div className="w-28 h-28 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-white shrink-0">
                   {selectedMaterial?.image_filename ? (
                     <img
                       src={getMediaUrl(systemSettings?.R2_BASE_URL, selectedMaterial.image_filename) || ""}
                       alt={selectedMaterial?.name}
-                      className="w-3/4 h-3/4 object-contain"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <Wheat className="w-16 h-16 text-neutral-600/70" />
+                    <div className="w-full h-full flex items-center justify-center bg-neutral-100">
+                      <Wheat className="w-10 h-10 text-neutral-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col pb-2">
+                  <div className="flex items-center gap-3 mb-2">
+                    {selectedMaterial?.category?.name && (
+                      <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold tracking-wide border border-white/30">
+                        {selectedMaterial.category.name}
+                      </span>
+                    )}
+                    {selectedMaterial?.vendor?.name && (
+                      <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold tracking-wide border border-white/30">
+                        Vendor: {selectedMaterial.vendor.name}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-4xl font-extrabold text-white drop-shadow-md">
+                    {selectedMaterial?.name}
+                  </h2>
+                  {selectedMaterial?.description && (
+                    <p className="text-white/80 mt-1 max-w-2xl text-sm drop-shadow-sm line-clamp-2">
+                      {selectedMaterial.description}
+                    </p>
                   )}
                 </div>
               </div>
+            </div>
 
-              {/* Right Side: Read-Only Form Fields */}
-              <div className="w-full md:w-1/2 flex flex-col gap-4">
-                {/* Name field */}
-                <div>
-                  <label className="block text-[13px] font-semibold text-neutral-500 mb-1">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedMaterial?.name || ""}
-                    readOnly
-                    className="w-full bg-[#f3f4f6] border border-transparent rounded-xl px-4 py-2.5 text-sm text-neutral-800 font-medium cursor-default focus:outline-none"
-                  />
-                </div>
-
-                {/* Price + Unit field */}
-                <div>
-                  <label className="block text-[13px] font-semibold text-neutral-500 mb-1">
-                    Price
-                  </label>
-                  <div className="flex items-center gap-3">
-                    {/* Price read-only input */}
-                    <div className="relative max-w-[150px]">
-                      <input
-                        type="text"
-                        value={selectedMaterial ? `₹${selectedMaterial.price}` : ""}
-                        readOnly
-                        className="w-full py-2.5 bg-[#f3f4f6] border border-transparent rounded-xl text-sm font-semibold text-neutral-800 text-center cursor-default focus:outline-none"
-                      />
+            {/* Dashboard Content */}
+            <div className="w-full max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
+              
+              {/* Left Column: Cost Breakdown & Meta */}
+              <div className="lg:col-span-1 flex flex-col gap-6">
+                
+                {/* Cost Card */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100">
+                  <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-5">Cost Breakdown</h3>
+                  
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <span className="text-xs font-semibold text-neutral-400 block mb-1">Standard Price</span>
+                      <p className="text-3xl font-black text-neutral-900 flex items-end">
+                        ₹{selectedMaterial?.standard_price || selectedMaterial?.price || 0} <span className="text-base font-semibold text-neutral-400 ml-1 pb-1">/ {selectedMaterial ? formatUnit(selectedMaterial.unit) : ""}</span>
+                      </p>
                     </div>
 
-                    <span className="text-xl font-bold text-neutral-800 mx-1">/</span>
+                    {/* Variance */}
+                    {(() => {
+                      const actualPrice = selectedMaterial?.actual_price || (selectedMaterial?.standard_price || selectedMaterial?.price || 0);
+                      const prevPrice = selectedMaterial?.previous_price || (selectedMaterial?.standard_price || selectedMaterial?.price || 0);
+                      
+                      if (actualPrice && prevPrice && prevPrice > 0) {
+                        const variance = ((actualPrice - prevPrice) / prevPrice) * 100;
+                        if (Math.abs(variance) >= 0.01) {
+                          return variance > 0 ? (
+                            <div className="flex flex-col items-end">
+                              <span className="text-xs font-semibold text-neutral-400 block mb-1">Variance</span>
+                              <span className="text-base font-bold text-red-600 flex items-center gap-1 bg-red-50 px-2 py-1 rounded-lg">
+                                <ArrowUp className="w-4 h-4" strokeWidth={3} /> {variance.toFixed(1)}%
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-end">
+                              <span className="text-xs font-semibold text-neutral-400 block mb-1">Variance</span>
+                              <span className="text-base font-bold text-green-600 flex items-center gap-1 bg-green-50 px-2 py-1 rounded-lg">
+                                <ArrowDown className="w-4 h-4" strokeWidth={3} /> {Math.abs(variance).toFixed(1)}%
+                              </span>
+                            </div>
+                          );
+                        }
+                      }
+                      return null;
+                    })()}
+                  </div>
 
-                    {/* Unit toggle style buttons (read-only) */}
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className={`py-2.5 px-6 rounded-xl text-xs font-bold transition-all border ${
-                          selectedMaterial?.unit === "kg" 
-                            ? "bg-[#6b21a8] text-white border-transparent shadow-sm" 
-                            : "bg-white text-[#6b21a8] border-[#6b21a8]"
-                        }`}
-                      >
-                        KG
-                      </button>
-                      <button
-                        type="button"
-                        className={`py-2.5 px-6 rounded-xl text-xs font-bold transition-all border ${
-                          selectedMaterial?.unit === "l" 
-                            ? "bg-[#6b21a8] text-white border-transparent shadow-sm" 
-                            : "bg-white text-[#6b21a8] border-[#6b21a8]"
-                        }`}
-                      >
-                        L
-                      </button>
+                  <div className="rounded-2xl border border-[#6b21a8]/15 bg-[#faf5ff] flex flex-col overflow-hidden mb-6">
+                    <div className="p-4 border-b border-[#6b21a8]/10 flex justify-between items-center bg-[#fdfafF]">
+                      <span className="text-xs font-bold text-[#6b21a8]/70 uppercase tracking-wide">Effective Cost</span>
+                      <div className="text-xl font-black text-[#6b21a8]">
+                        {selectedMaterial?.actual_price ? `₹${selectedMaterial.actual_price.toFixed(2)}` : "--"} <span className="text-xs font-bold text-[#6b21a8]/60">/ {selectedMaterial ? formatUnit(selectedMaterial.unit) : ""}</span>
+                      </div>
+                    </div>
+                    <div className="flex divide-x divide-[#6b21a8]/10 bg-white">
+                      <div className="flex-1 p-4 flex flex-col items-center justify-center text-center">
+                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Yield %</span>
+                        <div className="text-base font-bold text-neutral-800">
+                          {selectedMaterial?.yield_percentage ? `${selectedMaterial.yield_percentage}%` : "--%"}
+                        </div>
+                      </div>
+                      <div className="flex-1 p-4 flex flex-col items-center justify-center text-center">
+                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Yield Wt.</span>
+                        <div className="text-base font-bold text-neutral-800">
+                          {selectedMaterial?.yield_grams ? `${selectedMaterial.yield_grams}${selectedMaterial.unit === 'l' || selectedMaterial.unit === 'ml' ? 'ml' : 'g'}` : "--"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center text-sm py-2 border-b border-neutral-50">
+                      <span className="text-neutral-500 font-medium">Previous Price</span>
+                      <span className="text-neutral-900 font-bold">{selectedMaterial?.previous_price ? `₹${selectedMaterial.previous_price}/${formatUnit(selectedMaterial.unit)}` : "-"}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm py-2 border-b border-neutral-50">
+                      <span className="text-neutral-500 font-medium">Last Updated</span>
+                      <span className="text-neutral-900 font-bold">{selectedMaterial?.updated_at ? new Date(selectedMaterial.updated_at).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Description field */}
-                <div>
-                  <label className="block text-[13px] font-semibold text-neutral-500 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    value={selectedMaterial?.description || ""}
-                    readOnly
-                    rows={2}
-                    className="w-full bg-[#f3f4f6] border border-transparent rounded-xl px-4 py-2.5 text-sm text-neutral-600 cursor-default resize-none focus:outline-none"
-                  />
-                </div>
-
-                {/* Calories and Micronutrients are managed in Calorie MGT */}
+                {/* Stock Information */}
+                {(selectedMaterial?.current_stock !== undefined || selectedMaterial?.stock_threshold !== undefined) && (
+                  <div className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100">
+                    <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-4">Stock Info</h3>
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-semibold text-neutral-500 mb-1">Current Stock</span>
+                        <span className={`text-xl font-bold ${
+                          (selectedMaterial.current_stock ?? 0) <= (selectedMaterial.stock_threshold ?? 0) 
+                            ? "text-red-500" 
+                            : "text-neutral-800"
+                        }`}>
+                          {selectedMaterial.current_stock ?? 0} {formatUnit(selectedMaterial.unit)}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs font-semibold text-neutral-500 mb-1">Threshold</span>
+                        <span className="text-xl font-bold text-neutral-800">
+                          {selectedMaterial.stock_threshold ?? 0} {formatUnit(selectedMaterial.unit)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* Right Column: Nutrition & Logs */}
+              <div className="lg:col-span-2 flex flex-col gap-6">
+                
+                {/* Nutrition Grid */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100">
+                  <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-5">Nutritional Information <span className="text-xs font-medium normal-case ml-2 text-neutral-400">(per 100g/ml)</span></h3>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="bg-orange-50 rounded-2xl p-4 flex flex-col items-center justify-center border border-orange-100">
+                      <span className="text-xs font-bold text-orange-400 uppercase tracking-wide mb-1">Calories</span>
+                      <span className="text-lg font-black text-orange-600">{selectedMaterial?.calories ?? "-"} <span className="text-xs font-bold text-orange-400">kcal</span></span>
+                    </div>
+                    <div className="bg-blue-50 rounded-2xl p-4 flex flex-col items-center justify-center border border-blue-100">
+                      <span className="text-xs font-bold text-blue-400 uppercase tracking-wide mb-1">Protein</span>
+                      <span className="text-lg font-black text-blue-600">{selectedMaterial?.protein ?? "-"} <span className="text-xs font-bold text-blue-400">g</span></span>
+                    </div>
+                    <div className="bg-yellow-50 rounded-2xl p-4 flex flex-col items-center justify-center border border-yellow-100">
+                      <span className="text-xs font-bold text-yellow-500 uppercase tracking-wide mb-1">Carbs</span>
+                      <span className="text-lg font-black text-yellow-600">{selectedMaterial?.carbs ?? "-"} <span className="text-xs font-bold text-yellow-500">g</span></span>
+                    </div>
+                    <div className="bg-rose-50 rounded-2xl p-4 flex flex-col items-center justify-center border border-rose-100">
+                      <span className="text-xs font-bold text-rose-400 uppercase tracking-wide mb-1">Fat</span>
+                      <span className="text-lg font-black text-rose-600">{selectedMaterial?.fat ?? "-"} <span className="text-xs font-bold text-rose-400">g</span></span>
+                    </div>
+                    <div className="bg-emerald-50 rounded-2xl p-4 flex flex-col items-center justify-center border border-emerald-100">
+                      <span className="text-xs font-bold text-emerald-500 uppercase tracking-wide mb-1">Fiber</span>
+                      <span className="text-lg font-black text-emerald-600">{selectedMaterial?.fiber ?? "-"} <span className="text-xs font-bold text-emerald-500">g</span></span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cost Logs Table */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100 flex-1 flex flex-col">
+                  <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-5">Cost History Logs</h3>
+                  
+                  {isLoadingLogs ? (
+                    <div className="flex-1 flex justify-center items-center py-12">
+                      <Loader2 className="w-8 h-8 text-[#6b21a8] animate-spin" />
+                    </div>
+                  ) : costLogs.length === 0 ? (
+                    <div className="flex-1 flex flex-col justify-center items-center py-12 text-center border-2 border-dashed border-neutral-100 rounded-2xl bg-neutral-50/50">
+                      <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center mb-3">
+                        <Search className="w-5 h-5 text-neutral-400" />
+                      </div>
+                      <h4 className="text-sm font-bold text-neutral-600">No cost changes recorded yet</h4>
+                      <p className="text-xs text-neutral-400 mt-1 max-w-[250px]">When the price or yield of this item is updated, the history will appear here.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-neutral-100">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-neutral-50/80 border-b border-neutral-100">
+                            <th className="py-3.5 px-5 text-[11px] font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">Date</th>
+                            <th className="py-3.5 px-5 text-[11px] font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">Old Price</th>
+                            <th className="py-3.5 px-5 text-[11px] font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">New Price</th>
+                            <th className="py-3.5 px-5 text-[11px] font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">Old Yield</th>
+                            <th className="py-3.5 px-5 text-[11px] font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">New Yield</th>
+                            <th className="py-3.5 px-5 text-[11px] font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">Updated By</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-50">
+                          {costLogs.map((log) => (
+                            <tr key={log.ulid} className="hover:bg-neutral-50/30 transition-colors">
+                              <td className="py-3.5 px-5 text-xs font-semibold text-neutral-600 whitespace-nowrap">
+                                {new Date(log.created_at).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </td>
+                              <td className="py-3.5 px-5 text-xs font-medium text-neutral-400 line-through whitespace-nowrap">
+                                {log.previous_standard_price ? `₹${log.previous_standard_price}` : "-"}
+                              </td>
+                              <td className="py-3.5 px-5 text-xs font-bold text-neutral-800 whitespace-nowrap">
+                                {log.new_standard_price ? `₹${log.new_standard_price}` : "-"}
+                              </td>
+                              <td className="py-3.5 px-5 text-xs font-medium text-neutral-400 line-through whitespace-nowrap">
+                                {log.previous_yield_grams ? `${log.previous_yield_grams}g` : "-"}
+                              </td>
+                              <td className="py-3.5 px-5 text-xs font-bold text-neutral-800 whitespace-nowrap">
+                                {log.new_yield_grams ? `${log.new_yield_grams}g` : "-"}
+                              </td>
+                              <td className="py-3.5 px-5 text-xs font-medium text-neutral-600 whitespace-nowrap flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[9px] font-bold">
+                                  {(log.created_by?.full_name || log.created_by?.email || "S")[0].toUpperCase()}
+                                </div>
+                                {log.created_by?.full_name || log.created_by?.email || "System"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Pagination Controls */}
+                  {totalCostLogs > costLogPageSize && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-neutral-100">
+                      <span className="text-xs text-neutral-500">
+                        Showing {((costLogPage - 1) * costLogPageSize) + 1} to {Math.min(costLogPage * costLogPageSize, totalCostLogs)} of {totalCostLogs} entries
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setCostLogPage((prev) => Math.max(prev - 1, 1))}
+                          disabled={costLogPage === 1}
+                          className="px-3 py-1.5 rounded-lg border border-neutral-200 text-xs font-semibold text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Previous
+                        </button>
+                        <button
+                          onClick={() => setCostLogPage((prev) => Math.min(prev + 1, Math.ceil(totalCostLogs / costLogPageSize)))}
+                          disabled={costLogPage >= Math.ceil(totalCostLogs / costLogPageSize)}
+                          className="px-3 py-1.5 rounded-lg border border-neutral-200 text-xs font-semibold text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
       )}
@@ -908,10 +1233,31 @@ export default function CostManagementPage() {
               </button>
             </div>
 
+            {/* Vendor Dropdown */}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
+                Vendor
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsVendorModalOpen(true)}
+                className="w-full bg-neutral-100/70 border border-transparent hover:border-neutral-200 hover:bg-white rounded-2xl px-4 py-3.5 text-sm text-neutral-800 text-left transition-all flex items-center justify-between group"
+              >
+                {formState.vendor_name ? (
+                  <span className="font-semibold">{formState.vendor_name}</span>
+                ) : (
+                  <span className="text-neutral-400 font-medium">Select a vendor</span>
+                )}
+                <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center border border-neutral-200 shadow-sm group-hover:border-neutral-300 transition-colors">
+                  <Search className="w-3 h-3 text-neutral-500" />
+                </div>
+              </button>
+            </div>
+
             {/* Price & Unit Toggle */}
             <div>
               <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
-                Price
+                Standard Price
               </label>
               <div className="flex items-center gap-3">
                 {/* Price Numeric input */}
@@ -923,8 +1269,8 @@ export default function CostManagementPage() {
                     type="number"
                     step="any"
                     placeholder="155"
-                    value={formState.price}
-                    onChange={(e) => setFormState(prev => ({ ...prev, price: e.target.value === "" ? "" : Number(e.target.value) }))}
+                    value={formState.standard_price}
+                    onChange={(e) => setFormState(prev => ({ ...prev, standard_price: e.target.value === "" ? "" : Number(e.target.value) }))}
                     required
                     className="w-full pl-8 pr-4 py-3.5 bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl text-sm text-center text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold"
                   />
@@ -957,6 +1303,41 @@ export default function CostManagementPage() {
                     L
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* Yield Configuration */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
+                  Yield ({formState.unit === 'l' ? 'ml' : 'g'}) / {formState.unit.toUpperCase()}
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  placeholder={formState.unit === "g" || formState.unit === "ml" ? "1" : "1000"}
+                  value={formState.yield_grams}
+                  onChange={(e) => setFormState(prev => ({ ...prev, yield_grams: e.target.value === "" ? "" : Number(e.target.value) }))}
+                  className="w-full bg-neutral-100/70 border border-transparent focus:border-neutral-200 focus:bg-white rounded-2xl px-4 py-3.5 text-sm text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
+                  Yield % (Auto)
+                </label>
+                <div className="w-full bg-neutral-100 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-neutral-500 font-semibold h-[48px] flex items-center">
+                  {formState.yield_percentage ? `${formState.yield_percentage}%` : "--%"}
+                </div>
+              </div>
+            </div>
+
+            {/* Effective Cost */}
+            <div>
+              <label className="block text-xs font-semibold text-[#6b21a8] mb-1.5 uppercase tracking-wide">
+                Actual Price / Effective Cost
+              </label>
+              <div className="w-full bg-[#fdfafF] border border-[#6b21a8]/20 rounded-2xl px-4 py-3.5 text-sm text-[#6b21a8] font-bold h-[48px] flex items-center">
+                {formState.actual_price ? `₹${formState.actual_price} / ${formState.unit.toUpperCase()}` : `₹-- / ${formState.unit.toUpperCase()}`}
               </div>
             </div>
 
@@ -1009,6 +1390,19 @@ export default function CostManagementPage() {
           ...prev,
           category_ulid: cat?.ulid || null,
           category_name: cat?.name || null,
+        }));
+      }}
+    />
+
+    <SelectVendorModal
+      isOpen={isVendorModalOpen}
+      onClose={() => setIsVendorModalOpen(false)}
+      selectedVendorUlid={formState.vendor_ulid}
+      onSelect={(v) => {
+        setFormState(prev => ({
+          ...prev,
+          vendor_ulid: v?.ulid || null,
+          vendor_name: v?.name || null,
         }));
       }}
     />
