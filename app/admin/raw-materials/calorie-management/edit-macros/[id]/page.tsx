@@ -245,7 +245,7 @@ export default function EditMacrosPage({ params }: PageProps) {
                   Price
                 </label>
                 <div className="w-full py-4 bg-white border border-neutral-100 rounded-2xl text-[15px] font-bold text-neutral-500 text-center shadow-sm select-none">
-                  {`₹${material.price}`}
+                  {`₹${(material.standard_price ?? material.price)}`}
                 </div>
               </div>
 

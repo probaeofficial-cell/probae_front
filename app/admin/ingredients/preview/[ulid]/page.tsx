@@ -91,7 +91,8 @@ export default function IngredientPreviewPage() {
             if (material.unit === "kg" || material.unit === "l") {
               baseUnitWeight = 1000.0;
             }
-            const calculatedPrice = (Number(material.price) / baseUnitWeight) * weight;
+            const effectivePrice = Number(material.actual_price ?? material.standard_price ?? material.price ?? 0);
+            const calculatedPrice = (effectivePrice / baseUnitWeight) * weight;
 
             return {
               material,

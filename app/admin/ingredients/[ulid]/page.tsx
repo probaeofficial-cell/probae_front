@@ -122,7 +122,8 @@ export default function IngredientFormPage() {
             if (material.unit === "kg" || material.unit === "l") {
               baseUnitWeight = 1000.0;
             }
-            const calculatedPrice = (Number(material.price) / baseUnitWeight) * weight;
+            const effectivePrice = Number(material.actual_price ?? material.standard_price ?? material.price ?? 0);
+            const calculatedPrice = (effectivePrice / baseUnitWeight) * weight;
 
             return {
               material,
@@ -185,7 +186,8 @@ export default function IngredientFormPage() {
     if (material.unit === "kg" || material.unit === "l") {
       baseUnitWeight = 1000.0;
     }
-    const calculatedPrice = (Number(material.price) / baseUnitWeight) * weight;
+    const effectivePrice = Number(material.actual_price ?? material.standard_price ?? material.price ?? 0);
+    const calculatedPrice = (effectivePrice / baseUnitWeight) * weight;
 
     const newItem = {
       material,
@@ -240,7 +242,8 @@ export default function IngredientFormPage() {
       if (item.material.unit === "kg" || item.material.unit === "l") {
         baseUnitWeight = 1000.0;
       }
-      const calculatedPrice = (Number(item.material.price) / baseUnitWeight) * newWeight;
+      const effectivePrice = Number(item.material.actual_price ?? item.material.standard_price ?? item.material.price ?? 0);
+      const calculatedPrice = (effectivePrice / baseUnitWeight) * newWeight;
 
       updated[index] = {
         ...item,
