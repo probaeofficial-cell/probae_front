@@ -75,7 +75,12 @@ export default function PackagingBundleFormPage() {
 
   const handleComponentChange = (index: number, field: "component_ulid" | "quantity", value: any, comp?: any) => {
     const newComponents = [...components];
-    if (field === 'component_ulid') { newComponents[index].component_ulid = value; } else { newComponents[index].quantity = value; } if (comp !== undefined) newComponents[index].component = comp;
+    if (field === 'component_ulid') { 
+      newComponents[index].component_ulid = value; 
+    } else { 
+      newComponents[index].quantity = value; 
+    }
+    if (comp !== undefined) newComponents[index].component = comp;
     setComponents(newComponents);
   };
 
@@ -215,7 +220,7 @@ export default function PackagingBundleFormPage() {
                     <div className="flex-1 w-full">
                       <AsyncComponentSelect
                         value={item.component_ulid}
-                        onChange={(ulid: string, comp: any) => handleComponentChange(index, "component_ulid", ulid, comp)}
+                        onChange={(ulid, comp) => handleComponentChange(index, "component_ulid", ulid, comp)}
                         selectedComponent={item.component}
                       />
                     </div>
