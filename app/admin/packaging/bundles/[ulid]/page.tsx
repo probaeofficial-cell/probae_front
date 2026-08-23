@@ -18,6 +18,7 @@ import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
 import { PackagingComponent, PackagingItemLink, PackagingItemLinkInput } from "@/lib/types";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
+import AsyncComponentSelect from "@/components/admin/AsyncComponentSelect";
 
 export default function PackagingBundleFormPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -28,9 +29,9 @@ export default function PackagingBundleFormPage() {
   const bundleUlid = params.ulid as string;
 
   const [name, setName] = useState("");
-  const [components, setComponents] = useState<{ component_id: number; quantity: number }[]>([]);
+  const [code, setCode] = useState("");
+  const [components, setComponents] = useState<{ component_ulid: string; quantity: number; component?: any | null }[]>([]);
   
-  const [availableComponents, setAvailableComponents] = useState<PackagingComponent[]>([]);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,17 +46,11 @@ export default function PackagingBundleFormPage() {
     const fetchData = async () => {
       try {
         setIsPageLoading(true);
-        // Fetch all components (assuming pageSize=100 is enough for now)
-        const compsData = await endpoints.packagingComponents.getComponents(1, 100);
-        setAvailableComponents(compsData.items || []);
-
         if (isEdit) {
           const bundleData = await endpoints.packaging.getBundle(bundleUlid);
           setName(bundleData.name);
-          setComponents(bundleData.components.map((c: PackagingItemLink) => ({
-            component_id: c.component_id,
-            quantity: c.quantity
-          })));
+          setCode(bundleData.code || "");
+          setComponents(bundleData.components.map((c: any) => ({ component_ulid: c.component.ulid, quantity: c.quantity, component: c.component })));
         }
       } catch (err: any) {
         setError(err.message || "Failed to load data");
@@ -69,7 +64,7 @@ export default function PackagingBundleFormPage() {
   }, [user, isEdit, bundleUlid]);
 
   const addComponent = () => {
-    setComponents([...components, { component_id: 0, quantity: 1 }]);
+    setComponents([...components, { component_ulid: "", quantity: 1 }]);
   };
 
   const removeComponent = (index: number) => {
@@ -78,9 +73,9 @@ export default function PackagingBundleFormPage() {
     setComponents(newComponents);
   };
 
-  const handleComponentChange = (index: number, field: "component_id" | "quantity", value: number) => {
+  const handleComponentChange = (index: number, field: "component_ulid" | "quantity", value: any, comp?: any) => {
     const newComponents = [...components];
-    newComponents[index][field] = value;
+    if (field === 'component_ulid') { newComponents[index].component_ulid = value; } else { newComponents[index].quantity = value; } if (comp !== undefined) newComponents[index].component = comp;
     setComponents(newComponents);
   };
 
@@ -93,7 +88,7 @@ export default function PackagingBundleFormPage() {
       setError("Please add at least one component");
       return;
     }
-    if (components.some(c => c.component_id === 0 || c.quantity <= 0)) {
+    if (components.some(c => !c.component_ulid || c.quantity <= 0)) {
       setError("Please select a valid component and quantity > 0 for all items");
       return;
     }
@@ -103,7 +98,11 @@ export default function PackagingBundleFormPage() {
     try {
       const payload = {
         name,
-        components
+        code: code || null,
+        components: components.map(c => ({
+          component_ulid: c.component_ulid,
+          quantity: c.quantity
+        }))
       };
       if (isEdit) {
         await endpoints.packaging.updateBundle(bundleUlid, payload);
@@ -119,10 +118,7 @@ export default function PackagingBundleFormPage() {
   };
 
   // Calculate projected total cost based on current selections
-  const projectedTotal = components.reduce((sum, item) => {
-    const comp = availableComponents.find(c => c.id === item.component_id);
-    return sum + ((comp?.cost || 0) * item.quantity);
-  }, 0);
+  const projectedTotal = components.reduce((sum, item) => sum + ((item.component?.cost || 0) * item.quantity), 0);
 
   if (authLoading || isPageLoading) {
     return (
@@ -189,6 +185,17 @@ export default function PackagingBundleFormPage() {
             />
           </div>
 
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-neutral-700 ml-1">Packaging Code</label>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="e.g. PKG-100"
+              className="w-full h-12 bg-neutral-50 border border-neutral-200 rounded-xl px-4 text-sm font-medium text-neutral-800 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/20 focus:border-[#7c3aed] transition-all"
+            />
+          </div>
+
           <div className="flex flex-col gap-4">
             <div className="flex justify-between items-center">
               <label className="text-sm font-semibold text-neutral-700 ml-1">Components included</label>
@@ -202,20 +209,15 @@ export default function PackagingBundleFormPage() {
 
             <div className="flex flex-col gap-3">
               {components.map((item, index) => {
-                const compCost = availableComponents.find(c => c.id === item.component_id)?.cost || 0;
+                const compCost = item.component?.cost || 0;
                 return (
                   <div key={index} className="flex flex-col sm:flex-row items-center gap-3 bg-neutral-50 p-3 rounded-2xl border border-neutral-200">
                     <div className="flex-1 w-full">
-                      <select
-                        value={item.component_id}
-                        onChange={(e) => handleComponentChange(index, "component_id", parseInt(e.target.value))}
-                        className="w-full h-12 bg-white border border-neutral-200 rounded-xl px-4 text-sm font-medium text-neutral-800 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/20 focus:border-[#7c3aed]"
-                      >
-                        <option value={0}>Select a component...</option>
-                        {availableComponents.map(c => (
-                          <option key={c.id} value={c.id}>{c.name} (₹{c.cost})</option>
-                        ))}
-                      </select>
+                      <AsyncComponentSelect
+                        value={item.component_ulid}
+                        onChange={(ulid: string, comp: any) => handleComponentChange(index, "component_ulid", ulid, comp)}
+                        selectedComponent={item.component}
+                      />
                     </div>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                       <div className="flex items-center gap-2 bg-white border border-neutral-200 rounded-xl px-3 h-12 shrink-0">

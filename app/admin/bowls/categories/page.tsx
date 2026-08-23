@@ -345,8 +345,7 @@ export default function BowlCategoriesPage() {
         confirmText={isDeleting ? "Deleting..." : "Delete"}
         cancelText="Cancel"
         onConfirm={confirmDelete}
-        onCancel={() => !isDeleting && setIsDeleteModalOpen(false)}
-        variant="danger"
+        onClose={() => !isDeleting && setIsDeleteModalOpen(false)}
       />
 
       {/* Modal for viewing bowls */}

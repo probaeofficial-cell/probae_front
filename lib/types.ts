@@ -347,7 +347,7 @@ export interface PackagingItemLink {
 }
 
 export interface PackagingItemLinkInput {
-  component_id: number;
+  component_ulid: string;
   quantity: number;
 }
 
@@ -355,6 +355,7 @@ export interface Packaging {
   id: number;
   ulid: string;
   name: string;
+  code?: string | null;
   total_cost: number;
   created_at: string;
   updated_at: string;
@@ -363,11 +364,13 @@ export interface Packaging {
 
 export interface PackagingCreateInput {
   name: string;
+  code?: string | null;
   components: PackagingItemLinkInput[];
 }
 
 export interface PackagingUpdateInput {
   name?: string;
+  code?: string | null;
   components?: PackagingItemLinkInput[];
 }
 

@@ -180,7 +180,14 @@ export default function PackagingBundlesPage() {
                           <Package className="w-5 h-5" />
                         </div>
                         <div>
-                          <h3 className="text-[18px] font-bold text-[#111111] leading-tight">{item.name}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-[18px] font-bold text-[#111111] leading-tight">{item.name}</h3>
+                            {item.code && (
+                              <span className="px-2 py-0.5 bg-neutral-100 text-neutral-600 text-[10px] font-bold rounded-full">
+                                {item.code}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-neutral-500 font-medium">{item.components.length} Components</p>
                         </div>
                       </div>

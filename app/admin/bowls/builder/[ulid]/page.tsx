@@ -237,7 +237,7 @@ export default function BowlBuilderPage() {
               <label className="text-xs font-semibold text-neutral-800 ml-1">Name</label>
               <input type="text" placeholder="e.g. Green Guava" value={name} onChange={(e) => setName(e.target.value)} className="w-full h-10 bg-white rounded-xl px-4 text-sm font-medium focus:outline-none shadow-sm" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-neutral-800 ml-1">Code</label>
                 <input type="text" value={code} onChange={(e) => setCode(e.target.value)} className="w-full h-10 bg-white rounded-xl px-4 text-sm font-medium focus:outline-none shadow-sm text-neutral-500" />
@@ -260,6 +260,18 @@ export default function BowlBuilderPage() {
                    <div className={`w-11 h-6 rounded-full p-1 transition-colors relative ${status ? "bg-[#4CAF50]" : "bg-neutral-300"}`}>
                      <div className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 ${status ? "translate-x-5" : "translate-x-0"}`} />
                    </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-neutral-800 ml-1">Packaging Bundle</label>
+                <div className="relative">
+                  <select value={packagingId || 0} onChange={(e) => setPackagingId(parseInt(e.target.value) || null)} className="w-full h-10 bg-white rounded-xl px-4 text-sm font-medium focus:outline-none appearance-none shadow-sm">
+                    <option value={0}>No Packaging</option>
+                    {packagings.map(p => <option key={p.id} value={p.id}>{p.code ? `[${p.code}] ` : ''}{p.name}</option>)}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
+                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
                 </div>
               </div>
             </div>

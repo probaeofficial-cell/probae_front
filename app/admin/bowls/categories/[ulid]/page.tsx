@@ -91,18 +91,8 @@ export default function BowlCategoryFormPage() {
 
   // ─── Document Upload Helpers (Direct R2) ───────────────────────────────────
   const uploadFileToR2 = async (file: File): Promise<string> => {
-    const filename = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
-    const urlResponse = await endpoints.documents.getPresignedUrl(filename, file.type);
-    const { url } = urlResponse;
-    const uploadRes = await fetch(url, {
-      method: "PUT",
-      headers: { "Content-Type": file.type },
-      body: file,
-    });
-    if (!uploadRes.ok) {
-      throw new Error(`Failed to upload file ${file.name}`);
-    }
-    return filename;
+    const uploadRes = await endpoints.documents.upload(file);
+    return uploadRes.filename;
   };
 
   // ─── Image Handlers ────────────────────────────────────────────────────────
@@ -258,7 +248,7 @@ export default function BowlCategoryFormPage() {
                     className="w-full h-[180px] border-2 border-dashed border-neutral-800 rounded-[24px] flex flex-col items-center justify-center cursor-pointer relative group overflow-hidden"
                   >
                     {mainImagePreview || mainImageFilename ? (
-                      <img src={mainImagePreview || getMediaUrl(systemSettings.R2_BASE_URL, mainImageFilename)} alt="Main" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                      <img src={(mainImagePreview || (mainImageFilename ? getMediaUrl(systemSettings.R2_BASE_URL, mainImageFilename) : undefined)) as string} alt="Main" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                     ) : (
                       <>
                         <UploadCloud className="w-10 h-10 mb-2 text-black" />
@@ -285,7 +275,7 @@ export default function BowlCategoryFormPage() {
                     className="w-full h-[180px] border-2 border-dashed border-neutral-800 rounded-[24px] flex flex-col items-center justify-center cursor-pointer relative group overflow-hidden"
                   >
                     {bgImagePreview || bgImageFilename ? (
-                      <img src={bgImagePreview || getMediaUrl(systemSettings.R2_BASE_URL, bgImageFilename)} alt="Background" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                      <img src={(bgImagePreview || (bgImageFilename ? getMediaUrl(systemSettings.R2_BASE_URL, bgImageFilename) : undefined)) as string} alt="Background" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                     ) : (
                       <>
                         <UploadCloud className="w-10 h-10 mb-2 text-black" />

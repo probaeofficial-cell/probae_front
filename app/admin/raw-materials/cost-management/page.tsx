@@ -148,11 +148,11 @@ export default function CostManagementPage() {
         const actualP = sp / yieldRatio;
         
         setFormState(prev => {
-          if (prev.yield_percentage == yieldPerc.toFixed(2) && prev.actual_price == actualP.toFixed(2)) return prev;
+          if (prev.yield_percentage === Number(yieldPerc.toFixed(2)) && prev.actual_price === Number(actualP.toFixed(2))) return prev;
           return {
             ...prev,
-            yield_percentage: yieldPerc.toFixed(2),
-            actual_price: actualP.toFixed(2)
+            yield_percentage: Number(yieldPerc.toFixed(2)),
+            actual_price: Number(actualP.toFixed(2))
           };
         });
       }
