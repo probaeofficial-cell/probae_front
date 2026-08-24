@@ -209,7 +209,7 @@ export function Sidebar() {
                         <ul className="space-y-1">
                           {Object.entries(item.subItems!).map(([subKey, sub]) => {
                             const isSubActive = sub.path
-                              ? pathname === sub.path || pathname.startsWith(sub.path + "/")
+                              ? pathname === sub.path || (pathname.startsWith(sub.path + "/") && !Object.values(item.subItems!).some(s => s.path && s.path !== sub.path && pathname.startsWith(s.path)))
                               : false;
                             return (
                               <li key={subKey}>

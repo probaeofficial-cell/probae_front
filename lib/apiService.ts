@@ -6,7 +6,7 @@
  * in-memory token storage (per architecture rules), automatic token refresh
  * on 401 Unauthorized responses (with queueing logic), and standardized error handling.
  */
-import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories, StockLog, BowlCategory, BowlCategoryCreateInput, BowlCategoryUpdateInput, PaginatedBowlCategories, PaginatedPackagingComponents, PackagingComponent, PackagingComponentCreateInput, PackagingComponentUpdateInput, PaginatedPackaging, Packaging, PackagingCreateInput, PackagingUpdateInput, PaginatedBowls, Bowl, BowlCreateInput, BowlUpdateInput, Vendor, VendorCreateInput, VendorUpdateInput, PaginatedVendors } from "./types";
+import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories, StockLog, BowlCategory, BowlCategoryCreateInput, BowlCategoryUpdateInput, PaginatedBowlCategories, PaginatedPackagingComponents, PackagingComponent, PackagingComponentCreateInput, PackagingComponentUpdateInput, PaginatedPackaging, Packaging, PackagingCreateInput, PackagingUpdateInput, PaginatedBowls, Bowl, BowlCreateInput, BowlUpdateInput, Vendor, VendorCreateInput, VendorUpdateInput, PaginatedVendors, MealCategory, MealCategoryCreateInput, MealCategoryUpdateInput, PaginatedMealCategories } from "./types";
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
@@ -410,6 +410,28 @@ export const endpoints = {
     },
     deleteBowlCategory: async (ulid: string): Promise<void> => {
       return await api.del<void>(`/bowl-categories/${ulid}`);
+    },
+  },
+  
+  mealCategories: {
+    getMealCategories: async (page: number, size: number, search?: string): Promise<PaginatedMealCategories> => {
+      let query = `?page=${page}&page_size=${size}`;
+      if (search) {
+        query += `&search=${encodeURIComponent(search)}`;
+      }
+      return await api.get<PaginatedMealCategories>(`/meal-categories${query}`);
+    },
+    getMealCategory: async (ulid: string): Promise<MealCategory> => {
+      return await api.get<MealCategory>(`/meal-categories/${ulid}`);
+    },
+    createMealCategory: async (data: MealCategoryCreateInput): Promise<MealCategory> => {
+      return await api.post<MealCategory>("/meal-categories", data);
+    },
+    updateMealCategory: async (ulid: string, data: MealCategoryUpdateInput): Promise<MealCategory> => {
+      return await api.patch<MealCategory>(`/meal-categories/${ulid}`, data);
+    },
+    deleteMealCategory: async (ulid: string): Promise<void> => {
+      return await api.del<void>(`/meal-categories/${ulid}`);
     },
   },
 

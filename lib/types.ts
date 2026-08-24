@@ -384,8 +384,8 @@ export interface PaginatedPackaging {
 
 // ─── Updated Bowl Types ──────────────────────────────────────────────────────
 
-export type BowlType = "STANDARD" | "CUSTOM";
-export type BowlSection = "DRESSING" | "BLENDS" | "ADD_ONS" | "PROTEIN" | "CARB" | "FIBER" | "EXTRA_PROTEIN";
+export type BowlType = "BLOCK" | "BLEND";
+export type BowlSection = "Dressing" | "Blends" | "Add Ons" | "Protein" | "Carb" | "Fiber" | "Extra Protein";
 
 export interface BowlIngredient {
   id: number;
@@ -400,6 +400,8 @@ export interface BowlIngredientInput {
   ingredient_id: number;
   section_name: BowlSection;
   weight_g_or_ml: number;
+  _ingredient_name?: string;
+  _ingredient_ulid?: string;
 }
 
 export interface Bowl {
@@ -414,33 +416,50 @@ export interface Bowl {
   fixed_cost: number;
   total_cost: number;
   category_id: number;
+  meal_category_id?: number | null;
   packaging_id?: number | null;
+  image_filename?: string | null;
+  
+  total_calories: number;
+  total_protein: number;
+  total_carbs: number;
+  total_fat: number;
+  total_fiber: number;
+  total_weight: number;
+  
+  created_by_id?: number | null;
+  created_by_name?: string | null;
+  
   created_at: string;
   updated_at: string;
   ingredients: BowlIngredient[];
 }
 
 export interface BowlCreateInput {
-  code?: string;
+  code?: string | null;
   name: string;
   description?: string;
   bowl_type: BowlType;
   status?: boolean;
   fixed_cost?: number;
   category_id: number;
+  meal_category_id?: number | null;
   packaging_id?: number | null;
+  image_filename?: string | null;
   ingredients: BowlIngredientInput[];
 }
 
 export interface BowlUpdateInput {
-  code?: string;
+  code?: string | null;
   name?: string;
   description?: string;
   bowl_type?: BowlType;
   status?: boolean;
   fixed_cost?: number;
   category_id?: number;
+  meal_category_id?: number | null;
   packaging_id?: number | null;
+  image_filename?: string | null;
   ingredients?: BowlIngredientInput[];
 }
 
@@ -453,3 +472,45 @@ export interface PaginatedBowls {
 }
 
 export interface PaginatedCostLogs { items: CostLog[]; total: number; page: number; size: number; }
+
+export interface MealCategory {
+  id: number;
+  ulid: string;
+  name: string;
+  slug: string;
+  color_code?: string;
+  image_filename?: string;
+  time_from?: string;
+  time_to?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MealCategoryCreateInput {
+  name: string;
+  slug: string;
+  color_code?: string;
+  image_filename?: string;
+  time_from?: string | null;
+  time_to?: string | null;
+  is_active?: boolean;
+}
+
+export interface MealCategoryUpdateInput {
+  name?: string;
+  slug?: string;
+  color_code?: string;
+  image_filename?: string;
+  time_from?: string | null;
+  time_to?: string | null;
+  is_active?: boolean;
+}
+
+export interface PaginatedMealCategories {
+  items: MealCategory[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}

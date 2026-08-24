@@ -45,8 +45,8 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     label: "Bowls",
     icon: Coffee,
     subItems: {
+      mealCategories: { label: "Meal Categories", dotColor: "bg-green-500", path: "/admin/bowls/meal-categories" },
       categories: { label: "Categories", dotColor: "bg-blue-500", path: "/admin/bowls/categories" },
-      builder: { label: "Bowl Builder", dotColor: "bg-pink-500", path: "/admin/bowls/builder" },
       list: { label: "Bowl List", dotColor: "bg-purple-500", path: "/admin/bowls" },
     },
   },
