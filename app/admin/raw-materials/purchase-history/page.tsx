@@ -46,6 +46,8 @@ export default function PurchaseHistoryPage() {
   // RM Pagination State
   const [deletingPurchaseId, setDeletingPurchaseId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [searchDaily, setSearchDaily] = useState("");
+  const [searchMonthly, setSearchMonthly] = useState("");
   
   const [rmPage, setRmPage] = useState(1);
   const [rmHasMore, setRmHasMore] = useState(true);
@@ -159,7 +161,7 @@ export default function PurchaseHistoryPage() {
   const fetchDailyPurchases = async () => {
     try {
       setIsLoading(true);
-      const res = await endpoints.rawMaterials.purchases.getDaily(dailyDate, 1, 100);
+      const res = await endpoints.rawMaterials.purchases.getDaily(dailyDate, 1, 1000);
       setFetchedPurchases(res?.items || []);
     } catch (err: any) {
       showToast(err.message || "Failed to load purchases", "error");
@@ -171,7 +173,7 @@ export default function PurchaseHistoryPage() {
   const fetchMonthlyPurchases = async () => {
     try {
       setIsLoading(true);
-      const res = await endpoints.rawMaterials.purchases.getMonthly(monthlyMonth, 1, 100);
+      const res = await endpoints.rawMaterials.purchases.getMonthly(monthlyMonth, 1, 1000);
       setFetchedPurchases(res?.items || []);
     } catch (err: any) {
       showToast(err.message || "Failed to load purchases", "error");
@@ -506,9 +508,15 @@ export default function PurchaseHistoryPage() {
 
             {activeTab === "daily" && (
               <div className="bg-white border border-neutral-200 rounded-[32px] overflow-hidden shadow-sm">
-                <div className="p-8 border-b border-neutral-100 flex justify-between items-center">
-                  <div><h2 className="text-2xl font-bold text-neutral-900">Daily Purchases</h2><p className="text-sm text-neutral-500 mt-1">Review finalized purchase history for a specific day.</p></div>
-                  <input type="date" value={dailyDate} onChange={e => setDailyDate(e.target.value)} className="bg-[#f8f5fb] border-none rounded-2xl px-4 py-3 text-neutral-800 font-bold focus:ring-2 focus:ring-[#6b21a8]/20 outline-none" />
+                <div className="p-8 border-b border-neutral-100 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                  <div><h2 className="text-2xl font-bold text-neutral-900">Daily Purchases</h2><p className="text-sm text-neutral-500 mt-1">Review all raw material purchases made on a specific day.</p></div>
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:flex-initial">
+                      <input type="text" placeholder="Search raw material..." value={searchDaily} onChange={(e) => setSearchDaily(e.target.value)} className="w-full sm:w-64 bg-[#f8f5fb] border-none rounded-2xl pl-4 pr-10 py-3 text-sm text-neutral-800 font-medium focus:ring-2 focus:ring-[#6b21a8]/20 outline-none placeholder:text-neutral-400" />
+                      <Search className="w-4 h-4 text-neutral-400 absolute right-4 top-1/2 -translate-y-1/2" />
+                    </div>
+                    <input type="date" value={dailyDate} onChange={e => setDailyDate(e.target.value)} className="bg-[#f8f5fb] border-none rounded-2xl px-4 py-3 text-sm text-neutral-800 font-bold focus:ring-2 focus:ring-[#6b21a8]/20 outline-none" />
+                  </div>
                 </div>
                 <div className="p-8 overflow-x-auto">
                   {isLoading ? (
@@ -528,10 +536,10 @@ export default function PurchaseHistoryPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 whitespace-nowrap">
-                        {fetchedPurchases.length === 0 ? (
-                          <tr><td colSpan={7} className="text-center py-12"><span className="font-semibold text-neutral-400">No purchases found for this day.</span></td></tr>
+                        {fetchedPurchases.filter(p => (p.raw_material?.name || "").toLowerCase().includes(searchDaily.toLowerCase())).length === 0 ? (
+                          <tr><td colSpan={8} className="text-center py-12"><span className="font-semibold text-neutral-400">No purchases found.</span></td></tr>
                         ) : (
-                          fetchedPurchases.map((p) => (
+                          fetchedPurchases.filter(p => (p.raw_material?.name || "").toLowerCase().includes(searchDaily.toLowerCase())).map((p) => (
                             <tr key={p.id} className="hover:bg-neutral-50 transition-colors">
                               <td className="py-4 px-6 text-sm text-neutral-500">{new Date(p.purchase_date).toLocaleDateString()}</td>
                               <td className="py-4 px-4 font-bold text-neutral-800">{p.raw_material?.name}</td>
@@ -556,57 +564,112 @@ export default function PurchaseHistoryPage() {
             )}
             
             {activeTab === "monthly" && (
-              <div className="bg-white border border-neutral-200 rounded-[32px] overflow-hidden shadow-sm">
-                <div className="p-8 border-b border-neutral-100 flex justify-between items-center">
-                  <div><h2 className="text-2xl font-bold text-neutral-900">Monthly Purchases</h2><p className="text-sm text-neutral-500 mt-1">Review finalized purchase history for a specific month.</p></div>
-                  <input type="month" value={monthlyMonth} onChange={e => setMonthlyMonth(e.target.value)} className="bg-[#f8f5fb] border-none rounded-2xl px-4 py-3 text-neutral-800 font-bold focus:ring-2 focus:ring-[#6b21a8]/20 outline-none" />
-                </div>
-                <div className="p-8 overflow-x-auto">
-                  {isLoading ? (
-                    <div className="py-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#6b21a8]" /></div>
-                  ) : (
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-[#f8f5fb] text-xs font-bold text-neutral-500 tracking-wider whitespace-nowrap">
-                        <tr>
-                          <th className="py-4 px-6 rounded-l-xl">DATE</th>
-                          <th className="py-4 px-4">RAW MATERIAL</th>
-                          <th className="py-4 px-4">QTY</th>
-                          <th className="py-4 px-4">VENDOR</th>
-                          <th className="py-4 px-4">ACTUAL PRICE</th>
-                          <th className="py-4 px-4">AMOUNT</th>
-                          <th className="py-4 px-4">VARIANCE</th>
-                          <th className="py-4 px-6 rounded-r-xl text-right">ACTION</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-neutral-100 whitespace-nowrap">
-                        {fetchedPurchases.length === 0 ? (
-                          <tr><td colSpan={7} className="text-center py-12"><span className="font-semibold text-neutral-400">No purchases found for this month.</span></td></tr>
-                        ) : (
-                          fetchedPurchases.map((p) => (
-                            <tr key={p.id} className="hover:bg-neutral-50 transition-colors">
-                              <td className="py-4 px-6 text-sm text-neutral-500">{new Date(p.purchase_date).toLocaleDateString()}</td>
-                              <td className="py-4 px-4 font-bold text-neutral-800">{p.raw_material?.name}</td>
-                              <td className="py-4 px-4 font-medium text-neutral-700">{p.quantity} {p.unit}</td>
-                              <td className="py-4 px-4 text-sm text-neutral-500">{p.vendor?.name || "-"}</td>
-                              <td className="py-4 px-4 text-sm font-medium text-neutral-600">{formatCurrency(p.actual_price)}/{p.unit}</td>
-                              <td className="py-4 px-4 font-bold text-neutral-900">{formatCurrency(p.total_amount)}</td>
-                              <td className={`py-4 px-4 font-bold ${p.variance > 0 ? 'text-red-500' : 'text-green-500'}`}>{p.variance > 0 ? '+' : ''}{formatCurrency(p.variance)}</td>
-                              <td className="py-4 px-6 text-right">
-                                <button onClick={() => setDeletingPurchaseId(p.id)} className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors ml-auto">
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  )}
+              <div className="flex flex-col gap-6">
+                
+                {/* Monthly Stats Cards */}
+                {(() => {
+                  const filtered = fetchedPurchases.filter(p => (p.raw_material?.name || "").toLowerCase().includes(searchMonthly.toLowerCase()));
+                  const totalActual = filtered.reduce((sum, p) => sum + p.total_amount, 0);
+                  const totalVariance = filtered.reduce((sum, p) => sum + p.variance, 0);
+                  const totalStandard = totalActual - totalVariance;
+                  const variancePercent = totalStandard > 0 ? (totalVariance / totalStandard) * 100 : 0;
+                  
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* Total Purchase Card */}
+                      <div className="bg-white border border-neutral-200 rounded-[24px] p-6 relative overflow-hidden shadow-sm flex flex-col justify-between h-[120px]">
+                        <div className="absolute top-[-20px] right-[-20px] w-32 h-32 bg-[#f9f8fc] rounded-full z-0"></div>
+                        <div className="relative z-10 text-[10px] font-bold text-neutral-500 tracking-wider mb-1 uppercase">Total Purchase</div>
+                        <div className="relative z-10 text-2xl font-black text-neutral-900 mb-1">{formatCurrency(totalActual)}</div>
+                        <div className="relative z-10 text-[10px] font-medium text-neutral-400">Actual purchase value</div>
+                      </div>
+
+                      {/* Standard Cost Card */}
+                      <div className="bg-white border border-neutral-200 rounded-[24px] p-6 relative overflow-hidden shadow-sm flex flex-col justify-between h-[120px]">
+                        <div className="absolute top-[-20px] right-[-20px] w-32 h-32 bg-[#fcf9f9] rounded-full z-0"></div>
+                        <div className="relative z-10 text-[10px] font-bold text-neutral-500 tracking-wider mb-1 uppercase">Standard Cost</div>
+                        <div className="relative z-10 text-2xl font-black text-neutral-900 mb-1">{formatCurrency(totalStandard)}</div>
+                        <div className="relative z-10 text-[10px] font-medium text-neutral-400">Expected cost setup</div>
+                      </div>
+
+                      {/* Purchase Variance Card */}
+                      <div className="bg-white border border-neutral-200 rounded-[24px] p-6 relative overflow-hidden shadow-sm flex flex-col justify-between h-[120px]">
+                        <div className="relative z-10 text-[10px] font-bold text-neutral-500 tracking-wider mb-1 uppercase">Purchase Variance</div>
+                        <div className={`relative z-10 text-2xl font-black flex items-center gap-1 mb-1 ${totalVariance > 0 ? 'text-[#ff6b2b]' : 'text-green-500'}`}>
+                          {totalVariance > 0 ? '+' : ''}{formatCurrency(totalVariance)}
+                        </div>
+                        <div className="relative z-10 text-[10px] font-medium text-neutral-400">Actual vs Standard</div>
+                      </div>
+
+                      {/* Variance % Card */}
+                      <div className="bg-white border border-neutral-200 rounded-[24px] p-6 relative overflow-hidden shadow-sm flex flex-col justify-between h-[120px]">
+                        <div className="relative z-10 text-[10px] font-bold text-neutral-500 tracking-wider mb-1 uppercase">Variance %</div>
+                        <div className={`relative z-10 text-2xl font-black flex items-center gap-1 mb-1 ${variancePercent > 0 ? 'text-[#ff6b2b]' : 'text-green-500'}`}>
+                          {variancePercent > 0 ? '+' : ''}{variancePercent.toFixed(1)}%
+                        </div>
+                        <div className="relative z-10 text-[10px] font-medium text-neutral-400">Overall variance</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="bg-white border border-neutral-200 rounded-[32px] overflow-hidden shadow-sm">
+                  <div className="p-8 border-b border-neutral-100 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                    <div><h2 className="text-2xl font-bold text-neutral-900">Monthly Purchases</h2><p className="text-sm text-neutral-500 mt-1">Review finalized purchase history for a specific month.</p></div>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <div className="relative flex-1 sm:flex-initial">
+                        <input type="text" placeholder="Search raw material..." value={searchMonthly} onChange={(e) => setSearchMonthly(e.target.value)} className="w-full sm:w-64 bg-[#f8f5fb] border-none rounded-2xl pl-4 pr-10 py-3 text-sm text-neutral-800 font-medium focus:ring-2 focus:ring-[#6b21a8]/20 outline-none placeholder:text-neutral-400" />
+                        <Search className="w-4 h-4 text-neutral-400 absolute right-4 top-1/2 -translate-y-1/2" />
+                      </div>
+                      <input type="month" value={monthlyMonth} onChange={e => setMonthlyMonth(e.target.value)} className="bg-[#f8f5fb] border-none rounded-2xl px-4 py-3 text-sm text-neutral-800 font-bold focus:ring-2 focus:ring-[#6b21a8]/20 outline-none" />
+                    </div>
+                  </div>
+                  <div className="p-8 overflow-x-auto">
+                    {isLoading ? (
+                      <div className="py-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#6b21a8]" /></div>
+                    ) : (
+                      <table className="w-full text-left border-collapse">
+                        <thead className="bg-[#f8f5fb] text-xs font-bold text-neutral-500 tracking-wider whitespace-nowrap">
+                          <tr>
+                            <th className="py-4 px-6 rounded-l-xl">DATE</th>
+                            <th className="py-4 px-4">RAW MATERIAL</th>
+                            <th className="py-4 px-4">QTY</th>
+                            <th className="py-4 px-4">VENDOR</th>
+                            <th className="py-4 px-4">ACTUAL PRICE</th>
+                            <th className="py-4 px-4">AMOUNT</th>
+                            <th className="py-4 px-4">VARIANCE</th>
+                            <th className="py-4 px-6 rounded-r-xl text-right">ACTION</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100 whitespace-nowrap">
+                          {fetchedPurchases.filter(p => (p.raw_material?.name || "").toLowerCase().includes(searchMonthly.toLowerCase())).length === 0 ? (
+                            <tr><td colSpan={8} className="text-center py-12"><span className="font-semibold text-neutral-400">No purchases found.</span></td></tr>
+                          ) : (
+                            fetchedPurchases.filter(p => (p.raw_material?.name || "").toLowerCase().includes(searchMonthly.toLowerCase())).map((p) => (
+                              <tr key={p.id} className="hover:bg-neutral-50 transition-colors">
+                                <td className="py-4 px-6 text-sm text-neutral-500">{new Date(p.purchase_date).toLocaleDateString()}</td>
+                                <td className="py-4 px-4 font-bold text-neutral-800">{p.raw_material?.name}</td>
+                                <td className="py-4 px-4 font-medium text-neutral-700">{p.quantity} {p.unit}</td>
+                                <td className="py-4 px-4 text-sm text-neutral-500">{p.vendor?.name || "-"}</td>
+                                <td className="py-4 px-4 text-sm font-medium text-neutral-600">{formatCurrency(p.actual_price)}/{p.unit}</td>
+                                <td className="py-4 px-4 font-bold text-neutral-900">{formatCurrency(p.total_amount)}</td>
+                                <td className={`py-4 px-4 font-bold ${p.variance > 0 ? 'text-red-500' : 'text-green-500'}`}>{p.variance > 0 ? '+' : ''}{formatCurrency(p.variance)}</td>
+                                <td className="py-4 px-6 text-right">
+                                  <button onClick={() => setDeletingPurchaseId(p.id)} className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors ml-auto">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
-
-          </div>
+</div>
         </div>
       </div>
       <ConfirmationModal
