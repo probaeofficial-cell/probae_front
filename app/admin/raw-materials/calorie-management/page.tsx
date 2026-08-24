@@ -37,6 +37,7 @@ export default function CalorieManagementPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
   // Notifications State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -84,13 +85,23 @@ export default function CalorieManagementPage() {
   // Load Raw Materials
   const fetchMaterials = useCallback(async () => {
     if (!user) return;
-    setIsLoading(true);
+        if (page === 1) {
+      setIsLoading(true);
+    } else {
+      setIsFetchingNextPage(true);
+      await new Promise(r => setTimeout(r, 2000));
+    }
     try {
       const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch);
       const filtered = (data.items || []).filter(
         (m: RawMaterial) => m.calories !== null && m.calories !== undefined && m.calories !== 0
       );
-      setMaterials(filtered);
+      setMaterials(prev => {
+        if (page === 1) return filtered;
+        const existingIds = new Set(prev.map(item => item.id || item.ulid));
+        const newItems = filtered.filter(item => !existingIds.has(item.id || item.ulid));
+        return [...prev, ...newItems];
+      });
       // We adjust the pagination total based on the filtered set's ratio to server's total,
       // or simply use data.total if we keep server count, but since we are showing fewer,
       // let's set totalMaterials to the length of materials or match the backend.
@@ -103,6 +114,7 @@ export default function CalorieManagementPage() {
       showToast(error.message || "Failed to load raw materials", "error");
     } finally {
       setIsLoading(false);
+      setIsFetchingNextPage(false);
     }
   }, [user, page, pageSize, debouncedSearch]);
 
@@ -121,6 +133,13 @@ export default function CalorieManagementPage() {
   // ─── Event Handlers ────────────────────────────────────────────────────────
   // Pagination
   const totalPages = Math.ceil(totalMaterials / pageSize);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const bottom = Math.abs(e.currentTarget.scrollHeight - e.currentTarget.scrollTop - e.currentTarget.clientHeight) < 2;
+    if (bottom && !isLoading && !isFetchingNextPage && page < totalPages) {
+      setPage(prev => prev + 1);
+    }
+  };
   const handlePrevPage = () => {
     if (page > 1) setPage(page - 1);
   };
@@ -231,10 +250,15 @@ export default function CalorieManagementPage() {
           </div>
 
           {/* Grid Content Area */}
-          <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin">
+          {!isLoading && totalMaterials > 0 && (
+            <div className="text-xs text-neutral-400 font-medium px-2 mb-3 mt-[-12px]">
+              Showing {materials.length} of {totalMaterials}
+            </div>
+          )}
+          <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
             {isLoading ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
-                <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
+                <Loader2 className="w-8 h-8 text-[#6b21a8] animate-spin" />
                 <span className="text-neutral-500 text-sm font-medium">Loading materials...</span>
               </div>
             ) : materials.length === 0 ? (
@@ -362,30 +386,26 @@ export default function CalorieManagementPage() {
                 })}
               </div>
             )}
+            {isFetchingNextPage && (
+              <div className="py-6 flex justify-center items-center w-full">
+                <Loader2 className="w-6 h-6 text-[#6b21a8] animate-spin" />
+                <span className="ml-2 text-sm text-neutral-500 font-medium">Loading more...</span>
+              </div>
+            )}
+            {!isLoading && !isFetchingNextPage && page >= totalPages && totalPages > 0 && (
+              <div className="py-8 flex flex-col justify-center items-center w-full animate-in fade-in zoom-in duration-500">
+                <div className="w-10 h-10 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-3 shadow-sm ring-4 ring-green-50/50">
+                  <svg className="w-6 h-6 animate-[bounce_2s_ease-in-out_infinite]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="text-sm text-neutral-400 font-bold">You're all caught up!</span>
+              </div>
+            )}
           </div>
 
           {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-4 py-4 shrink-0 border-t border-neutral-200">
-              <button
-                disabled={page === 1}
-                onClick={handlePrevPage}
-                className="w-10 h-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center text-neutral-600 hover:border-[#7c3aed] hover:text-[#7c3aed] disabled:opacity-50 disabled:hover:text-neutral-600 disabled:hover:border-neutral-200 transition-colors shadow-sm cursor-pointer"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                disabled={page === totalPages}
-                onClick={handleNextPage}
-                className="w-10 h-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center text-neutral-600 hover:border-[#7c3aed] hover:text-[#7c3aed] disabled:opacity-50 disabled:hover:text-neutral-600 disabled:hover:border-neutral-200 transition-colors shadow-sm cursor-pointer"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          )}
+          
         </div>
       </div>
 

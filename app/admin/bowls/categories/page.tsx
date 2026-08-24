@@ -36,6 +36,7 @@ export default function BowlCategoriesPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
   // Modal State for viewing bowls in a category
   const [selectedCategoryForModal, setSelectedCategoryForModal] = useState<BowlCategory | null>(null);
@@ -81,16 +82,28 @@ export default function BowlCategoriesPage() {
 
   const fetchCategories = useCallback(async () => {
     if (!user) return;
-    setIsLoading(true);
+        if (page === 1) {
+      setIsLoading(true);
+    } else {
+      setIsFetchingNextPage(true);
+      await new Promise(r => setTimeout(r, 2000));
+    }
     try {
       const data = await endpoints.bowlCategories.getBowlCategories(page, pageSize, debouncedSearch);
-      setCategories(data.items || []);
+      setCategories(prev => {
+        const newItems = data.items || [];
+        if (page === 1) return newItems;
+        const existingIds = new Set(prev.map((item: any) => item.id || item.ulid));
+        const uniqueNewItems = newItems.filter((item: any) => !existingIds.has(item.id || item.ulid));
+        return [...prev, ...uniqueNewItems];
+      });
       setTotalCategories(data.total || 0);
     } catch (error: any) {
       console.error("Error loading categories:", error);
       showToast(error.message || "Failed to load bowl categories", "error");
     } finally {
       setIsLoading(false);
+      setIsFetchingNextPage(false);
     }
   }, [user, page, pageSize, debouncedSearch]);
 
@@ -108,6 +121,13 @@ export default function BowlCategoriesPage() {
 
   // ─── Event Handlers ────────────────────────────────────────────────────────
   const totalPages = Math.ceil(totalCategories / pageSize);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const bottom = Math.abs(e.currentTarget.scrollHeight - e.currentTarget.scrollTop - e.currentTarget.clientHeight) < 2;
+    if (bottom && !isLoading && !isFetchingNextPage && page < totalPages) {
+      setPage(prev => prev + 1);
+    }
+  };
   const handlePrevPage = () => {
     if (page > 1) setPage(page - 1);
   };
@@ -200,7 +220,12 @@ export default function BowlCategoriesPage() {
             </ProbaeButton>
           </div>
 
-          <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin">
+          {!isLoading && totalCategories > 0 && (
+            <div className="text-xs text-neutral-400 font-medium px-2 mb-3 mt-[-12px]">
+              Showing {categories.length} of {totalCategories}
+            </div>
+          )}
+          <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
             {isLoading ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
@@ -307,33 +332,24 @@ export default function BowlCategoriesPage() {
                 })}
               </div>
             )}
-
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-8 mb-4 px-2">
-                <span className="text-[13px] font-medium text-neutral-500">
-                  Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCategories)} of {totalCategories} categories
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handlePrevPage}
-                    disabled={page === 1}
-                    className="w-9 h-9 rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <span className="text-[13px] font-bold text-neutral-700 min-w-[2rem] text-center">
-                    {page}
-                  </span>
-                  <button
-                    onClick={handleNextPage}
-                    disabled={page === totalPages}
-                    className="w-9 h-9 rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+            {isFetchingNextPage && (
+              <div className="py-6 flex justify-center items-center w-full">
+                <Loader2 className="w-6 h-6 text-[#7c3aed] animate-spin" />
+                <span className="ml-2 text-sm text-neutral-500 font-medium">Loading more...</span>
               </div>
             )}
+            {!isLoading && !isFetchingNextPage && page >= totalPages && totalPages > 0 && (
+              <div className="py-8 flex flex-col justify-center items-center w-full animate-in fade-in zoom-in duration-500">
+                <div className="w-10 h-10 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-3 shadow-sm ring-4 ring-green-50/50">
+                  <svg className="w-6 h-6 animate-[bounce_2s_ease-in-out_infinite]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="text-sm text-neutral-400 font-bold">You're all caught up!</span>
+              </div>
+            )}
+
+            
           </div>
         </div>
       </div>
@@ -388,7 +404,7 @@ export default function BowlCategoriesPage() {
                   <p className="text-sm text-neutral-400 mt-2 max-w-[200px]">Add some bowls to this category to see them here.</p>
                 </div>
               )}
-            </div>
+          </div>
             <div className="p-4 sm:p-6 bg-neutral-50 border-t border-neutral-100 flex justify-end">
               <button
                 onClick={() => setSelectedCategoryForModal(null)}

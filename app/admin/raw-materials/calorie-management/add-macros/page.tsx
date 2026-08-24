@@ -315,7 +315,7 @@ export default function AddMacrosPage() {
                         onClick={() => handleSelectMaterial(m)}
                         className={`px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
                           selectedMaterial?.id === m.id 
-                            ? "bg-[#7c3aed] text-white" 
+                            ? "bg-[#6b21a8] text-white" 
                             : "text-neutral-700 hover:bg-neutral-100"
                         }`}
                       >

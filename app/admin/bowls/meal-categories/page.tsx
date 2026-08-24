@@ -32,6 +32,7 @@ export default function MealCategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [systemSettings, setSystemSettings] = useState<any>({});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,13 +73,24 @@ export default function MealCategoriesPage() {
 
   const fetchCategories = useCallback(async () => {
     if (!user) return;
-    setIsLoading(true);
+        if (page === 1) {
+      setIsLoading(true);
+    } else {
+      setIsFetchingNextPage(true);
+      await new Promise(r => setTimeout(r, 2000));
+    }
     try {
       const [data, settingsRes] = await Promise.all([
         endpoints.mealCategories.getMealCategories(page, pageSize, debouncedSearch),
         endpoints.settings.getSystemSettings().catch(() => ({}))
       ]);
-      setCategories(data.items || []);
+      setCategories(prev => {
+        const newItems = data.items || [];
+        if (page === 1) return newItems;
+        const existingIds = new Set(prev.map((item: any) => item.id || item.ulid));
+        const uniqueNewItems = newItems.filter((item: any) => !existingIds.has(item.id || item.ulid));
+        return [...prev, ...uniqueNewItems];
+      });
       setTotalCategories(data.total || 0);
       if (settingsRes && (settingsRes as any).R2_BASE_URL) {
         setSystemSettings({ R2_BASE_URL: (settingsRes as any).R2_BASE_URL });
@@ -87,6 +99,7 @@ export default function MealCategoriesPage() {
       console.error("Failed to fetch meal categories:", error);
     } finally {
       setIsLoading(false);
+      setIsFetchingNextPage(false);
     }
   }, [user, page, pageSize, debouncedSearch]);
 
@@ -95,6 +108,13 @@ export default function MealCategoriesPage() {
   }, [fetchCategories]);
 
   const totalPages = Math.ceil(totalCategories / pageSize) || 1;
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const bottom = Math.abs(e.currentTarget.scrollHeight - e.currentTarget.scrollTop - e.currentTarget.clientHeight) < 2;
+    if (bottom && !isLoading && !isFetchingNextPage && page < totalPages) {
+      setPage(prev => prev + 1);
+    }
+  };
 
   const handleOpenCreateModal = () => {
     setIsEditMode(false);
@@ -221,7 +241,12 @@ export default function MealCategoriesPage() {
             </ProbaeButton>
           </div>
 
-          <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin">
+          {!isLoading && totalCategories > 0 && (
+            <div className="text-xs text-neutral-400 font-medium px-2 mb-3 mt-[-12px]">
+              Showing {categories.length} of {totalCategories}
+            </div>
+          )}
+          <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
           {isLoading ? (
             <div className="h-64 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
@@ -278,27 +303,7 @@ export default function MealCategoriesPage() {
           )}
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 py-4 shrink-0 border-t border-neutral-200">
-            <button
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-              className="w-10 h-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center text-neutral-600 hover:border-[#7c3aed] disabled:opacity-50"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              disabled={page === totalPages}
-              onClick={() => setPage(page + 1)}
-              className="w-10 h-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center text-neutral-600 hover:border-[#7c3aed] disabled:opacity-50"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        )}
+        
         </div>
       </div>
 

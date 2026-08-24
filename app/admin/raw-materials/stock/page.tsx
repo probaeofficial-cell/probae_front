@@ -33,6 +33,7 @@ export default function StockManagementPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
   // Modals
   const [selectedMaterial, setSelectedMaterial] = useState<RawMaterial | null>(null);
@@ -51,14 +52,26 @@ export default function StockManagementPage() {
   // ─── Fetch Data ────────────────────────────────────────────────────────────
   const fetchMaterials = useCallback(async () => {
     try {
+          if (page === 1) {
       setIsLoading(true);
+    } else {
+      setIsFetchingNextPage(true);
+      await new Promise(r => setTimeout(r, 2000));
+    }
       const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch);
-      setMaterials(data.items || []);
+      setMaterials(prev => {
+        const newItems = data.items || [];
+        if (page === 1) return newItems;
+        const existingIds = new Set(prev.map((item: any) => item.id || item.ulid));
+        const uniqueNewItems = newItems.filter((item: any) => !existingIds.has(item.id || item.ulid));
+        return [...prev, ...uniqueNewItems];
+      });
       setTotalMaterials(data.total || 0);
     } catch (error) {
       console.error("Failed to fetch raw materials", error);
     } finally {
       setIsLoading(false);
+      setIsFetchingNextPage(false);
     }
   }, [page, pageSize, debouncedSearch]);
 
@@ -112,6 +125,15 @@ export default function StockManagementPage() {
     return gradients[id % gradients.length];
   };
 
+
+  const totalPages = Math.ceil(totalMaterials / pageSize);
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const bottom = Math.abs(e.currentTarget.scrollHeight - e.currentTarget.scrollTop - e.currentTarget.clientHeight) < 2;
+    if (bottom && !isLoading && !isFetchingNextPage && page < totalPages) {
+      setPage(prev => prev + 1);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
@@ -142,7 +164,12 @@ export default function StockManagementPage() {
           </div>
 
           {/* Grid Content Area */}
-          <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin">
+          {!isLoading && totalMaterials > 0 && (
+            <div className="text-xs text-neutral-400 font-medium px-2 mb-3 mt-[-12px]">
+              Showing {materials.length} of {totalMaterials}
+            </div>
+          )}
+          <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
             {isLoading ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-8 h-8 text-[#6b21a8] animate-spin" />
@@ -223,6 +250,22 @@ export default function StockManagementPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+            {isFetchingNextPage && (
+              <div className="py-6 flex justify-center items-center w-full">
+                <Loader2 className="w-6 h-6 text-[#6b21a8] animate-spin" />
+                <span className="ml-2 text-sm text-neutral-500 font-medium">Loading more...</span>
+              </div>
+            )}
+            {!isLoading && !isFetchingNextPage && page >= totalPages && totalPages > 0 && (
+              <div className="py-8 flex flex-col justify-center items-center w-full animate-in fade-in zoom-in duration-500">
+                <div className="w-10 h-10 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-3 shadow-sm ring-4 ring-green-50/50">
+                  <svg className="w-6 h-6 animate-[bounce_2s_ease-in-out_infinite]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="text-sm text-neutral-400 font-bold">You're all caught up!</span>
               </div>
             )}
           </div>
