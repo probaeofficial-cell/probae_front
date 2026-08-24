@@ -16,29 +16,7 @@ export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
-    rawMaterials: true,
-  });
-
-  // Auto-expand sections when an active sub-item is detected
-  useEffect(() => {
-    setOpenMenus((prev) => {
-      const next = { ...prev };
-      let changed = false;
-      Object.entries(MAIN_MENU).forEach(([menuKey, item]) => {
-        if (item.subItems) {
-          const hasActiveSub = Object.values(item.subItems).some(
-            (sub) => sub.path && (pathname === sub.path || pathname.startsWith(sub.path + "/"))
-          );
-          if (hasActiveSub && !next[menuKey]) {
-            next[menuKey] = true;
-            changed = true;
-          }
-        }
-      });
-      return changed ? next : prev;
-    });
-  }, [pathname]);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   useEffect(() => {
@@ -151,9 +129,9 @@ export function Sidebar() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (hasSub && !collapsed) {
+                      if (hasSub) {
                         setOpenMenus((prev) => ({ ...prev, [menuKey]: !prev[menuKey] }));
-                      } else if (!hasSub && item.path) {
+                      } else if (item.path) {
                         router.push(item.path);
                       }
                     }}
@@ -195,6 +173,40 @@ export function Sidebar() {
                   {collapsed && (
                     <div className="absolute left-14 top-1/2 -translate-y-1/2 bg-white text-black text-xs font-semibold px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
                       {item.label}
+                    </div>
+                  )}
+
+                  {/* Collapsed sub-items */}
+                  {hasSub && collapsed && openMenus[menuKey] && (
+                    <div className="flex flex-col items-center gap-2 mt-2 bg-[#2a2a2a]/30 py-2 rounded-xl">
+                      {Object.entries(item.subItems!).map(([subKey, sub]) => {
+                        const isSubActive = sub.path
+                          ? pathname === sub.path || (pathname.startsWith(sub.path + "/") && !Object.values(item.subItems!).some(s => s.path && s.path !== sub.path && pathname.startsWith(s.path)))
+                          : false;
+                        return (
+                          <div
+                            key={subKey}
+                            className="relative group/sub w-full flex justify-center"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => sub.path && router.push(sub.path)}
+                              className={`w-8 h-8 rounded-xl border flex items-center justify-center hover:bg-[#2a2a2a] transition-colors ${
+                                isSubActive
+                                  ? "border-[#7c26d9] bg-[#7c26d9]/10"
+                                  : "border-transparent"
+                              }`}
+                            >
+                              <span
+                                className={`w-2 h-2 rounded-full ${sub.dotColor}`}
+                              />
+                            </button>
+                            <div className="absolute left-12 top-1/2 -translate-y-1/2 bg-[#2a2a2a] border border-[#3a3a3a] text-white text-xs font-medium px-2.5 py-1.5 rounded-lg opacity-0 group-hover/sub:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
+                              {sub.label}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -247,39 +259,7 @@ export function Sidebar() {
                     </div>
                   )}
 
-                  {/* Collapsed sub-items */}
-                  {hasSub && collapsed && (
-                    <div className="flex flex-col items-center gap-2 mt-2">
-                      {Object.entries(item.subItems!).map(([subKey, sub]) => {
-                        const isSubActive = sub.path
-                          ? pathname === sub.path || pathname.startsWith(sub.path + "/")
-                          : false;
-                        return (
-                          <div
-                            key={subKey}
-                            className="relative group/sub w-full flex justify-center"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => sub.path && router.push(sub.path)}
-                              className={`w-8 h-8 rounded-xl border flex items-center justify-center hover:bg-[#2a2a2a] transition-colors ${
-                                isSubActive
-                                  ? "border-[#7c26d9] bg-[#7c26d9]/10"
-                                  : "border-[#2a2a2a]"
-                              }`}
-                            >
-                              <span
-                                className={`w-2 h-2 rounded-full ${sub.dotColor}`}
-                              />
-                            </button>
-                            <div className="absolute left-12 top-1/2 -translate-y-1/2 bg-[#2a2a2a] border border-[#3a3a3a] text-white text-xs font-medium px-2.5 py-1.5 rounded-lg opacity-0 group-hover/sub:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
-                              {sub.label}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+
                 </li>
               );
             })}
