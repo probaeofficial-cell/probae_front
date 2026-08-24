@@ -336,6 +336,20 @@ export const endpoints = {
       let query = `?page=${page}&size=${size}`;
       return await api.get<import("./types").PaginatedCostLogs>(`/raw-materials/${ulid}/cost-logs${query}`);
     },
+    purchases: {
+      batchCreate: async (data: any[]) => {
+        return await api.post<any[]>("/raw-materials/purchases/batch", data);
+      },
+      getDaily: async (date: string, page = 1, size = 50) => {
+        return await api.get<any>(`/raw-materials/purchases/daily?date=${date}&page=${page}&size=${size}`);
+      },
+      getMonthly: async (month: string, page = 1, size = 50) => {
+        return await api.get<any>(`/raw-materials/purchases/monthly?month=${month}&page=${page}&size=${size}`);
+      },
+      delete: async (id: number) => {
+        return await api.del<void>(`/raw-materials/purchases/${id}`);
+      },
+    },
   },
 
   rawMaterialCategories: {

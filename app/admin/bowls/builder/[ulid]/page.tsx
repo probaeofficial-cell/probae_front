@@ -443,7 +443,7 @@ export default function BowlBuilderPage() {
                   {/* Header Row */}
                   <div className={`flex items-center text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider h-10 rounded-t-[16px] ${section.headerColor}`}>
                     <div className="w-10 sm:w-12 text-center border-r border-white/30 h-full flex items-center justify-center">#</div>
-                    <div className="flex-1 px-3 sm:px-4 border-r border-white/30 h-full flex items-center">RAW MATERIAL</div>
+                    <div className="flex-1 px-3 sm:px-4 border-r border-white/30 h-full flex items-center">INGREDIENT</div>
                     <div className="w-20 sm:w-24 text-center border-r border-white/30 h-full flex items-center justify-center">WEIGHT (g)</div>
                     <div className="w-16 sm:w-20 text-center border-r border-white/30 h-full flex items-center justify-center">Cal</div>
                     <div className="w-16 sm:w-20 text-center border-r border-white/30 h-full flex items-center justify-center">Price</div>
