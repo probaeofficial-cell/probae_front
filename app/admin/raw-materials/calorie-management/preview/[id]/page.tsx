@@ -181,7 +181,7 @@ export default function MacrosPreviewPage({ params }: PageProps) {
               <div className="flex flex-col gap-1 mt-3">
                 <div className="flex justify-start gap-6">
                   <div className="flex flex-col items-center">
-                    <span className="text-[14px] text-neutral-800 font-medium mb-1.5 font-poppins">Protien</span>
+                    <span className="text-[14px] text-neutral-800 font-medium mb-1.5 font-poppins">Protein</span>
                     <div className="bg-[#6A0FAD] text-white text-base font-bold w-[60px] h-[54px] rounded-[16px] flex items-center justify-center shadow-sm">
                       {material.protein || 0}g
                     </div>

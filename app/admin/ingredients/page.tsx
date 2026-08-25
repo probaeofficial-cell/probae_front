@@ -331,28 +331,28 @@ export default function IngredientsPage() {
                         </div>
 
                         {/* Macros Badges */}
-                        <div className="flex justify-between w-full mt-2">
+                        <div className="flex gap-1 justify-between w-full mt-2">
                           <div className="flex flex-col items-center gap-1">
-                            <span className="text-[11px] text-[#333333] font-medium select-none">Protien</span>
-                            <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
+                            <span className="text-[10px] text-[#333333] font-medium tracking-tight select-none">Protein</span>
+                            <div className="bg-[#6A0FAD] text-white text-[10px] font-medium min-w-[30px] px-1 h-[22px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                               {Math.round(item.total_protein || 0)}g
                             </div>
                           </div>
                           <div className="flex flex-col items-center gap-1">
-                            <span className="text-[11px] text-[#333333] font-medium select-none">Carb</span>
-                            <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
+                            <span className="text-[10px] text-[#333333] font-medium tracking-tight select-none">Carb</span>
+                            <div className="bg-[#6A0FAD] text-white text-[10px] font-medium min-w-[30px] px-1 h-[22px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                               {Math.round(item.total_carbs || 0)}g
                             </div>
                           </div>
                           <div className="flex flex-col items-center gap-1">
-                            <span className="text-[11px] text-[#333333] font-medium select-none">Fiber</span>
-                            <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
+                            <span className="text-[10px] text-[#333333] font-medium tracking-tight select-none">Fiber</span>
+                            <div className="bg-[#6A0FAD] text-white text-[10px] font-medium min-w-[30px] px-1 h-[22px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                               {Math.round(item.total_fiber || 0)}g
                             </div>
                           </div>
                           <div className="flex flex-col items-center gap-1">
-                            <span className="text-[11px] text-[#333333] font-medium select-none">Fat</span>
-                            <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
+                            <span className="text-[10px] text-[#333333] font-medium tracking-tight select-none">Fat</span>
+                            <div className="bg-[#6A0FAD] text-white text-[10px] font-medium min-w-[30px] px-1 h-[22px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                               {Math.round(item.total_fat || 0)}g
                             </div>
                           </div>

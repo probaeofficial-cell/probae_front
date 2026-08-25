@@ -2,6 +2,8 @@
 "use client";
 
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { PriceTrends } from "@/components/admin/raw-materials/PriceTrends";
+import { TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
@@ -35,7 +37,7 @@ export default function PurchaseHistoryPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   
-  const [activeTab, setActiveTab] = useState<"record" | "daily" | "monthly">("record");
+  const [activeTab, setActiveTab] = useState<"record" | "daily" | "trends" | "monthly">("record");
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -321,6 +323,7 @@ export default function PurchaseHistoryPage() {
             <button onClick={() => setActiveTab("record")} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === "record" ? "bg-white text-[#6b21a8] shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}><ListOrdered className="w-4 h-4" />Record Purchase</button>
             <button onClick={() => setActiveTab("daily")} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === "daily" ? "bg-white text-[#6b21a8] shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}><CalendarDays className="w-4 h-4" />Daily View</button>
             <button onClick={() => setActiveTab("monthly")} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === "monthly" ? "bg-white text-[#6b21a8] shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}><CalendarRange className="w-4 h-4" />Monthly View</button>
+            <button onClick={() => setActiveTab("trends")} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === "trends" ? "bg-white text-[#6b21a8] shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}><TrendingUp className="w-4 h-4" />Price Trends</button>
           </div>
         </div>
 
@@ -668,6 +671,12 @@ export default function PurchaseHistoryPage() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {activeTab === "trends" && (
+
+              <PriceTrends />
+
             )}
 </div>
         </div>

@@ -278,11 +278,11 @@ export default function EditMacrosPage({ params }: PageProps) {
                 />
               </div>
 
-              {/* Protien & Carb */}
+              {/* Protein & Carb */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-neutral-800 mb-1.5">
-                    Protien
+                    Protein
                   </label>
                   <input
                     type="text"

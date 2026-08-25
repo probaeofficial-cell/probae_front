@@ -329,9 +329,9 @@ export default function CalorieManagementPage() {
                       </div>
 
                       {/* Info and Macros row */}
-                      <div className="flex justify-between items-start gap-4">
+                      <div className="flex justify-between items-start gap-2">
                         {/* Left Column: Name & Calorie Badge */}
-                        <div className="flex flex-col justify-start w-[38%] shrink-0 pt-1">
+                        <div className="flex flex-col justify-start w-[30%] shrink-0 pt-1">
                           <h3 className="text-[22px] font-bold text-[#111111] leading-tight">
                             {material.name}
                           </h3>
@@ -343,28 +343,28 @@ export default function CalorieManagementPage() {
                         {/* Right Column: Macro labels + badges & Micronutrients list */}
                         <div className="flex-1 flex flex-col items-start pt-1">
                           {/* 4 Macros Badges */}
-                          <div className="flex justify-between w-full pr-1">
+                          <div className="flex gap-1 justify-between w-full">
                             <div className="flex flex-col items-center gap-1">
-                              <span className="text-[11px] text-[#333333] font-medium select-none">Protien</span>
-                              <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
+                              <span className="text-[10px] text-[#333333] font-medium tracking-tight select-none">Protein</span>
+                              <div className="bg-[#6A0FAD] text-white text-[10px] font-medium min-w-[30px] px-1 h-[22px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                                 {material.protein || 0}g
                               </div>
                             </div>
                             <div className="flex flex-col items-center gap-1">
-                              <span className="text-[11px] text-[#333333] font-medium select-none">Carb</span>
-                              <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
+                              <span className="text-[10px] text-[#333333] font-medium tracking-tight select-none">Carb</span>
+                              <div className="bg-[#6A0FAD] text-white text-[10px] font-medium min-w-[30px] px-1 h-[22px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                                 {material.carbs || 0}g
                               </div>
                             </div>
                             <div className="flex flex-col items-center gap-1">
-                              <span className="text-[11px] text-[#333333] font-medium select-none">Fiber</span>
-                              <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
+                              <span className="text-[10px] text-[#333333] font-medium tracking-tight select-none">Fiber</span>
+                              <div className="bg-[#6A0FAD] text-white text-[10px] font-medium min-w-[30px] px-1 h-[22px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                                 {material.fiber || 0}g
                               </div>
                             </div>
                             <div className="flex flex-col items-center gap-1">
-                              <span className="text-[11px] text-[#333333] font-medium select-none">Fat</span>
-                              <div className="bg-[#6A0FAD] text-white text-[12px] font-medium w-[34px] h-[26px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
+                              <span className="text-[10px] text-[#333333] font-medium tracking-tight select-none">Fat</span>
+                              <div className="bg-[#6A0FAD] text-white text-[10px] font-medium min-w-[30px] px-1 h-[22px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
                                 {material.fat || 0}g
                               </div>
                             </div>
