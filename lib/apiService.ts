@@ -512,6 +512,19 @@ export const endpoints = {
     },
   },
 
+    planTiers: {
+    list: async (params?: any) => {
+      const p = new URLSearchParams();
+      if (params?.page) p.append("page", params.page.toString());
+      if (params?.limit) p.append("limit", params.limit.toString());
+      if (params?.search) p.append("search", params.search);
+      return await api.get(`/plans?${p.toString()}`);
+    },
+    get: async (ulid: string) => await api.get(`/plans/${ulid}`),
+    create: async (data: any) => await api.post("/plans", data),
+    update: async (ulid: string, data: any) => await api.patch(`/plans/${ulid}`, data),
+    delete: async (ulid: string) => await api.del(`/plans/${ulid}`),
+  },
   bowls: {
     getBowls: async (page: number, size: number, search?: string): Promise<PaginatedBowls> => {
       let query = `?page=${page}&page_size=${size}`;

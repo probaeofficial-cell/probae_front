@@ -1,5 +1,6 @@
 import {
   Home,
+  Calendar,
   Wheat,
   Layers,
   Coffee, // using Coffee or Salad for bowl as fallback if bowl doesn't exist
@@ -27,7 +28,8 @@ export type MenuItem = {
 };
 
 export const MAIN_MENU: Record<string, MenuItem> = {
-  dashboard: { label: "Dashboard", icon: Home, path: "/admin/dashboard" },
+  dashboard: { label: "Dashboard", icon: Home,
+  Calendar, path: "/admin/dashboard" },
   rawMaterials: {
     label: "Raw materials",
     icon: Wheat,
@@ -59,6 +61,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       bundles: { label: "Bundles", dotColor: "bg-teal-500", path: "/admin/packaging/bundles" },
     },
   },
+  planTiers: { label: "Plan Tiers", icon: Calendar, path: "/admin/plans" },
   orders: { label: "Orders", icon: Package, path: "/admin/orders" },
   customers: { label: "Customers", icon: Users, badge: 3, path: "/admin/customers" },
 };
