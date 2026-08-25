@@ -346,7 +346,7 @@ export default function MealCategoriesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-semibold text-neutral-600 uppercase mb-1 block">Time From (Optional)</label>
                   <input type="time" value={formData.time_from} onChange={(e) => setFormData({...formData, time_from: e.target.value})} className="text-neutral-900 w-full h-[48px] bg-neutral-50 border border-neutral-200 rounded-[14px] px-4 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 font-medium" />

@@ -602,7 +602,7 @@ export default function CostManagementPage() {
               Showing {materials.length} of {totalMaterials}
             </div>
           )}
-          <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
+          <div className="flex-1 overflow-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
               {isLoading ? (
                 <div className="h-64 flex flex-col items-center justify-center gap-3">
                   <Loader2 className="w-8 h-8 text-[#6b21a8] animate-spin" />
@@ -784,7 +784,7 @@ export default function CostManagementPage() {
           </div>
         ) : (
           /* ─── Detail/Preview View ─── */
-          <div className="flex-1 w-full rounded-2xl overflow-y-auto relative flex flex-col p-6 scrollbar-thin bg-[#fafafa]">
+          <div className="flex-1 w-full rounded-2xl overflow-auto relative flex flex-col p-6 scrollbar-thin bg-[#fafafa]">
             
             {/* Background Image Header Banner */}
             <div className="relative w-full h-[280px] rounded-3xl overflow-hidden shadow-sm mb-6 shrink-0 border border-neutral-100">
@@ -1081,7 +1081,7 @@ export default function CostManagementPage() {
     {isModalOpen && (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
         <div 
-          className="bg-white rounded-[40px] max-w-lg w-full p-8 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-neutral-100 flex flex-col gap-6 relative max-h-[90vh] overflow-y-auto scrollbar-thin"
+          className="bg-white rounded-[40px] max-w-lg w-full p-8 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-neutral-100 flex flex-col gap-6 relative max-h-[90vh] overflow-auto scrollbar-thin"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Modal Title */}
@@ -1098,7 +1098,7 @@ export default function CostManagementPage() {
           </div>
 
           {/* Two Drag & Drop Image Upload Zones (Task 2) */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Primary Thumbnail Zone */}
             <div className="flex flex-col gap-2">
               <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wide">
@@ -1328,7 +1328,7 @@ export default function CostManagementPage() {
             </div>
 
             {/* Yield Configuration */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
                   Yield ({formState.unit === 'l' ? 'ml' : 'g'}) / {formState.unit.toUpperCase()}

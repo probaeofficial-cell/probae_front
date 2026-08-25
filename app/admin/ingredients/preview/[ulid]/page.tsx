@@ -149,7 +149,7 @@ export default function IngredientPreviewPage() {
   return (
     <div className="flex flex-col flex-1 h-screen bg-[#E6E6E6] overflow-hidden p-4 sm:p-8">
       <Header />
-      <div className="flex-1 overflow-y-auto scrollbar-thin w-full pb-12">
+      <div className="flex-1 overflow-auto scrollbar-thin w-full pb-12">
         <div className="w-full max-w-5xl mx-auto flex flex-col px-4 sm:px-0 mt-6 mb-6">
           <Breadcrumbs segments={["Ingredients", "Preview Ingredient"]} />
           <div className="flex items-center gap-4 mt-4">

@@ -536,7 +536,7 @@ export default function BowlBuilderPage() {
         {/* Nutritional Card */}
         <div className="flex justify-center mt-12 mb-8">
           <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm w-full max-w-lg">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mb-4">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-neutral-800 ml-1">Protein</label>
                 <div className="bg-[#f2f2f2] h-10 rounded-xl px-4 flex items-center text-sm font-semibold text-neutral-500">{calculations.totalPro.toFixed(0)}g</div>
@@ -558,7 +558,7 @@ export default function BowlBuilderPage() {
               <label className="text-xs font-semibold text-neutral-800 ml-1">Micros</label>
               <div className="bg-[#f2f2f2] h-12 rounded-xl px-4 flex items-center text-xs font-semibold text-neutral-400">{micros}</div>
             </div>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-neutral-800 ml-1">Calorie</label>
                 <div className="bg-[#4CAF50] text-white h-10 rounded-xl px-4 flex items-center justify-center font-bold text-sm">{calculations.totalCal.toFixed(0)} Kcal</div>

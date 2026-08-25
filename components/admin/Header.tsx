@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, Search, User, KeyRound, LogOut, Check } from "lucide-react";
+import { Bell, Search, User, KeyRound, LogOut, Check, Menu } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "./UserAvatar";
@@ -74,6 +74,15 @@ export function Header() {
 
   return (
     <header className="flex items-center justify-between mb-8 relative z-40">
+      {/* Mobile Hamburger */}
+      <button
+        type="button"
+        className="md:hidden mr-3 text-neutral-600 hover:text-black transition-colors"
+        onClick={() => window.dispatchEvent(new CustomEvent("toggle-mobile-sidebar"))}
+      >
+        <Menu className="w-6 h-6" />
+      </button>
+
       {/* Search Bar */}
       <div className="relative flex-1 sm:flex-initial sm:w-full max-w-[180px] sm:max-w-md mr-2 sm:mr-0">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />

@@ -359,7 +359,7 @@ export default function IngredientFormPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col items-center">
+      <div className="flex-1 overflow-auto scrollbar-thin flex flex-col items-center">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
             <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />

@@ -255,7 +255,7 @@ export default function VendorsPage() {
               Showing {vendors.length} of {totalVendors}
             </div>
           )}
-          <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin rounded-2xl border border-neutral-100" onScroll={handleScroll}>
+          <div className="flex-1 overflow-auto pr-2 pb-6 scrollbar-thin rounded-2xl border border-neutral-100" onScroll={handleScroll}>
               {isLoading ? (
                 <div className="h-64 flex flex-col items-center justify-center gap-3">
                   <Loader2 className="w-8 h-8 text-[#6b21a8] animate-spin" />

@@ -327,7 +327,7 @@ export default function PurchaseHistoryPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-thin">
+        <div className="flex-1 overflow-auto scrollbar-thin">
           <div className="max-w-7xl mx-auto w-full">
             
             {activeTab === "record" && (
@@ -353,7 +353,7 @@ export default function PurchaseHistoryPage() {
                       </div>
                       
                       {isRMDropdownOpen && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto z-20 p-2">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-100 rounded-2xl shadow-xl max-h-60 overflow-auto z-20 p-2">
                           {rawMaterials.map(rm => (
                             <button type="button" key={rm.id} onClick={() => handleSelectRM(rm)} className="w-full text-left px-4 py-3 hover:bg-neutral-50 rounded-xl transition-colors">
                               <div className="font-bold text-neutral-800">{rm.name}</div>
@@ -393,7 +393,7 @@ export default function PurchaseHistoryPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-bold text-neutral-700 mb-2">Quantity</label>
                         <div className="relative">
@@ -446,7 +446,7 @@ export default function PurchaseHistoryPage() {
                     <p className="text-sm text-neutral-500 mt-1">Purchases recorded for {new Date(selectedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto overflow-x-auto scrollbar-thin px-8 pb-4">
+                  <div className="flex-1 overflow-auto overflow-x-auto scrollbar-thin px-8 pb-4">
                     <table className="w-full text-left border-collapse">
                       <thead className="sticky top-0 bg-[#f3e8ff] z-10 text-xs font-bold text-neutral-500 tracking-wider whitespace-nowrap">
                         <tr>

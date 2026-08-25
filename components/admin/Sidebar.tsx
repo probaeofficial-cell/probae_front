@@ -18,6 +18,21 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
+  const [mobileOpen, setMobileOpen] = useState(false);
+  useEffect(() => {
+    const handleToggle = () => setMobileOpen(prev => !prev);
+    window.addEventListener("toggle-mobile-sidebar", handleToggle as EventListener);
+    return () => {
+      window.removeEventListener("toggle-mobile-sidebar", handleToggle as EventListener);
+    };
+  }, []);
+  
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   useEffect(() => {
     const fetchLowStockCount = async () => {
@@ -47,10 +62,19 @@ export function Sidebar() {
   );
 
   return (
+    <>
+    {/* Mobile Backdrop */}
+    {mobileOpen && (
+      <div 
+        className="md:hidden fixed inset-0 bg-black/50 z-[90] backdrop-blur-sm" 
+        onClick={() => setMobileOpen(false)} 
+      />
+    )}
     <aside
-      className={`relative z-50 h-screen bg-[#1c1c1c] border-r border-[#2a2a2a] flex flex-col transition-all duration-300 ease-in-out ${
-        collapsed ? "w-[80px]" : "w-[260px]"
-      }`}
+      className={`fixed md:relative z-[100] h-screen bg-[#1c1c1c] border-r border-[#2a2a2a] flex flex-col transition-transform md:transition-all duration-300 ease-in-out
+        ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+        ${collapsed ? "md:w-[80px] w-[260px]" : "w-[260px]"}
+      `}
     >
       {/* ── Header / Logo ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between h-[80px] px-6 border-b border-[#2a2a2a]">
@@ -370,6 +394,7 @@ export function Sidebar() {
         )}
       </div>
     </aside>
+    </>
   );
 }
 
