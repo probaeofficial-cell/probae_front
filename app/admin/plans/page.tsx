@@ -20,6 +20,7 @@ export default function PlansPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [isDuplicatingId, setIsDuplicatingId] = useState<string | null>(null);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -32,7 +33,7 @@ export default function PlansPage() {
   const fetchTiers = useCallback(async (pageNum: number) => {
     setIsLoading(true);
     try {
-      const data = await endpoints.planTiers.list({ page: pageNum, limit: 10, search: debouncedSearch });
+      const data = await endpoints.planTiers.list({ page: pageNum, limit: 10, search: debouncedSearch }) as any;
       if (data.success) {
         setTiers(data.tiers);
         setTotalPages(Math.ceil(data.totalCount / data.limit) || 1);
@@ -61,6 +62,35 @@ export default function PlansPage() {
       fetchTiers(page);
     } catch (error) {
       console.error("Delete error:", error);
+    }
+  };
+
+  const handleDuplicateConfirm = async () => {
+    if (!isDuplicatingId) return;
+    try {
+      const tierToCopy = tiers.find(t => t.ulid === isDuplicatingId);
+      if (!tierToCopy) return;
+      
+      const payload = {
+        name: `${tierToCopy.name} (Copy)`,
+        category: tierToCopy.category,
+        duration: tierToCopy.duration,
+        days: tierToCopy.days,
+        mealType: tierToCopy.mealType,
+        discountPrice: tierToCopy.discountPrice,
+        totalPrice: tierToCopy.totalPrice,
+        selections: tierToCopy.selections?.map((s: any) => ({
+          type: s.type,
+          bowls: s.bowls.map((b: any) => b.ulid || b._id || b.id).filter(Boolean)
+        })) || []
+      };
+      
+      await endpoints.planTiers.create(payload);
+      fetchTiers(page);
+    } catch (err) {
+      console.error("Failed to duplicate tier", err);
+    } finally {
+      setIsDuplicatingId(null);
     }
   };
 
@@ -140,7 +170,7 @@ export default function PlansPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={(e) => handleDuplicate(e, tier.ulid)}
+                          onClick={(e) => { e.stopPropagation(); setIsDuplicatingId(tier.ulid); }}
                           className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-emerald-500 hover:bg-emerald-50 transition-colors"
                           title="Duplicate Tier"
                         >
@@ -192,7 +222,16 @@ export default function PlansPage() {
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
-        </div>
+          <ConfirmationModal
+        isOpen={!!isDuplicatingId}
+        onClose={() => setIsDuplicatingId(null)}
+        onConfirm={handleDuplicateConfirm}
+        title="Duplicate Plan Tier"
+        message="Are you sure you want to duplicate this plan tier? A new copy will be created with the same settings."
+        type="info"
+        confirmText="Duplicate"
+      />
+    </div>
       </div>
 
         </div>

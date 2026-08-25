@@ -88,7 +88,7 @@ export default function PlanBuilderPage() {
 
   useEffect(() => {
     if (isEditing) {
-      endpoints.planTiers.get(ulid).then(data => {
+      endpoints.planTiers.get(ulid).then((data: any) => {
         if (data.success) {
           const tier = data.tier;
           setNewTier({
