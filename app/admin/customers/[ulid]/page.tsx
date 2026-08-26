@@ -108,14 +108,30 @@ export default function CustomerDetailPage() {
     });
   };
 
-    const loadPlans = (e?: React.FormEvent) => {
+  
+  const getExpectedMealType = (slots: string[]) => {
+    const hasB = slots.includes("B-FAST");
+    const hasL = slots.includes("LUNCH");
+    const hasD = slots.includes("DINNER");
+    if (hasB && hasL && hasD) return "Breakfast + Lunch + Dinner";
+    if (hasB && hasL) return "Breakfast + Lunch";
+    if (hasL && hasD) return "Lunch + Dinner";
+    if (hasB && hasD) return "Breakfast + Dinner";
+    if (hasB) return "Breakfast Only";
+    if (hasL) return "Lunch Only";
+    if (hasD) return "Dinner Only";
+    return "";
+  };
+
+  const loadPlans = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsLoadingPlans(true);
     setTimeout(() => {
       const days = parseInt(formData.planFrequency.split(" ")[0]);
       const matched = allPlans.filter(t => 
         t.duration.toUpperCase() === formData.planDuration && 
-        t.days === days
+        t.days === days &&
+        t.mealType === getExpectedMealType(formData.mealSlots)
       );
       setPlans(matched);
       setIsLoadingPlans(false);
@@ -126,6 +142,11 @@ export default function CustomerDetailPage() {
     setIsSubmitting(true);
     setErrorMsg("");
     try {
+      let finalStatus = formData.status;
+      if (formData.selectedPlanId && finalStatus === "PENDING_PLAN") {
+        finalStatus = "ACTIVE";
+      }
+
       const payload = {
         name: formData.name,
         phone: formData.phone,
@@ -140,7 +161,7 @@ export default function CustomerDetailPage() {
         allergies: formData.allergies,
         chef_instructions: formData.comments,
         selected_plan_id: formData.selectedPlanId,
-        status: formData.status
+        status: finalStatus
       };
       
       await endpoints.customers.update(ulid, payload);

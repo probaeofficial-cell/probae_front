@@ -121,6 +121,21 @@ export default function NewCustomerPage() {
     }
   };
 
+
+  const getExpectedMealType = (slots: string[]) => {
+    const hasB = slots.includes("B-FAST");
+    const hasL = slots.includes("LUNCH");
+    const hasD = slots.includes("DINNER");
+    if (hasB && hasL && hasD) return "Breakfast + Lunch + Dinner";
+    if (hasB && hasL) return "Breakfast + Lunch";
+    if (hasL && hasD) return "Lunch + Dinner";
+    if (hasB && hasD) return "Breakfast + Dinner";
+    if (hasB) return "Breakfast Only";
+    if (hasL) return "Lunch Only";
+    if (hasD) return "Dinner Only";
+    return "";
+  };
+
   const loadPlans = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoadingPlans(true);
@@ -132,7 +147,8 @@ export default function NewCustomerPage() {
         const days = parseInt(formData.planFrequency.split(" ")[0]);
         const matched = listRes.tiers.filter((t: any) => 
           t.duration.toUpperCase() === formData.planDuration && 
-          t.days === days
+          t.days === days &&
+          t.mealType === getExpectedMealType(formData.mealSlots)
         );
         setPlans(matched);
       }
