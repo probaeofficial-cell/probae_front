@@ -512,7 +512,21 @@ export const endpoints = {
     },
   },
 
-    planTiers: {
+    customers: {
+    list: async (params?: any) => {
+      const p = new URLSearchParams();
+      if (params?.page) p.append("page", params.page.toString());
+      if (params?.limit) p.append("limit", params.limit.toString());
+      if (params?.search) p.append("search", params.search);
+      return await api.get(`/customers?${p.toString()}`);
+    },
+    get: async (ulid: string) => await api.get(`/customers/${ulid}`),
+    create: async (data: any) => await api.post("/customers", data),
+    update: async (ulid: string, data: any) => await api.patch(`/customers/${ulid}`, data),
+    calculateCalories: async (data: any) => await api.post("/customers/calculate-calories", data),
+    del: async (ulid: string) => await api.del(`/customers/${ulid}`),
+  },
+  planTiers: {
     list: async (params?: any) => {
       const p = new URLSearchParams();
       if (params?.page) p.append("page", params.page.toString());

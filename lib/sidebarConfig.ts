@@ -28,8 +28,7 @@ export type MenuItem = {
 };
 
 export const MAIN_MENU: Record<string, MenuItem> = {
-  dashboard: { label: "Dashboard", icon: Home,
-  Calendar, path: "/admin/dashboard" },
+  dashboard: { label: "Dashboard", icon: Home, path: "/admin/dashboard" },
   rawMaterials: {
     label: "Raw materials",
     icon: Wheat,
@@ -43,12 +42,12 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       purchaseHistory: { label: "Purchase History", dotColor: "bg-teal-500", path: "/admin/raw-materials/purchase-history" },
     },
   },
-  ingredients: { label: "Ingredients", icon: Layers, path: "/admin/ingredients" },
+  ingredients: { label: "Components", icon: Layers, path: "/admin/ingredients" },
   bowls: {
     label: "Bowls",
     icon: Coffee,
     subItems: {
-      mealCategories: { label: "Meal Categories", dotColor: "bg-green-500", path: "/admin/bowls/meal-categories" },
+      mealCategories: { label: "Meal Slots", dotColor: "bg-green-500", path: "/admin/bowls/meal-categories" },
       categories: { label: "Categories", dotColor: "bg-blue-500", path: "/admin/bowls/categories" },
       list: { label: "Bowl List", dotColor: "bg-purple-500", path: "/admin/bowls" },
     },
@@ -57,8 +56,8 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     label: "Packaging",
     icon: Box,
     subItems: {
-      components: { label: "Components", dotColor: "bg-orange-500", path: "/admin/packaging/components" },
-      bundles: { label: "Bundles", dotColor: "bg-teal-500", path: "/admin/packaging/bundles" },
+      components: { label: "Items", dotColor: "bg-orange-500", path: "/admin/packaging/components" },
+      bundles: { label: "Packaging Sets", dotColor: "bg-teal-500", path: "/admin/packaging/bundles" },
     },
   },
   planTiers: { label: "Plan Tiers", icon: Calendar, path: "/admin/plans" },

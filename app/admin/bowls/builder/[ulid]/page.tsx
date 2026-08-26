@@ -210,7 +210,7 @@ export default function BowlBuilderPage() {
     if (!name.trim()) return setError("Name is required");
     if (!categoryId) return setError("Bowl Category is required");
     if (bowlIngredients.some(i => i.ingredient_id === 0 || i.weight_g_or_ml <= 0)) {
-      return setError("All ingredients must be selected and have weight > 0");
+      return setError("All components must be selected and have weight > 0");
     }
     
     if (calculations.finalCost < calculations.productionCost) {
@@ -368,10 +368,10 @@ export default function BowlBuilderPage() {
               </div>
             </div>
 
-            {/* Row: Packaging, Meal Category, Type */}
+            {/* Row: Packaging, Meal Slot, Type */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-semibold text-neutral-800 mb-2 block">Packaging Bundle</label>
+                <label className="text-sm font-semibold text-neutral-800 mb-2 block">Packaging Set</label>
                 <AsyncPackagingSelect 
                   value={packagingId} 
                   onChange={(id: number | null) => setPackagingId(id)} 
@@ -379,7 +379,7 @@ export default function BowlBuilderPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-semibold text-neutral-800 mb-2 block">Meal Category</label>
+                <label className="text-sm font-semibold text-neutral-800 mb-2 block">Meal Slot</label>
                 <div className="relative">
                   <AsyncMealCategorySelect 
                     value={mealCategoryId || 0}
@@ -443,7 +443,7 @@ export default function BowlBuilderPage() {
                   {/* Header Row */}
                   <div className={`flex items-center text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider h-10 rounded-t-[16px] ${section.headerColor}`}>
                     <div className="w-10 sm:w-12 text-center border-r border-white/30 h-full flex items-center justify-center">#</div>
-                    <div className="flex-1 px-3 sm:px-4 border-r border-white/30 h-full flex items-center">INGREDIENT</div>
+                    <div className="flex-1 px-3 sm:px-4 border-r border-white/30 h-full flex items-center">COMPONENT</div>
                     <div className="w-20 sm:w-24 text-center border-r border-white/30 h-full flex items-center justify-center">WEIGHT (g)</div>
                     <div className="w-16 sm:w-20 text-center border-r border-white/30 h-full flex items-center justify-center">Cal</div>
                     <div className="w-16 sm:w-20 text-center border-r border-white/30 h-full flex items-center justify-center">Price</div>
@@ -576,7 +576,7 @@ export default function BowlBuilderPage() {
           <div className="bg-[#1a1a1a] rounded-[32px] p-6 sm:p-8 shadow-sm w-full max-w-lg flex flex-col gap-4">
             {/* Raw Cost — auto from ingredients */}
             <div className="flex justify-between items-center">
-              <span className="text-white font-semibold ml-2">Ingredient Cost</span>
+              <span className="text-white font-semibold ml-2">Component Cost</span>
               <div className="bg-[#E6E6E6] h-10 rounded-xl px-4 flex items-center justify-center w-36 font-bold text-neutral-500">
                 ₹{calculations.rawCost.toFixed(2)}
               </div>

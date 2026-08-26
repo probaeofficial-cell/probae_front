@@ -347,7 +347,7 @@ export default function IngredientFormPage() {
     <div className="flex flex-col flex-1 h-screen bg-[#E6E6E6] overflow-hidden p-4 sm:p-8">
       <Header />
       <div className="w-full max-w-5xl mx-auto flex flex-col px-4 sm:px-0">
-        <Breadcrumbs segments={["Ingredients", isEditMode ? "Edit" : "Create"]} />
+        <Breadcrumbs segments={["Components", isEditMode ? "Edit" : "Create"]} />
         <div className="flex items-center gap-4 mb-6">
           <button 
             onClick={() => router.push("/admin/ingredients")} 
@@ -355,7 +355,7 @@ export default function IngredientFormPage() {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-3xl font-bold text-neutral-800 m-0">{isEditMode ? "Edit Ingredient" : "Create Ingredient"}</h1>
+          <h1 className="text-3xl font-bold text-neutral-800 m-0">{isEditMode ? "Edit Component" : "Create Component"}</h1>
         </div>
       </div>
 
@@ -363,7 +363,7 @@ export default function IngredientFormPage() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
             <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
-            <span className="text-neutral-500 font-medium">Loading ingredient...</span>
+            <span className="text-neutral-500 font-medium">Loading component...</span>
           </div>
         ) : (
           <div className="w-full max-w-5xl flex flex-col pb-20">
@@ -544,7 +544,7 @@ export default function IngredientFormPage() {
                     {selectedRawMaterials.length === 0 && (
                       <tr>
                         <td colSpan={10} className="px-6 py-12 text-center text-neutral-400 font-medium">
-                          No raw materials added yet. Click "+ Add Raw" to build this ingredient.
+                          No raw materials added yet. Click "+ Add Raw" to build this component.
                         </td>
                       </tr>
                     )}
@@ -686,7 +686,7 @@ export default function IngredientFormPage() {
         isOpen={isDuplicateModalOpen}
         onClose={() => setIsDuplicateModalOpen(false)}
         title="Already Added"
-        message={`${duplicateMaterialName} has already been added to this ingredient. Please choose a different material or edit the existing one.`}
+        message={`${duplicateMaterialName} has already been added to this component. Please choose a different material or edit the existing one.`}
         type="warning"
         confirmText="OK"
         onConfirm={() => setIsDuplicateModalOpen(false)}
@@ -701,7 +701,7 @@ export default function IngredientFormPage() {
           setItemToDelete(null);
         }}
         title="Remove Raw Material"
-        message="Are you sure you want to remove this raw material from the ingredient? This will update the total calories, macros, and price."
+        message="Are you sure you want to remove this raw material from the component? This will update the total calories, macros, and price."
         type="delete"
         confirmText="Remove"
         onConfirm={confirmDelete}

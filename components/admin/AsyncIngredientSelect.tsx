@@ -89,7 +89,7 @@ export default function AsyncIngredientSelect({
   }, [handleObserver]);
 
   const currentOption = options.find(o => o.id === value) || selectedIngredient;
-  const displayLabel = value === 0 ? "Select ingredient..." : currentOption ? currentOption.name : "Select ingredient...";
+  const displayLabel = value === 0 ? "Select component..." : currentOption ? currentOption.name : "Select component...";
 
   return (
     <div className={`relative w-full ${isOpen ? "z-50" : "z-10"}`} ref={containerRef}>
@@ -109,7 +109,7 @@ export default function AsyncIngredientSelect({
             <Search className="w-4 h-4 text-neutral-400 ml-1 shrink-0" />
             <input
               type="text"
-              placeholder="Search ingredients..."
+              placeholder="Search components..."
               className="flex-1 bg-transparent h-8 text-sm outline-none text-neutral-800 placeholder:text-neutral-400"
               value={search}
               onChange={(e) => setSearch(e.target.value)}

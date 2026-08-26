@@ -296,13 +296,13 @@ export default function CalorieManagementPage() {
                             }}
                           />
                         ) : (
-                          <div className={`w-full h-full bg-gradient-to-br ${getGradientForImage(material.id)} flex items-center justify-center`}>
-                            <Wheat className="w-12 h-12 text-neutral-500/50" />
+                          <div className={`w-full h-full ${material.id % 2 === 0 ? "bg-[#b0ecd2]" : "bg-[#fde4cf]"} flex items-center justify-center`}>
+                            <Wheat className="w-16 h-16 text-black/20" />
                           </div>
                         )}
 
                         {/* ID Badge on top-left (dynamic width capsule) */}
-                        <div className="absolute top-3 left-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm select-none">
+                        <div className="absolute top-3 left-3 h-8 px-2.5 min-w-[32px] bg-white rounded-full flex items-center justify-center shadow-sm select-none">
                           <span className="text-[12px] font-bold text-neutral-800">A{material.id}</span>
                         </div>
 
@@ -331,7 +331,7 @@ export default function CalorieManagementPage() {
                       {/* Info and Macros row */}
                       <div className="flex justify-between items-start gap-2">
                         {/* Left Column: Name & Calorie Badge */}
-                        <div className="flex flex-col justify-start w-[30%] shrink-0 pt-1">
+                        <div className="flex flex-col justify-start w-[45%] shrink-0 pt-1 pr-2">
                           <h3 className="text-[22px] font-bold text-[#111111] leading-tight">
                             {material.name}
                           </h3>

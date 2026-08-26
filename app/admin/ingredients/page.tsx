@@ -212,7 +212,7 @@ export default function IngredientsPage() {
 
         {/* Breadcrumbs indicating position */}
         <div className="text-[13px] text-neutral-500 font-medium select-none pl-1 mb-4">
-          <span>Ingredients</span>
+          <span>Components</span>
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden p-1 sm:p-2">
@@ -225,12 +225,12 @@ export default function IngredientsPage() {
               placeholder="Search for your order"
             />
 
-            {/* Add Ingredients button using ProbaeButton */}
+            {/* Add Components button using ProbaeButton */}
             <ProbaeButton
               onClick={() => router.push("/admin/ingredients/add")}
               className="w-full sm:w-auto px-8 shrink-0"
             >
-              Add Ingredients
+              Add Components
             </ProbaeButton>
           </div>
 
@@ -255,7 +255,7 @@ export default function IngredientsPage() {
                 <p className="text-neutral-500 text-sm mt-2 max-w-sm">
                   {debouncedSearch 
                     ? `No results match your search "${debouncedSearch}". Try another query.` 
-                    : "No ingredients are available. Click 'Add Ingredients' to create one."}
+                    : "No ingredients are available. Click 'Add Components' to create one."}
                 </p>
               </div>
             ) : (
@@ -281,13 +281,13 @@ export default function IngredientsPage() {
                             }}
                           />
                         ) : (
-                          <div className={`w-full h-full bg-gradient-to-br ${getGradientForImage(item.id)} flex items-center justify-center`}>
-                            <Utensils className="w-12 h-12 text-neutral-500/50" />
+                          <div className={`w-full h-full ${item.id % 2 === 0 ? "bg-[#b0ecd2]" : "bg-[#fde4cf]"} flex items-center justify-center`}>
+                            <Utensils className="w-16 h-16 text-black/20" />
                           </div>
                         )}
 
                         {/* ID Badge on top-left (dynamic width capsule) */}
-                        <div className="absolute top-3 left-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm select-none">
+                        <div className="absolute top-3 left-3 h-8 px-2.5 min-w-[32px] bg-white rounded-full flex items-center justify-center shadow-sm select-none">
                           <span className="text-[12px] font-bold text-neutral-800">A{item.id}</span>
                         </div>
 
@@ -299,14 +299,14 @@ export default function IngredientsPage() {
                               router.push(`/admin/ingredients/${item.ulid}`);
                             }}
                             className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-md text-white hover:bg-white/40 flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                            title="Edit Ingredient"
+                            title="Edit Component"
                           >
                             <Pencil className="w-3.5 h-3.5 fill-current" />
                           </button>
                           <button
                             onClick={(e) => handleDelete(item, e)}
                             className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-md text-white hover:bg-white/40 flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                            title="Delete Ingredient"
+                            title="Delete Component"
                           >
                             <Trash2 className="w-3.5 h-3.5 fill-current" />
                           </button>
@@ -314,9 +314,9 @@ export default function IngredientsPage() {
                       </div>
 
                       {/* Info and Macros row */}
-                      <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-1">
                         {/* Title */}
-                        <h3 className="text-[22px] font-bold text-[#111111] leading-tight pt-1 line-clamp-2 min-h-[50px]">
+                        <h3 className="text-[22px] font-bold text-[#111111] leading-tight pt-1 line-clamp-2 mb-2">
                           {item.name}
                         </h3>
                         
@@ -331,7 +331,7 @@ export default function IngredientsPage() {
                         </div>
 
                         {/* Macros Badges */}
-                        <div className="flex gap-1 justify-between w-full mt-2">
+                        <div className="flex gap-6 justify-start w-full mt-3">
                           <div className="flex flex-col items-center gap-1">
                             <span className="text-[10px] text-[#333333] font-medium tracking-tight select-none">Protein</span>
                             <div className="bg-[#6A0FAD] text-white text-[10px] font-medium min-w-[30px] px-1 h-[22px] rounded-[8px] flex items-center justify-center select-none shadow-sm">
@@ -390,7 +390,7 @@ export default function IngredientsPage() {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
-        title="Delete Ingredient"
+        title="Delete Component"
         message={
           itemToDelete ? (
             <>

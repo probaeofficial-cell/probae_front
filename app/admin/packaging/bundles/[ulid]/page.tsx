@@ -86,7 +86,7 @@ export default function PackagingBundleFormPage() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setError("Bundle name is required");
+      setError("Packaging set name is required");
       return;
     }
     if (components.length === 0) {
@@ -116,7 +116,7 @@ export default function PackagingBundleFormPage() {
       }
       router.push("/admin/packaging/bundles");
     } catch (err: any) {
-      setError(err.message || "Failed to save bundle");
+      setError(err.message || "Failed to save packaging set");
     } finally {
       setIsSaving(false);
     }
@@ -130,7 +130,7 @@ export default function PackagingBundleFormPage() {
       <div className="flex h-screen items-center justify-center bg-[#fafafa]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
-          <span className="text-neutral-500 font-medium">Loading bundle builder...</span>
+          <span className="text-neutral-500 font-medium">Loading packaging set builder...</span>
         </div>
       </div>
     );
@@ -143,7 +143,7 @@ export default function PackagingBundleFormPage() {
       <Header />
 
       <div className="w-full max-w-4xl mx-auto flex flex-col px-4 sm:px-0">
-        <Breadcrumbs segments={["Packaging Bundles", isEdit ? "Edit" : "Create"]} />
+        <Breadcrumbs segments={["Packaging Sets", isEdit ? "Edit" : "Create"]} />
         <div className="flex items-center gap-4 mb-6">
           <button 
             onClick={() => router.push("/admin/packaging/bundles")} 
@@ -152,7 +152,7 @@ export default function PackagingBundleFormPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-3xl font-bold text-neutral-800 m-0">
-            {isEdit ? "Edit Packaging Bundle" : "Create New Bundle"}
+            {isEdit ? "Edit Packaging Set" : "Create Packaging Set"}
           </h1>
         </div>
       </div>
@@ -166,9 +166,9 @@ export default function PackagingBundleFormPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-neutral-800">
-                {isEdit ? "Edit Packaging Bundle" : "Create New Bundle"}
+                {isEdit ? "Edit Packaging Set" : "Create Packaging Set"}
               </h1>
-              <p className="text-sm text-neutral-500 font-medium mt-1">Combine components to build a packaging bundle for bowls.</p>
+              <p className="text-sm text-neutral-500 font-medium mt-1">Combine components to build a packaging set for bowls.</p>
             </div>
           </div>
 
@@ -180,12 +180,12 @@ export default function PackagingBundleFormPage() {
           )}
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-neutral-700 ml-1">Bundle Name</label>
+            <label className="text-sm font-semibold text-neutral-700 ml-1">Packaging Set Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Standard Large Bundle"
+              placeholder="e.g. Standard Large Packaging Set"
               className="w-full h-12 bg-neutral-50 border border-neutral-200 rounded-xl px-4 text-sm font-medium text-neutral-800 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/20 focus:border-[#7c3aed] transition-all"
             />
           </div>
@@ -266,7 +266,7 @@ export default function PackagingBundleFormPage() {
 
         <div className="flex justify-end mb-8">
           <ProbaeButton onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto px-12 h-14 text-lg">
-            {isSaving ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Saving...</> : "Save Bundle"}
+            {isSaving ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Saving...</> : "Save Packaging Set"}
           </ProbaeButton>
         </div>
       </div>

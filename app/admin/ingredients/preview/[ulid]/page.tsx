@@ -108,8 +108,8 @@ export default function IngredientPreviewPage() {
         );
         setSelectedRawMaterials(resolvedRawMaterials.filter((x): x is NonNullable<typeof x> => x !== null));
       } catch (err: any) {
-        console.error("Failed to load ingredient", err);
-        setError("Failed to load ingredient details.");
+        console.error("Failed to load component", err);
+        setError("Failed to load component details.");
       } finally {
         setIsLoading(false);
       }
@@ -121,7 +121,7 @@ export default function IngredientPreviewPage() {
       loadIngredient();
     } else {
       setIsLoading(false);
-      setError("Invalid ingredient ID.");
+      setError("Invalid component ID.");
     }
   }, [ulid, user]);
 
@@ -151,7 +151,7 @@ export default function IngredientPreviewPage() {
       <Header />
       <div className="flex-1 overflow-auto scrollbar-thin w-full pb-12">
         <div className="w-full max-w-5xl mx-auto flex flex-col px-4 sm:px-0 mt-6 mb-6">
-          <Breadcrumbs segments={["Ingredients", "Preview Ingredient"]} />
+          <Breadcrumbs segments={["Components", "Preview Component"]} />
           <div className="flex items-center gap-4 mt-4">
             <button 
               onClick={() => router.push("/admin/ingredients")} 
@@ -169,7 +169,7 @@ export default function IngredientPreviewPage() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-3">
             <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
-            <span className="text-neutral-500 font-medium">Loading ingredient...</span>
+            <span className="text-neutral-500 font-medium">Loading component...</span>
           </div>
         ) : error ? (
           <div className="p-4 bg-red-100 border border-red-200 rounded-xl text-red-700 font-semibold shadow-sm text-center">

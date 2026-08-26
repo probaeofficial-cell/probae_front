@@ -122,7 +122,7 @@ export default function PackagingComponentsPage() {
     setIsDeleting(true);
     try {
       await endpoints.packagingComponents.deleteComponent(itemToDelete.ulid);
-      showToast(`Component "${itemToDelete.name}" deleted successfully`, "success");
+      showToast(`Item "${itemToDelete.name}" deleted successfully`, "success");
       fetchComponents();
     } catch (error: any) {
       console.error("Error deleting component:", error);
@@ -204,7 +204,7 @@ export default function PackagingComponentsPage() {
         <div className="text-[13px] text-neutral-500 font-medium select-none pl-1 mb-4 flex items-center gap-2">
           <span>Packaging</span>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-neutral-800 font-bold">Components</span>
+          <span className="text-neutral-800 font-bold">Items</span>
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden p-1 sm:p-2">
@@ -212,11 +212,11 @@ export default function PackagingComponentsPage() {
             <ProbaeSearch
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search components by name..."
+              placeholder="Search items by name..."
             />
             <ProbaeButton onClick={openAddModal} className="w-full sm:w-auto px-8 shrink-0">
               <Plus className="w-4 h-4 mr-2" />
-              Add Component
+              Add Item
             </ProbaeButton>
           </div>
 
@@ -229,18 +229,18 @@ export default function PackagingComponentsPage() {
             {isLoading ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
-                <span className="text-neutral-500 text-sm font-medium">Loading components...</span>
+                <span className="text-neutral-500 text-sm font-medium">Loading items...</span>
               </div>
             ) : components.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center bg-white border border-neutral-100 rounded-[32px] p-8 text-center max-w-lg mx-auto shadow-sm">
                 <div className="w-16 h-16 rounded-2xl bg-neutral-50 border border-neutral-100 flex items-center justify-center text-neutral-400 mb-4">
                   <Box className="w-8 h-8" />
                 </div>
-                <h3 className="text-neutral-800 font-bold text-lg">No components found</h3>
+                <h3 className="text-neutral-800 font-bold text-lg">No items found</h3>
                 <p className="text-neutral-500 text-sm mt-2 max-w-sm">
                   {debouncedSearch 
                     ? `No results match your search "${debouncedSearch}".` 
-                    : "No packaging components are available. Click 'Add Component' to create one."}
+                    : "No packaging items are available. Click 'Add Item' to create one."}
                 </p>
               </div>
             ) : (
@@ -294,7 +294,7 @@ export default function PackagingComponentsPage() {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
-        title="Delete Component"
+        title="Delete Item"
         message={itemToDelete ? <>Are you sure you want to delete <span className="font-semibold text-white">{itemToDelete.name}</span>?</> : "Are you sure?"}
         confirmText="Delete"
         type="delete"
@@ -307,7 +307,7 @@ export default function PackagingComponentsPage() {
           <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100">
               <h2 className="text-xl font-bold text-neutral-800">
-                {editingItem ? "Edit Component" : "Add Component"}
+                {editingItem ? "Edit Item" : "Add Item"}
               </h2>
               <button onClick={() => setIsFormModalOpen(false)} className="p-2 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-full transition-colors">
                 <X className="w-5 h-5" />
@@ -316,7 +316,7 @@ export default function PackagingComponentsPage() {
             
             <form onSubmit={handleFormSubmit} className="p-6 flex flex-col gap-5">
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-semibold text-neutral-700 ml-1">Component Name</label>
+                <label className="text-sm font-semibold text-neutral-700 ml-1">Item Name</label>
                 <input
                   type="text"
                   required
@@ -353,7 +353,7 @@ export default function PackagingComponentsPage() {
                   {isSubmitting ? (
                     <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Saving...</span>
                   ) : (
-                    "Save Component"
+                    "Save Item"
                   )}
                 </ProbaeButton>
               </div>

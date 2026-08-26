@@ -56,7 +56,7 @@ export default function AsyncMealCategorySelect({ value, onChange, selectedCateg
       }
       setHasMore(pageNum < (res.total_pages || 1));
     } catch (err) {
-      console.error("Failed to load meal categories", err);
+      console.error("Failed to load meal slots", err);
     } finally {
       setIsLoading(false);
     }
@@ -101,7 +101,7 @@ export default function AsyncMealCategorySelect({ value, onChange, selectedCateg
 
   // Derived display name
   const currentOption = options.find(o => o.id === value) || selectedCategory;
-  const displayLabel = value === 0 ? "Select Meal Category…" : currentOption ? currentOption.name : "Select Meal Category…";
+  const displayLabel = value === 0 ? "Select Meal Slot…" : currentOption ? currentOption.name : "Select Meal Slot…";
 
   return (
     <div className="relative w-full" ref={containerRef}>
@@ -122,7 +122,7 @@ export default function AsyncMealCategorySelect({ value, onChange, selectedCateg
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input 
                 type="text"
-                placeholder="Search meal categories..."
+                placeholder="Search meal slots..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full h-9 pl-9 pr-3 bg-neutral-50 rounded-xl text-sm outline-none placeholder:text-neutral-400 text-neutral-700"
@@ -158,7 +158,7 @@ export default function AsyncMealCategorySelect({ value, onChange, selectedCateg
             
             {!hasMore && options.length === 0 && (
               <div className="py-4 text-center text-sm text-neutral-400">
-                No meal categories found
+                No meal slots found
               </div>
             )}
           </div>

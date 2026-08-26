@@ -110,7 +110,7 @@ export default function PackagingBundlesPage() {
     setIsDeleting(true);
     try {
       await endpoints.packaging.deleteBundle(itemToDelete.ulid);
-      showToast(`Packaging Bundle "${itemToDelete.name}" deleted successfully`, "success");
+      showToast(`Packaging Set "${itemToDelete.name}" deleted successfully`, "success");
       fetchBundles();
     } catch (error: any) {
       console.error("Error deleting packaging bundle:", error);
@@ -152,7 +152,7 @@ export default function PackagingBundlesPage() {
         <div className="text-[13px] text-neutral-500 font-medium select-none pl-1 mb-4 flex items-center gap-2">
           <span>Packaging</span>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-neutral-800 font-bold">Bundles</span>
+          <span className="text-neutral-800 font-bold">Packaging Sets</span>
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden p-1 sm:p-2">
@@ -160,11 +160,11 @@ export default function PackagingBundlesPage() {
             <ProbaeSearch
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search packaging bundles..."
+              placeholder="Search packaging sets..."
             />
             <ProbaeButton onClick={() => router.push("/admin/packaging/bundles/add")} className="w-full sm:w-auto px-8 shrink-0">
               <Plus className="w-4 h-4 mr-2" />
-              Add Bundle
+              Add Packaging Set
             </ProbaeButton>
           </div>
 
@@ -177,18 +177,18 @@ export default function PackagingBundlesPage() {
             {isLoading ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
-                <span className="text-neutral-500 text-sm font-medium">Loading bundles...</span>
+                <span className="text-neutral-500 text-sm font-medium">Loading packaging sets...</span>
               </div>
             ) : bundles.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center bg-white border border-neutral-100 rounded-[32px] p-8 text-center max-w-lg mx-auto shadow-sm">
                 <div className="w-16 h-16 rounded-2xl bg-neutral-50 border border-neutral-100 flex items-center justify-center text-neutral-400 mb-4">
                   <Package className="w-8 h-8" />
                 </div>
-                <h3 className="text-neutral-800 font-bold text-lg">No bundles found</h3>
+                <h3 className="text-neutral-800 font-bold text-lg">No packaging sets found</h3>
                 <p className="text-neutral-500 text-sm mt-2 max-w-sm">
                   {debouncedSearch 
                     ? `No results match your search "${debouncedSearch}".` 
-                    : "No packaging bundles are available. Click 'Add Bundle' to create one."}
+                    : "No packaging sets are available. Click 'Add Packaging Set' to create one."}
                 </p>
               </div>
             ) : (
@@ -280,7 +280,7 @@ export default function PackagingBundlesPage() {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
-        title="Delete Packaging Bundle"
+        title="Delete Packaging Set"
         message={itemToDelete ? <>Are you sure you want to delete <span className="font-semibold text-white">{itemToDelete.name}</span>? This might affect bowls using this packaging.</> : "Are you sure?"}
         confirmText="Delete"
         type="delete"

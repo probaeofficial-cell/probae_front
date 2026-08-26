@@ -96,7 +96,7 @@ export default function MealCategoriesPage() {
         setSystemSettings({ R2_BASE_URL: (settingsRes as any).R2_BASE_URL });
       }
     } catch (error: any) {
-      console.error("Failed to fetch meal categories:", error);
+      console.error("Failed to fetch meal slots:", error);
     } finally {
       setIsLoading(false);
       setIsFetchingNextPage(false);
@@ -226,7 +226,7 @@ export default function MealCategoriesPage() {
         <Header />
         
         <div className="text-[13px] text-neutral-500 font-medium select-none pl-1 mb-4">
-          <span>Meal Categories</span>
+          <span>Meal Slots</span>
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden p-1 sm:p-2">
@@ -237,7 +237,7 @@ export default function MealCategoriesPage() {
               placeholder="Search for your category"
             />
             <ProbaeButton onClick={handleOpenCreateModal} className="w-full sm:w-auto px-8 shrink-0">
-              Add Meal Category
+              Add Meal Slot
             </ProbaeButton>
           </div>
 
@@ -254,9 +254,9 @@ export default function MealCategoriesPage() {
             </div>
           ) : categories.length === 0 ? (
             <div className="h-64 flex flex-col items-center justify-center bg-white rounded-3xl border border-neutral-100 p-8 text-center max-w-lg mx-auto shadow-sm">
-              <h3 className="text-neutral-800 font-bold text-lg">No meal categories found</h3>
+              <h3 className="text-neutral-800 font-bold text-lg">No meal slots found</h3>
               <p className="text-neutral-500 text-sm mt-2 max-w-sm">
-                Click 'Add Meal Category' to create one.
+                Click 'Add Meal Slot' to create one.
               </p>
             </div>
           ) : (
@@ -313,7 +313,7 @@ export default function MealCategoriesPage() {
             <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-600">
               <X className="w-6 h-6" />
             </button>
-            <h2 className="text-2xl font-bold text-neutral-800 mb-6">{isEditMode ? "Edit Meal Category" : "Add Meal Category"}</h2>
+            <h2 className="text-2xl font-bold text-neutral-800 mb-6">{isEditMode ? "Edit Meal Slot" : "Add Meal Slot"}</h2>
             
             <form onSubmit={handleSave} className="space-y-5">
               <div className="flex items-center gap-6">
@@ -372,7 +372,7 @@ export default function MealCategoriesPage() {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
-        title="Delete Meal Category"
+        title="Delete Meal Slot"
         message={`Are you sure you want to delete ${itemToDelete?.name}?`}
         confirmText="Delete"
         type="delete"
