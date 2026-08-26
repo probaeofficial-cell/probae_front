@@ -30,7 +30,7 @@ interface DraftPurchase {
   rawMaterial: RawMaterial;
   vendor: Vendor | null;
   quantity: number;
-  actualPrice: number; // per unit
+  purchasePrice: number; // per unit
 }
 
 export default function PurchaseHistoryPage() {
@@ -67,7 +67,7 @@ export default function PurchaseHistoryPage() {
   
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("0");
-  const [actualPrice, setActualPrice] = useState<string>("0");
+  const [purchasePrice, setPurchasePrice] = useState<string>("0");
 
   const [draftPurchases, setDraftPurchases] = useState<DraftPurchase[]>([]);
 
@@ -217,7 +217,7 @@ export default function PurchaseHistoryPage() {
     setIsRMDropdownOpen(false);
     
     const stdCost = rm.standard_price || rm.price || 0;
-    setActualPrice(stdCost.toString());
+    setPurchasePrice(stdCost.toString());
     
     if (rm.vendor) {
       setSelectedVendorId(rm.vendor.id.toString());
@@ -228,16 +228,16 @@ export default function PurchaseHistoryPage() {
 
   const stdCostPerUnit = selectedRM ? (selectedRM.standard_price || selectedRM.price || 0) : 0;
   const numQty = parseFloat(quantity) || 0;
-  const numActualPrice = parseFloat(actualPrice) || 0;
+  const numPurchasePrice = parseFloat(purchasePrice) || 0;
   
   const totalStandardCost = stdCostPerUnit * numQty;
-  const totalPurchaseAmount = numActualPrice * numQty;
+  const totalPurchaseAmount = numPurchasePrice;
   const variance = totalPurchaseAmount - totalStandardCost;
 
   const handleAddPurchase = () => {
     if (!selectedRM) return showToast("Select a raw material", "error");
     if (numQty <= 0) return showToast("Quantity must be greater than 0", "error");
-    if (numActualPrice < 0) return showToast("Actual price cannot be negative", "error");
+    if (numPurchasePrice < 0) return showToast("Purchase price cannot be negative", "error");
     
     const vendor = vendors.find(v => v.id.toString() === selectedVendorId) || null;
     
@@ -246,7 +246,7 @@ export default function PurchaseHistoryPage() {
       rawMaterial: selectedRM,
       vendor,
       quantity: numQty,
-      actualPrice: numActualPrice
+      purchasePrice: numPurchasePrice
     };
     
     setDraftPurchases([...draftPurchases, newDraft]);
@@ -254,7 +254,7 @@ export default function PurchaseHistoryPage() {
     setSelectedRM(null);
     setSearchRM("");
     setQuantity("0");
-    setActualPrice("0");
+    setPurchasePrice("0");
     setSelectedVendorId("");
     showToast("Added to draft list", "success");
   };
@@ -277,9 +277,9 @@ export default function PurchaseHistoryPage() {
           quantity: d.quantity,
           unit: d.rawMaterial.unit,
           standard_cost: stdCost,
-          actual_price: d.actualPrice,
-          total_amount: d.actualPrice * d.quantity,
-          variance: (d.actualPrice * d.quantity) - (stdCost * d.quantity)
+          actual_price: d.quantity > 0 ? d.purchasePrice / d.quantity : 0,
+          total_amount: d.purchasePrice,
+          variance: d.purchasePrice - (stdCost * d.quantity)
         };
       });
       
@@ -296,7 +296,7 @@ export default function PurchaseHistoryPage() {
   const formatCurrency = (val: number) => `₹${val.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
   
   const draftTotalStandard = draftPurchases.reduce((acc, curr) => acc + ((curr.rawMaterial.standard_price || curr.rawMaterial.price || 0) * curr.quantity), 0);
-  const draftTotalActual = draftPurchases.reduce((acc, curr) => acc + (curr.actualPrice * curr.quantity), 0);
+  const draftTotalActual = draftPurchases.reduce((acc, curr) => acc + curr.purchasePrice, 0);
   const draftTotalVariance = draftTotalActual - draftTotalStandard;
 
   if (authLoading) return <div className="p-8"><Loader2 className="w-8 h-8 animate-spin text-[#6b21a8]" /></div>;
@@ -406,9 +406,9 @@ export default function PurchaseHistoryPage() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-bold text-neutral-700 mb-2">Actual Price</label>
+                        <label className="block text-sm font-bold text-neutral-700 mb-2">Purchase Price</label>
                         <div className="relative">
-                          <input type="number" value={actualPrice} onChange={e => setActualPrice(e.target.value)} className="w-full bg-[#f8f5fb] border-none rounded-2xl px-4 py-3.5 text-neutral-800 font-bold focus:ring-2 focus:ring-[#6b21a8]/20 outline-none pr-10" />
+                          <input type="number" value={purchasePrice} onChange={e => setPurchasePrice(e.target.value)} className="w-full bg-[#f8f5fb] border-none rounded-2xl px-4 py-3.5 text-neutral-800 font-bold focus:ring-2 focus:ring-[#6b21a8]/20 outline-none pr-10" />
                           <PenLine className="w-4 h-4 text-neutral-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
                       </div>
@@ -453,7 +453,7 @@ export default function PurchaseHistoryPage() {
                           <th className="py-4 px-4 rounded-l-xl">RAW MATERIAL</th>
                           <th className="py-4 px-2">QTY</th>
                           <th className="py-4 px-2">VENDOR</th>
-                          <th className="py-4 px-2">ACTUAL PRICE</th>
+                          <th className="py-4 px-2">PURCHASE PRICE</th>
                           <th className="py-4 px-2">AMOUNT</th>
                           <th className="py-4 px-2">VARIANCE</th>
                           <th className="py-4 px-4 text-right rounded-r-xl">ACTION</th>
@@ -473,14 +473,14 @@ export default function PurchaseHistoryPage() {
                         ) : (
                           draftPurchases.map((d) => {
                             const stdCost = d.rawMaterial.standard_price || d.rawMaterial.price || 0;
-                            const varAmount = (d.actualPrice * d.quantity) - (stdCost * d.quantity);
+                            const varAmount = d.purchasePrice - (stdCost * d.quantity);
                             return (
                               <tr key={d.id} className="hover:bg-neutral-50 transition-colors">
                                 <td className="py-4 px-4"><div className="font-bold text-neutral-800">{d.rawMaterial.name}</div></td>
                                 <td className="py-4 px-2 font-medium text-neutral-700">{d.quantity} {d.rawMaterial.unit}</td>
                                 <td className="py-4 px-2 text-sm text-neutral-500">{d.vendor ? d.vendor.name : "-"}</td>
-                                <td className="py-4 px-2 text-sm font-medium text-neutral-600">{formatCurrency(d.actualPrice)}/{d.rawMaterial.unit}</td>
-                                <td className="py-4 px-2 font-bold text-neutral-900">{formatCurrency(d.actualPrice * d.quantity)}</td>
+                                <td className="py-4 px-2 text-sm font-medium text-neutral-600">{formatCurrency(d.quantity > 0 ? d.purchasePrice / d.quantity : 0)}/{d.rawMaterial.unit}</td>
+                                <td className="py-4 px-2 font-bold text-neutral-900">{formatCurrency(d.purchasePrice)}</td>
                                 <td className={`py-4 px-2 font-bold ${varAmount > 0 ? 'text-red-500' : 'text-green-500'}`}>{varAmount > 0 ? '+' : ''}{formatCurrency(varAmount)}</td>
                                 <td className="py-4 px-4 text-right"><button onClick={() => removeDraft(d.id)} className="text-neutral-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button></td>
                               </tr>
@@ -532,7 +532,7 @@ export default function PurchaseHistoryPage() {
                           <th className="py-4 px-4">RAW MATERIAL</th>
                           <th className="py-4 px-4">QTY</th>
                           <th className="py-4 px-4">VENDOR</th>
-                          <th className="py-4 px-4">ACTUAL PRICE</th>
+                          <th className="py-4 px-4">PURCHASE PRICE</th>
                           <th className="py-4 px-4">AMOUNT</th>
                           <th className="py-4 px-4">VARIANCE</th>
                           <th className="py-4 px-6 rounded-r-xl text-right">ACTION</th>
@@ -638,7 +638,7 @@ export default function PurchaseHistoryPage() {
                             <th className="py-4 px-4">RAW MATERIAL</th>
                             <th className="py-4 px-4">QTY</th>
                             <th className="py-4 px-4">VENDOR</th>
-                            <th className="py-4 px-4">ACTUAL PRICE</th>
+                            <th className="py-4 px-4">PURCHASE PRICE</th>
                             <th className="py-4 px-4">AMOUNT</th>
                             <th className="py-4 px-4">VARIANCE</th>
                             <th className="py-4 px-6 rounded-r-xl text-right">ACTION</th>
