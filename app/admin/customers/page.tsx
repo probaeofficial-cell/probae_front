@@ -7,17 +7,32 @@ import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
+import { getMediaUrl } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function CustomersPage() {
   const router = useRouter();
+  useEffect(() => {
+    async function fetchSystemSettings() {
+      try {
+        const data = await endpoints.settings.getSystemSettings();
+        if (data && data.R2_BASE_URL !== undefined) {
+          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
+        }
+      } catch (err) {
+        console.error("Failed to fetch settings", err);
+      }
+    }
+    fetchSystemSettings();
+  }, []);
   const [customers, setCustomers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -91,7 +106,18 @@ export default function CustomersPage() {
                 ) : (
                   customers.map((c) => (
                     <tr key={c.ulid} className="hover:bg-neutral-50/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-neutral-900 whitespace-nowrap">{c.name}</td>
+                      <td className="px-6 py-4 font-medium text-neutral-900 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          {c.image_filename ? (
+                            <img src={getMediaUrl(systemSettings.R2_BASE_URL, c.image_filename) as string} alt={c.name} className="w-10 h-10 rounded-full object-cover border border-neutral-200" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-400 font-bold uppercase shrink-0">
+                              {c.name.charAt(0)}
+                            </div>
+                          )}
+                          <span>{c.name}</span>
+                        </div>
+                      </td>
                       <td className="px-6 py-4 text-neutral-600 whitespace-nowrap">{c.phone}</td>
                       <td className="px-6 py-4 text-neutral-600 whitespace-nowrap">{c.goal}</td>
                       <td className="px-6 py-4 whitespace-nowrap">

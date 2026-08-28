@@ -1,26 +1,43 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
-import { ArrowRight, ArrowLeft, Check, Plus, Lock, Unlock, Loader2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Plus, Lock, Unlock, Loader2, Camera, Upload } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
+import { getMediaUrl } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
 export default function NewCustomerPage() {
   const router = useRouter();
+  useEffect(() => {
+    async function fetchSystemSettings() {
+      try {
+        const data = await endpoints.settings.getSystemSettings();
+        if (data && data.R2_BASE_URL !== undefined) {
+          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
+        }
+      } catch (err) {
+        console.error("Failed to fetch settings", err);
+      }
+    }
+    fetchSystemSettings();
+  }, []);
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customAllergy, setCustomAllergy] = useState("");
   const [calorieProfile, setCalorieProfile] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [errorMsg, setErrorMsg] = useState("");
   
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
+    image_filename: null as string | null,
     address: "",
     sex: "Male",
     age: "25",
@@ -35,10 +52,104 @@ export default function NewCustomerPage() {
     planFrequency: "5 DAYS",
     mealSlots: ["LUNCH"] as string[],
     mealCalories: { "LUNCH": 500 } as Record<string, number>,
+    probaeTarget: 2000,
     lockedMeals: {} as Record<string, boolean>,
     selectedPlanId: null as string | null,
     status: "ONBOARDING"
   });
+
+
+  const handleProbaeTargetChange = (val: number) => {
+    const target = val || 0;
+    setFormData((prev) => {
+      const slots = prev.mealSlots;
+      const newCalories = { ...prev.mealCalories };
+      if (slots.length > 0) {
+        const perSlot = Math.round(target / slots.length);
+        slots.forEach((s, i) => {
+          if (i === slots.length - 1) {
+            newCalories[s] = target - (perSlot * (slots.length - 1));
+          } else {
+            newCalories[s] = perSlot;
+          }
+        });
+      }
+      return { ...prev, probaeTarget: target, mealCalories: newCalories, lockedMeals: {} };
+    });
+  };
+
+  const handleMealCalorieChange = (changedSlot: string, val: number) => {
+    const rawVal = val || 0;
+    setFormData((prev) => {
+      const slots = prev.mealSlots;
+      const target = prev.probaeTarget;
+      const newCals = { ...prev.mealCalories };
+      
+      let lockedSum = 0;
+      const unlockedSlots: string[] = [];
+      
+      slots.forEach(s => {
+        if (s !== changedSlot) {
+          if (prev.lockedMeals[s]) {
+            lockedSum += newCals[s] || 0;
+          } else {
+            unlockedSlots.push(s);
+          }
+        }
+      });
+      
+      let finalVal = rawVal;
+      if (finalVal + lockedSum > target) {
+        finalVal = target - lockedSum;
+        if (finalVal < 0) finalVal = 0;
+      }
+      
+      newCals[changedSlot] = finalVal;
+      
+      let remaining = target - lockedSum - finalVal;
+      
+      if (unlockedSlots.length > 0) {
+        const currentUnlockedSum = unlockedSlots.reduce((sum, s) => sum + (newCals[s] || 0), 0);
+        let distributed = 0;
+        unlockedSlots.forEach((s, idx) => {
+          if (idx === unlockedSlots.length - 1) {
+            newCals[s] = remaining - distributed;
+          } else {
+            let portion = 0;
+            if (currentUnlockedSum > 0) {
+              portion = Math.round(((newCals[s] || 0) / currentUnlockedSum) * remaining);
+            } else {
+              portion = Math.round(remaining / unlockedSlots.length);
+            }
+            newCals[s] = portion;
+            distributed += portion;
+          }
+        });
+      }
+      
+      return { ...prev, mealCalories: newCals };
+    });
+  };
+
+  const toggleLock = (slot: string) => {
+    setFormData(prev => ({
+      ...prev,
+      lockedMeals: { ...prev.lockedMeals, [slot]: !prev.lockedMeals[slot] }
+    }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setIsUploadingImage(true);
+    try {
+      const res = await endpoints.documents.upload(e.target.files[0]);
+      updateField("image_filename", res.filename);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   const updateField = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -52,7 +163,18 @@ export default function NewCustomerPage() {
         if (field === "mealSlots") {
           const newCalories = { ...prev.mealCalories };
           delete newCalories[value];
-          return { ...prev, [field]: newArray, mealCalories: newCalories };
+          // Redistribute remainder
+          if (newArray.length > 0) {
+            const perSlot = Math.round(prev.probaeTarget / newArray.length);
+            newArray.forEach((s, i) => {
+              if (i === newArray.length - 1) {
+                newCalories[s] = prev.probaeTarget - (perSlot * (newArray.length - 1));
+              } else {
+                newCalories[s] = perSlot;
+              }
+            });
+          }
+          return { ...prev, [field]: newArray, mealCalories: newCalories, lockedMeals: {} };
         }
         return { ...prev, [field]: newArray };
       } else {
@@ -64,12 +186,15 @@ export default function NewCustomerPage() {
         const newArray = [...current, value];
         if (field === "mealSlots") {
           const newCalories = { ...prev.mealCalories };
-          if (calorieProfile?.total) {
-            newCalories[value] = Math.round(calorieProfile.total / 3);
-          } else {
-            newCalories[value] = 500;
-          }
-          return { ...prev, [field]: newArray, mealCalories: newCalories };
+          const perSlot = Math.round(prev.probaeTarget / newArray.length);
+          newArray.forEach((s, i) => {
+            if (i === newArray.length - 1) {
+              newCalories[s] = prev.probaeTarget - (perSlot * (newArray.length - 1));
+            } else {
+              newCalories[s] = perSlot;
+            }
+          });
+          return { ...prev, [field]: newArray, mealCalories: newCalories, lockedMeals: {} };
         }
         return { ...prev, [field]: newArray };
       }
@@ -102,15 +227,18 @@ export default function NewCustomerPage() {
         // Setup initial slots
         setFormData((prev) => {
           const newCalories = { ...prev.mealCalories };
+          const target = res.total;
           if (prev.mealSlots.length > 0) {
-            const perSlot = Math.round(res.total / 3);
-            prev.mealSlots.forEach((slot) => {
-              if (!newCalories[slot] || newCalories[slot] === 500) {
+            const perSlot = Math.round(target / prev.mealSlots.length);
+            prev.mealSlots.forEach((slot, i) => {
+              if (i === prev.mealSlots.length - 1) {
+                newCalories[slot] = target - (perSlot * (prev.mealSlots.length - 1));
+              } else {
                 newCalories[slot] = perSlot;
               }
             });
           }
-          return { ...prev, mealCalories: newCalories };
+          return { ...prev, probaeTarget: target, mealCalories: newCalories, lockedMeals: {} };
         });
         setStep(3);
       }
@@ -138,6 +266,12 @@ export default function NewCustomerPage() {
 
   const loadPlans = async (e: React.FormEvent) => {
     e.preventDefault();
+    const sum = Object.values(formData.mealCalories).reduce((a,b)=>a+b, 0);
+    if (sum !== formData.probaeTarget) {
+      setErrorMsg(`Meal allocation (${sum} kcal) must exactly match the target (${formData.probaeTarget} kcal).`);
+      return;
+    }
+    setErrorMsg("");
     setIsLoadingPlans(true);
     setStep(4);
     
@@ -173,10 +307,11 @@ export default function NewCustomerPage() {
         weight: parseFloat(formData.weight),
         activity_level: formData.activityLevel,
         goal: formData.goal,
+        image_filename: formData.image_filename,
         dietary_preferences: formData.dietaryPreferences,
         allergies: formData.allergies,
         chef_instructions: formData.comments,
-        calorie_profile: calorieProfile,
+        calorie_profile: { ...calorieProfile, probaeTarget: formData.probaeTarget, mealCalories: formData.mealCalories, mealSlots: formData.mealSlots, lockedMeals: formData.lockedMeals },
         selected_plan_id: skipPlan ? null : formData.selectedPlanId,
         status: skipPlan ? "PENDING_PLAN" : "ACTIVE"
       };
@@ -212,6 +347,24 @@ export default function NewCustomerPage() {
               <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-6">
                 <h2 className="text-2xl font-bold text-neutral-900 mb-6">Biological Profile</h2>
                 
+                <div className="flex justify-center mb-8">
+                  <div className="relative">
+                    <div className="w-24 h-24 rounded-full bg-neutral-100 border-2 border-dashed border-neutral-300 flex items-center justify-center overflow-hidden">
+                      {isUploadingImage ? (
+                        <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
+                      ) : formData.image_filename ? (
+                        <img src={getMediaUrl(systemSettings.R2_BASE_URL, formData.image_filename) as string} alt="Customer" className="w-full h-full object-cover" />
+                      ) : (
+                        <Upload className="w-6 h-6 text-neutral-400" />
+                      )}
+                    </div>
+                    <label className="absolute bottom-0 right-0 w-8 h-8 bg-white border border-neutral-200 rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:bg-neutral-50 transition-colors">
+                      <Camera className="w-4 h-4 text-neutral-600" />
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                    </label>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Full Name</label>
@@ -330,15 +483,75 @@ export default function NewCustomerPage() {
                 </div>
 
                 {calorieProfile && (
-                  <div className="bg-white p-6 rounded-2xl border border-neutral-200 mb-8 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-neutral-500 font-bold uppercase tracking-wider mb-1">Target Calories</p>
-                      <h3 className="text-4xl font-bold text-neutral-900">{calorieProfile.total} <span className="text-xl font-normal text-neutral-500">kcal</span></h3>
+                  <div className="bg-white p-6 rounded-2xl border border-neutral-200 mb-8 flex flex-col gap-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-neutral-500 font-bold uppercase tracking-wider mb-1">Calculated TDEE</p>
+                        <h3 className="text-4xl font-bold text-neutral-900">{calorieProfile.total} <span className="text-xl font-normal text-neutral-500">kcal</span></h3>
+                      </div>
+                      <div className="flex gap-6">
+                        <div className="text-center"><p className="text-xs text-neutral-500 uppercase font-bold">Pro</p><p className="font-bold text-lg text-[#6A0FAD]">{calorieProfile.protein}g</p></div>
+                        <div className="text-center"><p className="text-xs text-neutral-500 uppercase font-bold">Carb</p><p className="font-bold text-lg text-[#4caf50]">{calorieProfile.carbs}g</p></div>
+                        <div className="text-center"><p className="text-xs text-neutral-500 uppercase font-bold">Fat</p><p className="font-bold text-lg text-[#ff751f]">{calorieProfile.fat}g</p></div>
+                      </div>
                     </div>
-                    <div className="flex gap-6">
-                      <div className="text-center"><p className="text-xs text-neutral-500 uppercase font-bold">Pro</p><p className="font-bold text-lg text-[#6A0FAD]">{calorieProfile.protein}g</p></div>
-                      <div className="text-center"><p className="text-xs text-neutral-500 uppercase font-bold">Carb</p><p className="font-bold text-lg text-[#4caf50]">{calorieProfile.carbs}g</p></div>
-                      <div className="text-center"><p className="text-xs text-neutral-500 uppercase font-bold">Fat</p><p className="font-bold text-lg text-[#ff751f]">{calorieProfile.fat}g</p></div>
+
+                    <div className="pt-6 border-t border-neutral-100 grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div>
+                        <label className="block text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-2">Probae Calorie Target</label>
+                        <p className="text-sm text-neutral-500 mb-4">How many of the total {calorieProfile.total} kcal will be fulfilled by Probae meals?</p>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="number" 
+                            value={formData.probaeTarget}
+                            onChange={(e) => handleProbaeTargetChange(Number(e.target.value))}
+                            className="w-32 bg-[#f8f5fb] border-none rounded-xl px-4 py-3 text-neutral-900 font-bold focus:ring-2 focus:ring-[#6A0FAD]/20 outline-none"
+                          />
+                          <span className="text-neutral-500 font-medium">kcal / day</span>
+                        </div>
+                      </div>
+
+                      {formData.mealSlots.length > 0 && (
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-4 flex justify-between items-center">
+                            <span>Meal Allocation</span>
+                            <span className={Object.values(formData.mealCalories).reduce((a,b)=>a+b,0) !== formData.probaeTarget ? "text-red-500 font-bold" : "text-[#6A0FAD] font-bold"}>
+                              {Object.values(formData.mealCalories).reduce((a,b)=>a+b,0)} / {formData.probaeTarget}
+                            </span>
+                          </label>
+                          <div className="space-y-4">
+                            {formData.mealSlots.map(slot => {
+                              const isLocked = formData.lockedMeals[slot];
+                              return (
+                                <div key={slot} className="flex items-center gap-2 sm:gap-3">
+                                  <div className="w-16 shrink-0 text-xs sm:text-sm font-bold text-neutral-700 tracking-wider whitespace-nowrap">{slot}</div>
+                                  <button type="button" onClick={() => toggleLock(slot)} className={`p-1 sm:p-1.5 shrink-0 rounded-lg transition-colors ${isLocked ? "bg-red-100 text-red-600" : "bg-neutral-100 text-neutral-400 hover:bg-neutral-200"}`}>
+                                    {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                                  </button>
+                                  <input 
+                                    type="range" 
+                                    min="0"
+                                    max={formData.probaeTarget} 
+                                    value={formData.mealCalories[slot] || 0}
+                                    onChange={(e) => handleMealCalorieChange(slot, Number(e.target.value))}
+                                    disabled={isLocked}
+                                    className={`flex-1 min-w-[40px] ${isLocked ? "opacity-50 cursor-not-allowed" : "accent-[#6A0FAD]"}`}
+                                  />
+                                  <div className="w-16 sm:w-20 shrink-0 relative">
+                                    <input
+                                      type="number"
+                                      value={formData.mealCalories[slot] || 0}
+                                      onChange={(e) => handleMealCalorieChange(slot, Number(e.target.value))}
+                                      disabled={isLocked}
+                                      className={`w-full border-none rounded-lg px-1 sm:px-2 py-1.5 text-xs sm:text-sm font-bold text-center focus:ring-2 focus:ring-[#6A0FAD]/20 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isLocked ? "bg-neutral-100 text-neutral-400" : "bg-[#f8f5fb] text-neutral-900"}`}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
