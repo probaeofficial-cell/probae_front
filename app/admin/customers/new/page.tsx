@@ -22,14 +22,27 @@ export default function NewCustomerPage() {
         console.error("Failed to fetch settings", err);
       }
     }
+    async function fetchMealCats() {
+      try {
+        const catData = await endpoints.mealCategories.getMealCategories(1, 100) as any;
+        if (catData.items) setMealCategories(catData.items);
+        else if (catData.categories) setMealCategories(catData.categories);
+      } catch (e) {
+        console.error("Failed to fetch meal categories", e);
+      }
+    }
     fetchSystemSettings();
+    fetchMealCats();
   }, []);
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customAllergy, setCustomAllergy] = useState("");
   const [calorieProfile, setCalorieProfile] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
+  const [mealCategories, setMealCategories] = useState<any[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [errorMsg, setErrorMsg] = useState("");
@@ -50,8 +63,8 @@ export default function NewCustomerPage() {
     comments: "",
     planDuration: "WEEKLY",
     planFrequency: "5 DAYS",
-    mealSlots: ["LUNCH"] as string[],
-    mealCalories: { "LUNCH": 500 } as Record<string, number>,
+    mealSlots: [] as string[],
+    mealCalories: {} as Record<string, number>,
     probaeTarget: 2000,
     lockedMeals: {} as Record<string, boolean>,
     selectedPlanId: null as string | null,
@@ -251,17 +264,10 @@ export default function NewCustomerPage() {
 
 
   const getExpectedMealType = (slots: string[]) => {
-    const hasB = slots.includes("B-FAST");
-    const hasL = slots.includes("LUNCH");
-    const hasD = slots.includes("DINNER");
-    if (hasB && hasL && hasD) return "Breakfast + Lunch + Dinner";
-    if (hasB && hasL) return "Breakfast + Lunch";
-    if (hasL && hasD) return "Lunch + Dinner";
-    if (hasB && hasD) return "Breakfast + Dinner";
-    if (hasB) return "Breakfast Only";
-    if (hasL) return "Lunch Only";
-    if (hasD) return "Dinner Only";
-    return "";
+    return slots.map(s => {
+      const found = mealCategories.find(c => (c.slug === s || c.name === s));
+      return found ? found.name : s;
+    }).join(" + ");
   };
 
   const loadPlans = async (e: React.FormEvent) => {
@@ -290,6 +296,32 @@ export default function NewCustomerPage() {
       console.error(err);
     } finally {
       setIsLoadingPlans(false);
+    }
+  };
+
+    const handlePlanSelect = async (planUlid: string) => {
+    updateField("selectedPlanId", planUlid);
+    setIsPreviewLoading(true);
+    setPreviewData(null);
+    try {
+      // In a real app we should use endpoints from apiService, but fetch is fine for this new endpoint
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1"}/plans/preview-customization`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan_ulid: planUlid,
+          goal: formData.goal,
+          meal_calories: formData.mealCalories
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPreviewData(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsPreviewLoading(false);
     }
   };
 
@@ -524,7 +556,7 @@ export default function NewCustomerPage() {
                               const isLocked = formData.lockedMeals[slot];
                               return (
                                 <div key={slot} className="flex items-center gap-2 sm:gap-3">
-                                  <div className="w-16 shrink-0 text-xs sm:text-sm font-bold text-neutral-700 tracking-wider whitespace-nowrap">{slot}</div>
+                                  <div className="w-16 shrink-0 text-xs sm:text-sm font-bold text-neutral-700 tracking-wider whitespace-nowrap">{mealCategories.find(c => c.slug === slot)?.name || slot}</div>
                                   <button type="button" onClick={() => toggleLock(slot)} className={`p-1 sm:p-1.5 shrink-0 rounded-lg transition-colors ${isLocked ? "bg-red-100 text-red-600" : "bg-neutral-100 text-neutral-400 hover:bg-neutral-200"}`}>
                                     {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                                   </button>
@@ -575,10 +607,13 @@ export default function NewCustomerPage() {
                   </div>
                   <div className="col-span-1 md:col-span-2">
                     <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Meal Slots</label>
-                    <div className="flex gap-4">
-                      {["B-FAST", "LUNCH", "DINNER"].map(m => (
-                        <button type="button" key={m} onClick={() => toggleArrayField("mealSlots", m)} className={`flex-1 py-4 rounded-xl border text-sm font-bold ${formData.mealSlots.includes(m) ? "bg-[#ff751f] text-white border-[#ff751f]" : "bg-white text-neutral-600 border-neutral-300"}`}>{m}</button>
-                      ))}
+                    <div className="flex gap-4 flex-wrap">
+                      {mealCategories.map(cat => {
+                        const m = cat.slug || cat.name;
+                        return (
+                          <button type="button" key={m} onClick={() => toggleArrayField("mealSlots", m)} className={`flex-1 min-w-[120px] py-4 rounded-xl border text-sm font-bold ${formData.mealSlots.includes(m) ? "bg-[#ff751f] text-white border-[#ff751f]" : "bg-white text-neutral-600 border-neutral-300"}`}>{cat.name}</button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -605,7 +640,7 @@ export default function NewCustomerPage() {
                     </div>
                   ) : (
                     plans.map(p => (
-                      <div key={p.ulid} onClick={() => updateField("selectedPlanId", p.ulid)} className={`cursor-pointer p-6 rounded-2xl border-2 transition-all ${formData.selectedPlanId === p.ulid ? "border-[#6A0FAD] bg-[#6A0FAD]/5" : "border-neutral-200 bg-white"}`}>
+                      <div key={p.ulid} onClick={() => handlePlanSelect(p.ulid)} className={`cursor-pointer p-6 rounded-2xl border-2 transition-all ${formData.selectedPlanId === p.ulid ? "border-[#6A0FAD] bg-[#6A0FAD]/5" : "border-neutral-200 bg-white"}`}>
                         <div className="flex justify-between items-start mb-4">
                           <h3 className="text-xl font-bold text-neutral-900">{p.name}</h3>
                           {formData.selectedPlanId === p.ulid && <Check className="text-[#6A0FAD] w-5 h-5" />}
@@ -616,6 +651,75 @@ export default function NewCustomerPage() {
                     ))
                   )}
                 </div>
+
+                                {isPreviewLoading && (
+                  <div className="flex items-center justify-center p-8 bg-white rounded-2xl border border-neutral-200">
+                    <Loader2 className="w-8 h-8 text-[#6A0FAD] animate-spin" />
+                    <span className="ml-3 text-neutral-600 font-bold">Scaling recipe macros & calculating dynamic pricing...</span>
+                  </div>
+                )}
+
+                {!isPreviewLoading && previewData && (
+                  <div className="space-y-6">
+                    {/* Financial Summary */}
+                    <div className="bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col md:flex-row justify-between items-center gap-6">
+                      <div className="flex-1 text-center md:text-left">
+                        <div className="text-sm font-bold text-neutral-500 uppercase tracking-wider">Gross Value</div>
+                        <div className="text-2xl font-bold text-neutral-900">₹{previewData.gross_price}</div>
+                      </div>
+                      <div className="w-px h-12 bg-neutral-200 hidden md:block"></div>
+                      <div className="flex-1 text-center">
+                        <div className="text-sm font-bold text-red-500 uppercase tracking-wider">Plan Discount ({previewData.discount_percentage}%)</div>
+                        <div className="text-2xl font-bold text-red-600">- ₹{previewData.discount_amount}</div>
+                      </div>
+                      <div className="w-px h-12 bg-neutral-200 hidden md:block"></div>
+                      <div className="flex-1 text-center md:text-right">
+                        <div className="text-sm font-bold text-[#6A0FAD] uppercase tracking-wider">Final Price</div>
+                        <div className="text-3xl font-black text-[#6A0FAD]">₹{previewData.final_discounted_price}</div>
+                      </div>
+                    </div>
+
+                    {/* Matrix Preview */}
+                    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+                      <div className="px-6 py-4 bg-neutral-50 border-b border-neutral-200">
+                        <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">Customized Meal Schedule</h3>
+                      </div>
+                      <div className="divide-y divide-neutral-100 max-h-96 overflow-y-auto">
+                        {previewData.scaled_matrix.map((item: any, idx: number) => (
+                          <div key={idx} className="p-4 hover:bg-neutral-50 transition-colors flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-neutral-100 rounded-xl flex flex-col items-center justify-center shrink-0">
+                                <span className="text-[10px] font-bold text-neutral-500 uppercase">Day</span>
+                                <span className="text-sm font-black text-neutral-900">{item.day_index + 1}</span>
+                              </div>
+                              <div>
+                                <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-1">{item.meal_type}</div>
+                                <div className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                                  {item.bowl_name}
+                                  <span className="text-[10px] font-bold text-[#6A0FAD] bg-[#6A0FAD]/10 px-2 py-0.5 rounded-full">
+                                    ₹{item.scaled_price?.toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-6">
+                              <div className="hidden sm:flex items-center gap-3">
+                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_protein)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Pro</div></div>
+                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_carbs)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Carb</div></div>
+                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_fats)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Fat</div></div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-black text-neutral-900">{Math.round(item.scaled_calories)} <span className="text-xs text-neutral-500 font-medium">kcal</span></div>
+                                <div className="text-[10px] font-bold text-green-600 uppercase">Target: {item.target_calories}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {errorMsg && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">

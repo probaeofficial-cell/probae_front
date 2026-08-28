@@ -37,8 +37,11 @@ export default function CustomerDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
+  const [mealCategories, setMealCategories] = useState<any[]>([]);
   const [allPlans, setAllPlans] = useState<any[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
 
@@ -59,12 +62,36 @@ export default function CustomerDetailPage() {
     selectedPlanId: null as string | null,
     planDuration: "WEEKLY",
     planFrequency: "5 DAYS",
-    mealSlots: ["LUNCH", "DINNER"] as string[],
+    mealSlots: [] as string[],
     probaeTarget: 0,
     mealCalories: {} as Record<string, number>,
     lockedMeals: {} as Record<string, boolean>,
     image_filename: null as string | null
   });
+
+    const fetchPreview = async (planUlid: string, goal: string, mealCalories: any) => {
+    setIsPreviewLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1"}/plans/preview-customization`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan_ulid: planUlid,
+          goal: goal,
+          meal_calories: mealCalories,
+          customer_ulid: ulid
+        })
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setPreviewData(resData);
+      }
+    } catch (e) {
+      console.error("Preview fetch error:", e);
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
 
   const fetchCustomer = async () => {
     setIsLoading(true);
@@ -79,6 +106,9 @@ export default function CustomerDetailPage() {
       }
       if (data) {
         setCustomer(data);
+        if (data.selected_plan_id) {
+          fetchPreview(data.selected_plan_id, data.goal || "MAINTENANCE", data.calorie_profile?.mealCalories || {});
+        }
         const profile = data.calorie_profile || {};
         setFormData({
           name: data.name || "",
@@ -260,17 +290,10 @@ export default function CustomerDetailPage() {
 
   
   const getExpectedMealType = (slots: string[]) => {
-    const hasB = slots.includes("B-FAST");
-    const hasL = slots.includes("LUNCH");
-    const hasD = slots.includes("DINNER");
-    if (hasB && hasL && hasD) return "Breakfast + Lunch + Dinner";
-    if (hasB && hasL) return "Breakfast + Lunch";
-    if (hasL && hasD) return "Lunch + Dinner";
-    if (hasB && hasD) return "Breakfast + Dinner";
-    if (hasB) return "Breakfast Only";
-    if (hasL) return "Lunch Only";
-    if (hasD) return "Dinner Only";
-    return "";
+    return slots.map(s => {
+      const found = mealCategories.find(c => (c.slug === s || c.name === s));
+      return found ? found.name : s;
+    }).join(" + ");
   };
 
   const loadPlans = (e?: React.FormEvent) => {
@@ -606,7 +629,7 @@ export default function CustomerDetailPage() {
                             {plans.map(p => (
                               <div 
                                 key={p.ulid} 
-                                onClick={() => updateField("selectedPlanId", p.ulid)}
+                                onClick={() => { updateField("selectedPlanId", p.ulid); fetchPreview(p.ulid, formData.goal, formData.mealCalories); }}
                                 className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.selectedPlanId === p.ulid ? "border-[#6A0FAD] bg-[#6A0FAD]/5" : "border-neutral-200 hover:border-[#6A0FAD]/30"}`}
                               >
                                 <div className="flex justify-between items-start mb-2">
@@ -648,6 +671,79 @@ export default function CustomerDetailPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Plan Customization Preview */}
+                {isPreviewLoading && (
+                  <div className="flex items-center justify-center p-8 bg-white rounded-2xl border border-neutral-200">
+                    <Loader2 className="w-8 h-8 text-[#6A0FAD] animate-spin" />
+                    <span className="ml-3 text-neutral-600 font-bold">Calculating personalized macros & pricing...</span>
+                  </div>
+                )}
+
+                {!isPreviewLoading && previewData && (
+                  <div className="space-y-6">
+                    <div className="bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col md:flex-row justify-between items-center gap-6">
+                      <div className="flex-1 text-center md:text-left">
+                        <div className="text-sm font-bold text-neutral-500 uppercase tracking-wider">Gross Value</div>
+                        <div className="text-2xl font-bold text-neutral-900">₹{previewData.gross_price}</div>
+                      </div>
+                      <div className="w-px h-12 bg-neutral-200 hidden md:block"></div>
+                      <div className="flex-1 text-center">
+                        <div className="text-sm font-bold text-red-500 uppercase tracking-wider">Plan Discount ({previewData.discount_percentage}%)</div>
+                        <div className="text-2xl font-bold text-red-600">- ₹{previewData.discount_amount}</div>
+                      </div>
+                      <div className="w-px h-12 bg-neutral-200 hidden md:block"></div>
+                      <div className="flex-1 text-center md:text-right">
+                        <div className="text-sm font-bold text-[#6A0FAD] uppercase tracking-wider">Final Price</div>
+                        <div className="text-3xl font-black text-[#6A0FAD]">₹{previewData.final_discounted_price}</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+                      <div className="px-6 py-4 bg-neutral-50 border-b border-neutral-200 flex justify-between items-center">
+                        <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">Customized Meal Schedule</h3>
+                        {isEditMode && (
+                          <button type="button" onClick={() => fetchPreview(formData.selectedPlanId || "", formData.goal, formData.mealCalories)} className="text-xs font-bold text-[#6A0FAD] hover:underline">
+                            Refresh Preview
+                          </button>
+                        )}
+                      </div>
+                      <div className="divide-y divide-neutral-100 max-h-96 overflow-y-auto">
+                        {previewData.scaled_matrix.map((item: any, idx: number) => (
+                          <div key={idx} className="p-4 hover:bg-neutral-50 transition-colors flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-neutral-100 rounded-xl flex flex-col items-center justify-center shrink-0">
+                                <span className="text-[10px] font-bold text-neutral-500 uppercase">Day</span>
+                                <span className="text-sm font-black text-neutral-900">{item.day_index + 1}</span>
+                              </div>
+                              <div>
+                                <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-1">{item.meal_type}</div>
+                                <div className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                                  {item.bowl_name}
+                                  <span className="text-[10px] font-bold text-[#6A0FAD] bg-[#6A0FAD]/10 px-2 py-0.5 rounded-full">
+                                    ₹{item.scaled_price?.toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-6">
+                              <div className="hidden sm:flex items-center gap-3">
+                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_protein)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Pro</div></div>
+                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_carbs)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Carb</div></div>
+                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_fats)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Fat</div></div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-black text-neutral-900">{Math.round(item.scaled_calories)} <span className="text-xs text-neutral-500 font-medium">kcal</span></div>
+                                <div className="text-[10px] font-bold text-green-600 uppercase">Target: {item.target_calories}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               </div>
 

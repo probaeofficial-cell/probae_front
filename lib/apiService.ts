@@ -250,6 +250,21 @@ export const api = {
 
 // ─── Application API Endpoints ───────────────────────────────────────────────
 export const endpoints = {
+  orders: {
+    list: (params: { page?: number; limit?: number; source?: string; target_date?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params.page) searchParams.append("page", params.page.toString());
+      if (params.limit) searchParams.append("limit", params.limit.toString());
+      if (params.source) searchParams.append("source", params.source);
+      if (params.target_date) searchParams.append("target_date", params.target_date);
+      return api.get(`/orders?${searchParams.toString()}`);
+    },
+    preview: (payload: { customer_ulid: string; bowl_ulid: string; meal_slot: string }) =>
+      api.post("/orders/preview", payload),
+    checkout: (payload: any) =>
+      api.post("/orders/checkout", payload),
+  },
+
   auth: {
     login: async (payload: { identifier: string; password: string; totp_code?: string }, rememberMe?: boolean): Promise<LoginResponse> => {
       const response = await api.post<LoginResponse>("/auth/login", payload);
@@ -433,7 +448,20 @@ export const endpoints = {
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
       }
-      return await api.get<PaginatedMealCategories>(`/meal-categories${query}`);
+      const data = await api.get<PaginatedMealCategories>(`/meal-categories${query}`);
+      if (data && data.items) {
+        const order = ["breakfast", "lunch", "dinner", "snack", "drink"];
+        data.items.sort((a, b) => {
+          const slugA = (a.slug || "").toLowerCase();
+          const slugB = (b.slug || "").toLowerCase();
+          const idxA = order.findIndex(o => slugA.includes(o));
+          const idxB = order.findIndex(o => slugB.includes(o));
+          const weightA = idxA === -1 ? 999 : idxA;
+          const weightB = idxB === -1 ? 999 : idxB;
+          return weightA - weightB;
+        });
+      }
+      return data;
     },
     getMealCategory: async (ulid: string): Promise<MealCategory> => {
       return await api.get<MealCategory>(`/meal-categories/${ulid}`);
