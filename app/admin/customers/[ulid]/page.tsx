@@ -750,6 +750,17 @@ export default function CustomerDetailPage() {
               {/* Right Column (Status & Macros) */}
               <div className="space-y-6">
                 
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-100 p-6 shadow-sm">
+                  <h3 className="text-xs font-bold text-green-700 uppercase tracking-wider mb-2">Total Calories Delivered</h3>
+                  <div className="flex items-end gap-2">
+                    <span className="text-3xl font-black text-green-900">
+                      {customer.total_calories_ordered ? customer.total_calories_ordered.toLocaleString("en-US", { maximumFractionDigits: 1 }) : "0"}
+                    </span>
+                    <span className="text-sm font-bold text-green-700 mb-1">kcal</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-green-600 uppercase tracking-wider mt-2">Lifetime Consumption</p>
+                </div>
+
                 <div className="bg-white rounded-2xl border border-neutral-200 p-6">
                   <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider mb-4">Customer Status</h3>
                   {isEditMode ? (

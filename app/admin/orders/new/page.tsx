@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { endpoints } from "@/lib/apiService";
 import { Header } from "@/components/admin/Header";
+import { ProbaeButton } from "@/components/ProbaeButton";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 
 export default function NewOrderPage() {
@@ -36,17 +37,16 @@ export default function NewOrderPage() {
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [custData, bowlData, mealCatData] = await Promise.all([
+        const [custData, mealCatData] = await Promise.all([
           endpoints.customers.list({ limit: 100 }) as any,
-          endpoints.bowls.getBowls(1, 100) as any,
           endpoints.mealCategories.getMealCategories(1, 100) as any
         ]);
         if (custData.success) setCustomers(custData.customers || []);
-        if (bowlData.items) setBowls(bowlData.items || []); else if (bowlData.bowls) setBowls(bowlData.bowls || []);
         if (mealCatData.items) setMealCategories(mealCatData.items || []); else if (mealCatData.categories) setMealCategories(mealCatData.categories || []);
       } catch (e) {
         console.error(e);
@@ -54,6 +54,25 @@ export default function NewOrderPage() {
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchBowlsForSlot = async () => {
+      if (!selectedMealSlot || mealCategories.length === 0) return;
+      const cat = mealCategories.find(c => (c.slug === selectedMealSlot || c.name === selectedMealSlot));
+      if (!cat) return;
+      
+      try {
+        const bowlData = await endpoints.bowls.getBowls(1, 100, undefined, cat.ulid) as any;
+        if (bowlData.items) setBowls(bowlData.items || []); else if (bowlData.bowls) setBowls(bowlData.bowls || []);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    
+    fetchBowlsForSlot();
+    setSelectedBowl(null);
+    setBowlSearch("");
+  }, [selectedMealSlot, mealCategories]);
 
   const filteredCustomers = customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch));
   const filteredBowls = bowls.filter(b => b.name.toLowerCase().includes(bowlSearch.toLowerCase()));
@@ -126,6 +145,27 @@ export default function NewOrderPage() {
     setOrderItems(newItems);
   };
 
+  const handleCalorieChange = (itemIndex: number, ingIndex: number, newCalStr: string) => {
+    const newCal = parseFloat(newCalStr) || 0;
+    const newItems = [...orderItems];
+    const item = newItems[itemIndex];
+    const ing = item.workingIngredients[ingIndex];
+    
+    const originalScaledCal = item.previewData.ingredients[ingIndex].calories;
+    const ratio = originalScaledCal > 0 ? (newCal / originalScaledCal) : 0;
+    
+    ing.calories = newCal;
+    ing.new_weight = item.previewData.ingredients[ingIndex].new_weight * ratio;
+    ing.protein = item.previewData.ingredients[ingIndex].protein * ratio;
+    ing.carbs = item.previewData.ingredients[ingIndex].carbs * ratio;
+    ing.fat = item.previewData.ingredients[ingIndex].fat * ratio;
+    ing.fiber = item.previewData.ingredients[ingIndex].fiber * ratio;
+    ing.cost = item.previewData.ingredients[ingIndex].cost * ratio;
+    
+    setOrderItems(newItems);
+  };
+
+
   // Calculate live totals for an item
   const getItemLiveTotals = (item: any) => {
     const totals = item.workingIngredients.reduce((acc: any, ing: any) => {
@@ -147,6 +187,33 @@ export default function NewOrderPage() {
     const totals = getItemLiveTotals(item);
     return sum + (totals.finalPrice * item.quantity);
   }, 0);
+
+  const checkDeviation = () => {
+    if (!selectedCustomer) return false;
+    const targetCalories = selectedCustomer.calorie_profile?.mealCalories || {};
+    
+    const slotTotals: Record<string, number> = {};
+    orderItems.forEach(item => {
+      const cals = getItemLiveTotals(item).cals * item.quantity;
+      slotTotals[item.mealSlot] = (slotTotals[item.mealSlot] || 0) + cals;
+    });
+
+    for (const [slot, total] of Object.entries(slotTotals)) {
+      const target = targetCalories[slot] || 0;
+      if (Math.abs(total - target) > 50) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const initiateCheckout = () => {
+    if (checkDeviation()) {
+      setShowWarningModal(true);
+    } else {
+      handleCheckout();
+    }
+  };
 
   const handleCheckout = async () => {
     if (!selectedCustomer || orderItems.length === 0) return;
@@ -265,17 +332,28 @@ export default function NewOrderPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-black text-neutral-900">{selectedCustomer.name}</h3>
-                  <div className="flex flex-wrap gap-4 mt-2">
+                  <div className="flex flex-wrap gap-4 mt-2 mb-4">
                     <div className="flex items-center gap-1.5 text-sm font-medium text-neutral-600">
                       <Activity className="w-4 h-4 text-[#6A0FAD]" />
                       Goal: <span className="text-neutral-900 font-bold uppercase">{selectedCustomer.goal}</span>
                     </div>
                     {selectedCustomer.calorie_profile?.tdee && (
                       <div className="flex items-center gap-1.5 text-sm font-medium text-neutral-600">
-                        Total TDEE: <span className="text-neutral-900 font-bold">{Math.round(selectedCustomer.calorie_profile.tdee)} kcal</span>
+                        Total Target: <span className="text-neutral-900 font-bold">{Math.round(selectedCustomer.calorie_profile.probaeTarget || selectedCustomer.calorie_profile.tdee)} kcal</span>
                       </div>
                     )}
                   </div>
+                  
+                  {selectedCustomer.calorie_profile?.mealCalories && (
+                    <div className="flex flex-wrap gap-2 pt-4 border-t border-[#6A0FAD]/10">
+                       {Object.entries(selectedCustomer.calorie_profile.mealCalories).map(([slot, cals]: any) => (
+                         <div key={slot} className="bg-white border border-neutral-200 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                           <span className="text-[10px] font-black uppercase tracking-widest text-[#6A0FAD]">{mealCategories.find(c => c.slug === slot)?.name || slot}</span>
+                           <span className="text-sm font-bold text-neutral-900">{Math.round(cals)} kcal</span>
+                         </div>
+                       ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -283,6 +361,18 @@ export default function NewOrderPage() {
             {/* Add Bowl Section */}
             {selectedCustomer && (
               <div className="pt-6 border-t border-neutral-100 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div className="md:col-span-4">
+                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Meal Slot Target</label>
+                  <select 
+                    value={selectedMealSlot}
+                    onChange={(e) => setSelectedMealSlot(e.target.value)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] outline-none appearance-none"
+                  >
+                    {mealCategories.map(cat => (
+                      <option key={cat.ulid} value={cat.slug || cat.name}>{cat.name} Target</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="md:col-span-5 relative">
                   <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Bowl Recipe</label>
                   <div className="relative">
@@ -321,18 +411,6 @@ export default function NewOrderPage() {
                       </div>
                     )}
                   </div>
-                </div>
-                <div className="md:col-span-4">
-                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Meal Slot Target</label>
-                  <select 
-                    value={selectedMealSlot}
-                    onChange={(e) => setSelectedMealSlot(e.target.value)}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] outline-none appearance-none"
-                  >
-                    {mealCategories.map(cat => (
-                      <option key={cat.ulid} value={cat.slug || cat.name}>{cat.name} Target</option>
-                    ))}
-                  </select>
                 </div>
                 <div className="md:col-span-3">
                   <button 
@@ -388,13 +466,27 @@ export default function NewOrderPage() {
                             </td>
                             <td className="px-6 py-4 text-right text-neutral-400 font-bold w-1/6">{item.previewData.ingredients[i].original_weight}g</td>
                             <td className="px-6 py-4 text-right text-[#6A0FAD] font-bold bg-[#F9F5FD] w-1/6">{item.previewData.ingredients[i].new_weight}g</td>
-                            <td className="px-6 py-4 text-right w-1/4">
-                              <input 
-                                type="number" 
-                                value={ing.new_weight.toFixed(1)}
-                                onChange={(e) => handleWeightChange(itemIndex, i, e.target.value)}
-                                className="w-20 text-center bg-white border border-neutral-200 rounded-lg px-2 py-1.5 font-bold text-neutral-900 focus:outline-none focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD]"
-                              />
+                            <td className="px-6 py-4 text-right w-1/3">
+                              <div className="flex items-center justify-end gap-2">
+                                <div className="flex items-center bg-white border border-neutral-200 rounded-lg focus-within:ring-2 focus-within:ring-[#6A0FAD]/20 focus-within:border-[#6A0FAD] transition-all">
+                                  <input 
+                                    type="number" 
+                                    value={ing.new_weight.toFixed(1)}
+                                    onChange={(e) => handleWeightChange(itemIndex, i, e.target.value)}
+                                    className="w-20 text-center bg-transparent px-2 py-1.5 font-bold text-neutral-900 outline-none"
+                                  />
+                                  <span className="pr-3 text-xs text-neutral-400 font-bold select-none">g</span>
+                                </div>
+                                <div className="flex items-center bg-white border border-neutral-200 rounded-lg focus-within:ring-2 focus-within:ring-[#6A0FAD]/20 focus-within:border-[#6A0FAD] transition-all">
+                                  <input 
+                                    type="number" 
+                                    value={ing.calories.toFixed(1)}
+                                    onChange={(e) => handleCalorieChange(itemIndex, i, e.target.value)}
+                                    className="w-20 text-center bg-transparent px-2 py-1.5 font-bold text-neutral-900 outline-none"
+                                  />
+                                  <span className="pr-3 text-xs text-neutral-400 font-bold select-none">kcal</span>
+                                </div>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -437,16 +529,36 @@ export default function NewOrderPage() {
               <div className="text-neutral-400 font-bold text-sm">Grand Total ({orderItems.length} items)</div>
               <div className="text-3xl font-black text-[#00E676]">₹{grandTotal.toFixed(2)}</div>
             </div>
-            <button 
-              onClick={handleCheckout}
+            <ProbaeButton 
+              onClick={initiateCheckout}
               disabled={isSubmitting}
-              className="w-full md:w-auto px-6 py-3 bg-[#6A0FAD] hover:bg-[#5b0c96] text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full md:w-auto md:!px-10"
             >
               {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
               Approve & Create Order
-            </button>
+            </ProbaeButton>
           </div>
         )}
+
+        {/* Warning Modal */}
+        {showWarningModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl flex flex-col">
+              <h2 className="text-2xl font-black text-neutral-900 mb-2">Calorie Deviation Detected</h2>
+              <p className="text-neutral-500 font-medium mb-8">
+                The total calories in this custom order deviate significantly from the customer's prescribed meal targets. Are you sure you want to approve this order?
+              </p>
+              <div className="flex gap-4">
+                <button onClick={() => setShowWarningModal(false)} className="flex-1 py-3 bg-neutral-100 text-neutral-600 font-bold rounded-[20px] hover:bg-neutral-200 transition-colors">Cancel</button>
+                <ProbaeButton onClick={() => { setShowWarningModal(false); handleCheckout(); }} className="flex-1">
+                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                  Approve Anyway
+                </ProbaeButton>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

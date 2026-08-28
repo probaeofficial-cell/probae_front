@@ -263,6 +263,14 @@ export const endpoints = {
       api.post("/orders/preview", payload),
     checkout: (payload: any) =>
       api.post("/orders/checkout", payload),
+    updateStatus: (ulid: string, status: string) =>
+      api.patch(`/orders/${ulid}/status`, { status }),
+    get: (ulid: string) =>
+      api.get(`/orders/${ulid}`),
+    delete: (ulid: string) =>
+      api.del(`/orders/${ulid}`),
+    updateItem: (orderUlid: string, itemUlid: string, payload: any) =>
+      api.patch(`/orders/${orderUlid}/items/${itemUlid}`, payload),
   },
 
   auth: {
@@ -568,10 +576,13 @@ export const endpoints = {
     delete: async (ulid: string) => await api.del(`/plans/${ulid}`),
   },
   bowls: {
-    getBowls: async (page: number, size: number, search?: string): Promise<PaginatedBowls> => {
+    getBowls: async (page: number, size: number, search?: string, mealCategoryUlid?: string): Promise<PaginatedBowls> => {
       let query = `?page=${page}&page_size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
+      }
+      if (mealCategoryUlid) {
+        query += `&meal_category_ulid=${encodeURIComponent(mealCategoryUlid)}`;
       }
       return await api.get<PaginatedBowls>(`/bowls${query}`);
     },

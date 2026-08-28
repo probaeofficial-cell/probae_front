@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Loader2, ExternalLink, Calendar, Eye, X, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Loader2, Calendar, Eye, X, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -11,9 +11,18 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<"PLAN" | "CUSTOM">("PLAN");
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const handleStatusChange = async (ulid: string, newStatus: string) => {
+    try {
+      await endpoints.orders.updateStatus(ulid, newStatus);
+      setOrders(orders.map(o => o.ulid === ulid ? { ...o, status: newStatus } : o));
+    } catch (e) {
+      console.error("Failed to update status", e);
+      alert("Failed to update status");
+    }
+  };
 
   const fetchOrders = async (source: string, pageNum: number) => {
     setIsLoading(true);
@@ -107,23 +116,31 @@ export default function OrdersPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800">
-                            {order.status}
-                          </span>
+                          <select 
+                            value={order.status}
+                            onChange={(e) => handleStatusChange(order.ulid, e.target.value)}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 outline-none cursor-pointer hover:bg-blue-200 transition-colors appearance-none"
+                          >
+                            <option value="CREATED">CREATED</option>
+                            <option value="PREPARED">PREPARED</option>
+                            <option value="DISPATCHED">DISPATCHED</option>
+                            <option value="DELIVERED">DELIVERED</option>
+                            <option value="CANCELLED">CANCELLED</option>
+                          </select>
                         </td>
                         <td className="px-6 py-4 text-right whitespace-nowrap">
                           <div className="font-black text-neutral-900">₹{order.total_order_price.toFixed(2)}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2">
-                            <button 
-                              onClick={() => setSelectedOrder(order)} 
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2">
+                              <Link 
+                                href={`/admin/orders/${order.ulid}`}
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Link>
+                            </div>
+                          </td>
                       </tr>
                     ))
                   )}
@@ -154,66 +171,6 @@ export default function OrdersPage() {
 
         </div>
       </div>
-
-      {/* Recipe Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-neutral-100 flex justify-between items-center bg-white shrink-0">
-              <div>
-                <h2 className="text-2xl font-black text-neutral-900">Order Recipe Snapshot</h2>
-                <p className="text-sm text-neutral-500 font-medium mt-1">ID: {selectedOrder.ulid}</p>
-              </div>
-              <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors"><X className="w-6 h-6" /></button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto bg-neutral-50/50 flex-1">
-              <div className="space-y-6">
-                {selectedOrder.items.map((item: any, idx: number) => (
-                  <div key={item.id} className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
-                    <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <div className="text-[10px] font-black text-[#6A0FAD] uppercase tracking-widest mb-1">{item.meal_slot}</div>
-                        <h3 className="text-lg font-bold text-neutral-900">{item.bowl_name}</h3>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-black text-neutral-900">{Math.round(item.adjusted_calories)} kcal</div>
-                        <div className="text-xs text-neutral-500 font-medium">₹{item.adjusted_price.toFixed(2)}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="overflow-hidden rounded-xl border border-neutral-200">
-                      <table className="w-full text-left text-sm">
-                        <thead className="bg-[#F3F4F6] text-[10px] uppercase tracking-wider text-neutral-500 font-bold border-b border-neutral-200">
-                          <tr>
-                            <th className="px-4 py-3">Ingredient</th>
-                            <th className="px-4 py-3">Tag</th>
-                            <th className="px-4 py-3 text-right">Base</th>
-                            <th className="px-4 py-3 text-right font-black text-[#6A0FAD]">Scaled Weight</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-neutral-100">
-                          {item.adjusted_ingredients.map((ing: any, i: number) => (
-                            <tr key={i} className="hover:bg-neutral-50">
-                              <td className="px-4 py-3 font-medium text-neutral-900">{ing.name}</td>
-                              <td className="px-4 py-3">
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-600">{ing.macro_tag}</span>
-                              </td>
-                              <td className="px-4 py-3 text-right text-neutral-500">{ing.original_weight}g</td>
-                              <td className="px-4 py-3 text-right font-black text-[#6A0FAD] bg-[#6A0FAD]/5">{ing.new_weight}g</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
