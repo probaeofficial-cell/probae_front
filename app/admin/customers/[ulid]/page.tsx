@@ -21,6 +21,12 @@ export default function CustomerDetailPage() {
         if (data && data.R2_BASE_URL !== undefined) {
           setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
         }
+        const catData = await endpoints.mealCategories.getMealCategories(1, 100) as any;
+        if (catData) {
+          if (catData.items) setMealCategories(catData.items);
+          else if (catData.categories) setMealCategories(catData.categories);
+          else if (Array.isArray(catData)) setMealCategories(catData);
+        }
       } catch (err) {
         console.error("Failed to fetch settings", err);
       }
@@ -127,9 +133,9 @@ export default function CustomerDetailPage() {
           selectedPlanId: data.selected_plan_id || null,
           planDuration: "WEEKLY",
           planFrequency: "5 DAYS",
-          mealSlots: profile.mealSlots || ["LUNCH", "DINNER"],
+          mealSlots: profile.mealSlots || [],
           probaeTarget: profile.probaeTarget || profile.total || 0,
-          mealCalories: profile.mealCalories || { "LUNCH": 500, "DINNER": 500 },
+          mealCalories: profile.mealCalories || {},
           lockedMeals: profile.lockedMeals || {},
           image_filename: data.image_filename || null
         });
@@ -144,6 +150,15 @@ export default function CustomerDetailPage() {
   useEffect(() => {
     if (ulid) fetchCustomer();
   }, [ulid]);
+
+  useEffect(() => {
+    if (formData.selectedPlanId && formData.mealCalories && Object.keys(formData.mealCalories).length > 0) {
+      const timer = setTimeout(() => {
+        fetchPreview(formData.selectedPlanId, formData.goal, formData.mealCalories);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [formData.mealCalories, formData.selectedPlanId, formData.goal]);
 
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,6 +260,10 @@ export default function CustomerDetailPage() {
   };
   
   const toggleArrayField = (field: "dietaryPreferences" | "allergies" | "mealSlots", value: string) => {
+    if (field === "mealSlots" && formData.selectedPlanId) {
+      alert("Meal slots changed. The current plan has been cleared. Please select another plan.");
+      setPreviewData(null);
+    }
     setFormData((prev) => {
       const current = prev[field] as string[];
       if (current.includes(value)) {
@@ -262,7 +281,7 @@ export default function CustomerDetailPage() {
               }
             });
           }
-          return { ...prev, [field]: newArray, mealCalories: newCalories, lockedMeals: {} };
+          return { ...prev, [field]: newArray, mealCalories: newCalories, lockedMeals: {}, selectedPlanId: null };
         }
         return { ...prev, [field]: newArray };
       }
@@ -282,7 +301,7 @@ export default function CustomerDetailPage() {
             newCalories[s] = perSlot;
           }
         });
-        return { ...prev, [field]: newArray, mealCalories: newCalories, lockedMeals: {} };
+        return { ...prev, [field]: newArray, mealCalories: newCalories, lockedMeals: {}, selectedPlanId: null };
       }
       return { ...prev, [field]: newArray };
     });
@@ -608,10 +627,13 @@ export default function CustomerDetailPage() {
                         </div>
                         <div className="col-span-1 md:col-span-2">
                           <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Meal Slots</label>
-                          <div className="flex gap-4">
-                            {["B-FAST", "LUNCH", "DINNER"].map(m => (
-                              <button type="button" key={m} onClick={() => toggleArrayField("mealSlots", m)} className={`flex-1 py-4 rounded-xl border text-sm font-bold ${formData.mealSlots.includes(m) ? "bg-[#ff751f] text-white border-[#ff751f]" : "bg-white text-neutral-600 border-neutral-300"}`}>{m}</button>
-                            ))}
+                          <div className="flex gap-4 flex-wrap">
+                            {mealCategories.map(cat => {
+                              const m = cat.slug || cat.name;
+                              return (
+                                <button type="button" key={m} onClick={() => toggleArrayField("mealSlots", m)} className={`flex-1 min-w-[120px] py-4 rounded-xl border text-sm font-bold ${formData.mealSlots.includes(m) ? "bg-[#ff751f] text-white border-[#ff751f]" : "bg-white text-neutral-600 border-neutral-300"}`}>{cat.name}</button>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>
