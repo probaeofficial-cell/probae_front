@@ -108,7 +108,7 @@ export default function PlansPage() {
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search plans..."
-          />
+           isLoading={isLoading} />
           <ProbaeButton onClick={() => router.push("/admin/plans/builder/new")} className="w-full sm:w-auto shrink-0">
             <Plus className="w-4 h-4 mr-2" />
             Create Plan

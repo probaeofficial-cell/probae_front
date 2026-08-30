@@ -1,5 +1,6 @@
 
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { PriceTrends } from "@/components/admin/raw-materials/PriceTrends";
@@ -299,7 +300,7 @@ export default function PurchaseHistoryPage() {
   const draftTotalActual = draftPurchases.reduce((acc, curr) => acc + curr.purchasePrice, 0);
   const draftTotalVariance = draftTotalActual - draftTotalStandard;
 
-  if (authLoading) return <div className="p-8"><Loader2 className="w-8 h-8 animate-spin text-[#6b21a8]" /></div>;
+  if (authLoading) return <div className="p-8"><BowlLoader className="w-8 h-8 animate-spin text-[#6b21a8]" /></div>;
 
   return (
     <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden font-sans">
@@ -366,7 +367,7 @@ export default function PurchaseHistoryPage() {
                           )}
 
                           <div ref={loadingNodeRef} className="py-2 flex justify-center">
-                            {rmIsLoading && <Loader2 className="w-5 h-5 text-[#6b21a8] animate-spin" />}
+                            {rmIsLoading && <BowlLoader className="w-5 h-5 text-[#6b21a8] animate-spin" />}
                           </div>
                         </div>
                       )}
@@ -498,7 +499,7 @@ export default function PurchaseHistoryPage() {
                     <hr className="border-neutral-200 mb-6" />
                     <div className="flex gap-4">
                       <button onClick={handleSubmitBatch} disabled={draftPurchases.length === 0 || isLoading} className="flex-1 bg-[#6b21a8] text-white font-bold rounded-2xl py-4 flex items-center justify-center gap-2 hover:bg-[#581c87] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                        {isLoading ? <BowlLoader className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
                         <span>Submit Purchase</span>
                       </button>
                       <button onClick={() => setDraftPurchases([])} disabled={draftPurchases.length === 0} className="px-8 bg-white border-2 border-neutral-200 text-neutral-700 font-bold rounded-2xl hover:bg-neutral-50 transition-colors disabled:opacity-50">Clear All</button>
@@ -523,7 +524,7 @@ export default function PurchaseHistoryPage() {
                 </div>
                 <div className="p-8 overflow-x-auto">
                   {isLoading ? (
-                    <div className="py-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#6b21a8]" /></div>
+                    <div className="py-12 flex justify-center"><BowlLoader className="w-8 h-8 animate-spin text-[#6b21a8]" /></div>
                   ) : (
                     <table className="w-full text-left border-collapse">
                       <thead className="bg-[#f8f5fb] text-xs font-bold text-neutral-500 tracking-wider whitespace-nowrap">
@@ -629,7 +630,7 @@ export default function PurchaseHistoryPage() {
                   </div>
                   <div className="p-8 overflow-x-auto">
                     {isLoading ? (
-                      <div className="py-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#6b21a8]" /></div>
+                      <div className="py-12 flex justify-center"><BowlLoader className="w-8 h-8 animate-spin text-[#6b21a8]" /></div>
                     ) : (
                       <table className="w-full text-left border-collapse">
                         <thead className="bg-[#f8f5fb] text-xs font-bold text-neutral-500 tracking-wider whitespace-nowrap">

@@ -335,10 +335,13 @@ export const endpoints = {
     getLowStockCount: async (): Promise<{ count: number }> => {
       return await api.get<{ count: number }>("/raw-materials/metrics/low-stock-count");
     },
-    getRawMaterials: async (page: number, size: number, search?: string): Promise<PaginatedRawMaterials> => {
+    getRawMaterials: async (page: number, size: number, search?: string, stockout?: boolean): Promise<PaginatedRawMaterials> => {
       let query = `?page=${page}&size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
+      }
+      if (stockout) {
+        query += `&stockout=true`;
       }
       return await api.get<PaginatedRawMaterials>(`/raw-materials/${query}`);
     },

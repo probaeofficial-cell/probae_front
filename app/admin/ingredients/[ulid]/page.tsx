@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -362,7 +363,7 @@ export default function IngredientFormPage() {
       <div className="flex-1 overflow-auto scrollbar-thin flex flex-col items-center">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
-            <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
+            <BowlLoader className="w-8 h-8 text-neutral-500 animate-spin" />
             <span className="text-neutral-500 font-medium">Loading component...</span>
           </div>
         ) : (
@@ -660,7 +661,7 @@ export default function IngredientFormPage() {
                   disabled={isSaving}
                   className="py-3.5 text-lg rounded-[20px]"
                 >
-                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                  {isSaving ? <BowlLoader className="w-5 h-5 animate-spin mr-2" /> : null}
                   Save
                 </ProbaeButton>
               </div>

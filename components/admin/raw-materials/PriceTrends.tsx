@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect } from "react";
 import { Search, Loader2, ArrowUp, ArrowDown, TrendingUp, TrendingDown, Minus } from "lucide-react";
@@ -165,7 +166,7 @@ export function PriceTrends() {
         </div>
 
         {isLoading ? (
-          <div className="py-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#6b21a8]" /></div>
+          <div className="py-24 flex justify-center"><BowlLoader className="w-8 h-8 animate-spin text-[#6b21a8]" /></div>
         ) : (
           <div className="flex flex-col gap-4">
             {filtered.length === 0 ? (

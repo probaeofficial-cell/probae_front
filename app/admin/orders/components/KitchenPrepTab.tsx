@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect } from "react";
 import { Loader2, CheckCircle2, Circle, Clock } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
@@ -34,7 +35,7 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
   };
 
   if (isLoading) {
-    return <div className="p-8 flex justify-center"><Loader2 className="animate-spin w-8 h-8 text-neutral-400" /></div>;
+    return <div className="p-8 flex justify-center"><BowlLoader className="animate-spin w-8 h-8 text-neutral-400" /></div>;
   }
 
   if (!data) return <div className="p-8 text-center text-neutral-500">Failed to load prep list.</div>;

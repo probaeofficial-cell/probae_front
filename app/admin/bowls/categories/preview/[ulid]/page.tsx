@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -105,7 +106,7 @@ export default function BowlCategoryPreviewPage() {
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-0">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-3">
-            <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
+            <BowlLoader className="w-8 h-8 text-neutral-500 animate-spin" />
             <span className="text-neutral-500 font-medium">Loading category...</span>
           </div>
         ) : error ? (

@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
 import { Loader2, Calendar, Eye, ChevronLeft, ChevronRight, Plus, ListChecks } from "lucide-react";
 import Link from "next/link";
@@ -117,7 +118,7 @@ export default function OrdersPage() {
                     {isLoading ? (
                       <tr>
                         <td colSpan={6} className="px-6 py-8 text-center">
-                          <div className="flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-[#6A0FAD]" /></div>
+                          <div className="flex justify-center"><BowlLoader className="w-6 h-6 animate-spin text-[#6A0FAD]" /></div>
                         </td>
                       </tr>
                     ) : orders.length === 0 ? (

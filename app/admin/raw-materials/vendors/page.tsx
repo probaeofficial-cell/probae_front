@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -32,6 +33,7 @@ export default function VendorsPage() {
   const [pageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
@@ -55,17 +57,12 @@ export default function VendorsPage() {
 
   // ─── Side Effects ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/admin/login");
-    }
-  }, [user, authLoading, router]);
-
-  // Debounce search
-  useEffect(() => {
+    setIsTyping(true);
     const handler = setTimeout(() => {
       setDebouncedSearch(searchQuery);
       setPage(1);
-    }, 500);
+      setIsTyping(false);
+    }, 1000);
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
@@ -206,7 +203,7 @@ export default function VendorsPage() {
   if (authLoading || (!user && isLoading)) {
     return (
       <div className="h-full w-full flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#7c26d9] animate-spin" />
+        <BowlLoader className="w-8 h-8 text-[#7c26d9]" />
       </div>
     );
   }
@@ -239,7 +236,7 @@ export default function VendorsPage() {
                 value={searchQuery}
                 onChange={setSearchQuery}
                 placeholder="Search vendors by name or code..."
-              />
+               isLoading={isTyping || isLoading} />
 
               <ProbaeButton 
                 onClick={openAddModal}
@@ -256,9 +253,9 @@ export default function VendorsPage() {
             </div>
           )}
           <div className="flex-1 overflow-auto pr-2 pb-6 scrollbar-thin rounded-2xl border border-neutral-100" onScroll={handleScroll}>
-              {isLoading ? (
+              {isLoading || isTyping ? (
                 <div className="h-64 flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="w-8 h-8 text-[#6b21a8] animate-spin" />
+                  <BowlLoader className="w-8 h-8 text-[#6b21a8]" />
                   <span className="text-neutral-500 text-sm font-medium">Loading vendors...</span>
                 </div>
               ) : vendors.length === 0 ? (
@@ -342,7 +339,7 @@ export default function VendorsPage() {
               )}
               {isFetchingNextPage && (
                 <div className="py-6 flex justify-center items-center w-full">
-                  <Loader2 className="w-6 h-6 text-[#6b21a8] animate-spin" />
+                  <BowlLoader className="w-6 h-6 text-[#6b21a8]" />
                   <span className="ml-2 text-sm text-neutral-500 font-medium">Loading more...</span>
                 </div>
               )}
@@ -430,7 +427,7 @@ export default function VendorsPage() {
                 >
                   {isSaving ? (
                     <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                      <BowlLoader className="w-4 h-4" /> Saving...
                     </div>
                   ) : (
                     modalMode === "add" ? "Add Vendor" : "Save Changes"

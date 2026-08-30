@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -32,6 +33,7 @@ export default function BowlsListPage() {
   const [pageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
@@ -42,16 +44,12 @@ export default function BowlsListPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/admin/login");
-    }
-  }, [user, authLoading, router]);
-
-  useEffect(() => {
+    setIsTyping(true);
     const handler = setTimeout(() => {
       setDebouncedSearch(searchQuery);
       setPage(1);
-    }, 800);
+      setIsTyping(false);
+    }, 1000);
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
@@ -169,7 +167,7 @@ export default function BowlsListPage() {
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search bowls..."
-            />
+             isLoading={isTyping || isLoading} />
             <ProbaeButton onClick={() => router.push("/admin/bowls/builder/add")} className="w-full sm:w-auto px-8 shrink-0">
               <Plus className="w-4 h-4 mr-2" />
               Add Bowl
@@ -182,9 +180,9 @@ export default function BowlsListPage() {
             </div>
           )}
           <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
-            {isLoading ? (
+            {isLoading || isTyping ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
-                <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
+                <BowlLoader className="w-8 h-8 text-[#7c3aed]" />
                 <span className="text-neutral-500 text-sm font-medium">Loading bowls...</span>
               </div>
             ) : bowls.length === 0 ? (
@@ -303,7 +301,7 @@ export default function BowlsListPage() {
             )}
             {isFetchingNextPage && (
               <div className="py-6 flex justify-center items-center w-full">
-                <Loader2 className="w-6 h-6 text-[#7c3aed] animate-spin" />
+                <BowlLoader className="w-6 h-6 text-[#7c3aed]" />
                 <span className="ml-2 text-sm text-neutral-500 font-medium">Loading more...</span>
               </div>
             )}

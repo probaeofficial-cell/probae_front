@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -129,7 +130,7 @@ export default function PackagingBundleFormPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-[#fafafa]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
+          <BowlLoader className="w-8 h-8 text-[#7c3aed] animate-spin" />
           <span className="text-neutral-500 font-medium">Loading packaging set builder...</span>
         </div>
       </div>
@@ -266,7 +267,7 @@ export default function PackagingBundleFormPage() {
 
         <div className="flex justify-end mb-8">
           <ProbaeButton onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto px-12 h-14 text-lg">
-            {isSaving ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Saving...</> : "Save Packaging Set"}
+            {isSaving ? <><BowlLoader className="w-5 h-5 animate-spin mr-2" /> Saving...</> : "Save Packaging Set"}
           </ProbaeButton>
         </div>
       </div>

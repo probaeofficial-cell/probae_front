@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -43,6 +44,7 @@ export default function CostManagementPage() {
   const [pageSize] = useState(10); // Standard grid size
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
@@ -103,35 +105,12 @@ export default function CostManagementPage() {
   // ─── Side Effects ──────────────────────────────────────────────────────────
   // Auth validation
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/admin/login");
-    }
-  }, [user, authLoading, router]);
-
-  // Load system settings
-  useEffect(() => {
-    async function fetchSystemSettings() {
-      try {
-        const data = await endpoints.settings.getSystemSettings();
-        if (data && data.R2_BASE_URL !== undefined) {
-          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
-        }
-      } catch (error) {
-        console.error("Error fetching system settings:", error);
-      }
-    }
-    if (user) {
-      fetchSystemSettings();
-    }
-  }, [user]);
-
-  // Search Debouncing (Debounce for 3 seconds)
-  useEffect(() => {
+    setIsTyping(true);
     const handler = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-      setPage(1); // Reset page to 1 when search query changes
-    }, 3000);
-
+      setPage(1);
+      setIsTyping(false);
+    }, 1000);
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
@@ -585,7 +564,7 @@ export default function CostManagementPage() {
                 value={searchQuery}
                 onChange={setSearchQuery}
                 placeholder="Search for your order"
-              />
+               isLoading={isTyping || isLoading} />
 
               {/* Actions */}
               <ProbaeButton
@@ -603,9 +582,9 @@ export default function CostManagementPage() {
             </div>
           )}
           <div className="flex-1 overflow-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
-              {isLoading ? (
+              {isLoading || isTyping ? (
                 <div className="h-64 flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="w-8 h-8 text-[#6b21a8] animate-spin" />
+                  <BowlLoader className="w-8 h-8 text-[#6b21a8]" />
                   <span className="text-neutral-500 text-sm font-medium">Loading materials...</span>
                 </div>
               ) : materials.length === 0 ? (
@@ -763,7 +742,7 @@ export default function CostManagementPage() {
               )}
               {isFetchingNextPage && (
                 <div className="py-6 flex justify-center items-center w-full">
-                  <Loader2 className="w-6 h-6 text-[#6b21a8] animate-spin" />
+                  <BowlLoader className="w-6 h-6 text-[#6b21a8]" />
                   <span className="ml-2 text-sm text-neutral-500 font-medium">Loading more...</span>
                 </div>
               )}
@@ -992,7 +971,7 @@ export default function CostManagementPage() {
                   
                   {isLoadingLogs ? (
                     <div className="flex-1 flex justify-center items-center py-12">
-                      <Loader2 className="w-8 h-8 text-[#6b21a8] animate-spin" />
+                      <BowlLoader className="w-8 h-8 text-[#6b21a8]" />
                     </div>
                   ) : costLogs.length === 0 ? (
                     <div className="flex-1 flex flex-col justify-center items-center py-12 text-center border-2 border-dashed border-neutral-100 rounded-2xl bg-neutral-50/50">
@@ -1127,7 +1106,7 @@ export default function CostManagementPage() {
 
                 {isUploadingPrimary ? (
                   <div className="flex flex-col items-center gap-1.5 text-center">
-                    <Loader2 className="w-6 h-6 text-[#6b21a8] animate-spin" />
+                    <BowlLoader className="w-6 h-6 text-[#6b21a8]" />
                     <span className="text-[10px] text-neutral-500 font-semibold">Uploading...</span>
                   </div>
                 ) : previewUrl ? (
@@ -1185,7 +1164,7 @@ export default function CostManagementPage() {
 
                 {isUploadingBackground ? (
                   <div className="flex flex-col items-center gap-1.5 text-center">
-                    <Loader2 className="w-6 h-6 text-[#6b21a8] animate-spin" />
+                    <BowlLoader className="w-6 h-6 text-[#6b21a8]" />
                     <span className="text-[10px] text-neutral-500 font-semibold">Uploading...</span>
                   </div>
                 ) : previewBackgroundUrl ? (
@@ -1392,7 +1371,7 @@ export default function CostManagementPage() {
                   type="submit"
                   disabled={isUploadingPrimary || isUploadingBackground || isSaving}
                 >
-                  {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSaving && <BowlLoader className="w-4 h-4" />}
                   Save
                 </ProbaeButton>
               </div>

@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
 import { Loader2, ArrowLeft, CheckCircle2, Search, Plus, Trash2, User, Activity } from "lucide-react";
 import Link from "next/link";
@@ -418,7 +419,7 @@ export default function NewOrderPage() {
                     disabled={!selectedBowl || isPreviewLoading}
                     className="w-full h-[50px] flex items-center justify-center gap-2 bg-[#6A0FAD] text-white font-bold rounded-xl hover:bg-[#5b0c96] transition-colors shadow-sm disabled:opacity-50"
                   >
-                    {isPreviewLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                    {isPreviewLoading ? <BowlLoader className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                     Add to Order
                   </button>
                 </div>
@@ -534,7 +535,7 @@ export default function NewOrderPage() {
               disabled={isSubmitting}
               className="w-full md:w-auto md:!px-10"
             >
-              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+              {isSubmitting ? <BowlLoader className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
               Approve & Create Order
             </ProbaeButton>
           </div>
@@ -551,7 +552,7 @@ export default function NewOrderPage() {
               <div className="flex gap-4">
                 <button onClick={() => setShowWarningModal(false)} className="flex-1 py-3 bg-neutral-100 text-neutral-600 font-bold rounded-[20px] hover:bg-neutral-200 transition-colors">Cancel</button>
                 <ProbaeButton onClick={() => { setShowWarningModal(false); handleCheckout(); }} className="flex-1">
-                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                  {isSubmitting ? <BowlLoader className="w-5 h-5 animate-spin" /> : null}
                   Approve Anyway
                 </ProbaeButton>
               </div>

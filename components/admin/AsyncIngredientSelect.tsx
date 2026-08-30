@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, Search, Loader2 } from "lucide-react";
@@ -140,7 +141,7 @@ export default function AsyncIngredientSelect({
             )}
 
             <div ref={loadingNodeRef} className="py-2 flex justify-center">
-              {isLoading && <Loader2 className="w-4 h-4 text-neutral-400 animate-spin" />}
+              {isLoading && <BowlLoader className="w-4 h-4 text-neutral-400 animate-spin" />}
             </div>
           </div>
         </div>

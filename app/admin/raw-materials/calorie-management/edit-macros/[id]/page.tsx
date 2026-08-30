@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -379,7 +380,7 @@ export default function EditMacrosPage({ params }: PageProps) {
                   disabled={isSaving}
                   className="py-3.5 rounded-[20px] text-[15px]"
                 >
-                  {isSaving && <Loader2 className="w-4 h-4 animate-spin text-white mr-1.5" />}
+                  {isSaving && <BowlLoader className="w-4 h-4 animate-spin text-white mr-1.5" />}
                   Save
                 </ProbaeButton>
               </div>

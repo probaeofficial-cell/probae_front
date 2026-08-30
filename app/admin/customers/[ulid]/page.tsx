@@ -1,5 +1,6 @@
 
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -395,7 +396,7 @@ export default function CustomerDetailPage() {
     return (
       <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
         <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden items-center justify-center">
-          <Loader2 className="w-8 h-8 text-[#6A0FAD] animate-spin" />
+          <BowlLoader className="w-8 h-8 text-[#6A0FAD] animate-spin" />
         </div>
       </div>
     );
@@ -439,7 +440,7 @@ export default function CustomerDetailPage() {
                       Cancel
                     </button>
                     <ProbaeButton onClick={handleSave} disabled={isSubmitting} className="!w-auto">
-                      {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+                      {isSubmitting ? <BowlLoader className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
                       Save Changes
                     </ProbaeButton>
                   </>
@@ -465,7 +466,7 @@ export default function CustomerDetailPage() {
                     <div className="relative">
                       <div className="w-24 h-24 rounded-full bg-neutral-100 border-2 border-dashed border-neutral-300 flex items-center justify-center overflow-hidden">
                         {isUploadingImage ? (
-                          <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
+                          <BowlLoader className="w-6 h-6 animate-spin text-neutral-400" />
                         ) : formData.image_filename ? (
                           <img src={getMediaUrl(systemSettings.R2_BASE_URL, formData.image_filename) as string} alt="Customer" className="w-full h-full object-cover" />
                         ) : (
@@ -640,7 +641,7 @@ export default function CustomerDetailPage() {
                       
                       <div className="flex justify-end pt-2">
                         <ProbaeButton onClick={loadPlans} type="button" disabled={isLoadingPlans} className="!w-auto flex items-center gap-2">
-                          {isLoadingPlans ? <Loader2 className="w-4 h-4 animate-spin" /> : "Find Plans"}
+                          {isLoadingPlans ? <BowlLoader className="w-4 h-4 animate-spin" /> : "Find Plans"}
                         </ProbaeButton>
                       </div>
 
@@ -697,7 +698,7 @@ export default function CustomerDetailPage() {
                 {/* Plan Customization Preview */}
                 {isPreviewLoading && (
                   <div className="flex items-center justify-center p-8 bg-white rounded-2xl border border-neutral-200">
-                    <Loader2 className="w-8 h-8 text-[#6A0FAD] animate-spin" />
+                    <BowlLoader className="w-8 h-8 text-[#6A0FAD] animate-spin" />
                     <span className="ml-3 text-neutral-600 font-bold">Calculating personalized macros & pricing...</span>
                   </div>
                 )}

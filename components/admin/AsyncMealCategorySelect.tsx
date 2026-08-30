@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, Search, Loader2 } from "lucide-react";
@@ -152,7 +153,7 @@ export default function AsyncMealCategorySelect({ value, onChange, selectedCateg
             
             {hasMore && (
               <div ref={loadingNodeRef} className="py-3 flex justify-center">
-                <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
+                <BowlLoader className="w-4 h-4 animate-spin text-neutral-400" />
               </div>
             )}
             

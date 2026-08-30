@@ -1,5 +1,6 @@
 import React from "react";
 import { Search, Filter } from "lucide-react";
+import { BowlLoader } from "./BowlLoader";
 
 interface ProbaeSearchProps {
   value: string;
@@ -8,6 +9,7 @@ interface ProbaeSearchProps {
   onFilterClick?: () => void;
   sortByText?: string;
   onSortClick?: () => void;
+  isLoading?: boolean;
 }
 
 export function ProbaeSearch({
@@ -17,6 +19,7 @@ export function ProbaeSearch({
   onFilterClick,
   sortByText = "A to Z",
   onSortClick,
+  isLoading = false,
 }: ProbaeSearchProps) {
   return (
     <div
@@ -30,7 +33,11 @@ export function ProbaeSearch({
     >
       {/* Gradient Search circle */}
       <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#EA580C] to-[#7C3AED] flex items-center justify-center text-white shrink-0 shadow-sm mr-3">
-        <Search className="w-4 h-4 text-white" />
+        {isLoading ? (
+          <BowlLoader className="w-5 h-5 text-white" />
+        ) : (
+          <Search className="w-4 h-4 text-white" />
+        )}
       </div>
       {/* Vertical line separator after search circle */}
       <div className="h-5 w-[1px] bg-neutral-200 mr-3 shrink-0" />

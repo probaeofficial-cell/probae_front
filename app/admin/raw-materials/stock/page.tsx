@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -31,6 +32,8 @@ export default function StockManagementPage() {
   const [pageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [filterStockout, setFilterStockout] = useState(false);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
@@ -42,10 +45,12 @@ export default function StockManagementPage() {
 
   // ─── Debounce Search ───────────────────────────────────────────────────────
   useEffect(() => {
+    setIsTyping(true);
     const handler = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-      setPage(1); // Reset page on new search
-    }, 500);
+      setPage(1);
+      setIsTyping(false);
+    }, 1000);
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
@@ -58,7 +63,7 @@ export default function StockManagementPage() {
       setIsFetchingNextPage(true);
       await new Promise(r => setTimeout(r, 2000));
     }
-      const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch);
+      const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch, filterStockout);
       setMaterials(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -73,7 +78,7 @@ export default function StockManagementPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [page, pageSize, debouncedSearch]);
+  }, [page, pageSize, debouncedSearch, filterStockout]);
 
   const fetchSystemSettings = async () => {
     try {
@@ -85,6 +90,10 @@ export default function StockManagementPage() {
       console.error("Failed to fetch system settings:", error);
     }
   };
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterStockout]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -137,7 +146,7 @@ export default function StockManagementPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
-        <Loader2 className="w-8 h-8 text-[#6b21a8] animate-spin" />
+        <BowlLoader className="w-8 h-8 text-[#6b21a8]" />
       </div>
     );
   }
@@ -159,8 +168,20 @@ export default function StockManagementPage() {
             <ProbaeSearch
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search for your order"
-            />
+              placeholder="Search by name or code..."
+             isLoading={isTyping || isLoading} />
+            
+            {/* Filter Toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-neutral-600">Stockout Items Only</span>
+              <button
+                type="button"
+                onClick={() => setFilterStockout(!filterStockout)}
+                className={`w-11 h-6 rounded-full transition-colors relative ${filterStockout ? 'bg-[#7c26d9]' : 'bg-neutral-200'}`}
+              >
+                <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${filterStockout ? 'translate-x-5' : ''}`} />
+              </button>
+            </div>
           </div>
 
           {/* Grid Content Area */}
@@ -170,9 +191,9 @@ export default function StockManagementPage() {
             </div>
           )}
           <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
-            {isLoading ? (
+            {isLoading || isTyping ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
-                <Loader2 className="w-8 h-8 text-[#6b21a8] animate-spin" />
+                <BowlLoader className="w-8 h-8 text-[#6b21a8]" />
                 <span className="text-neutral-500 text-sm font-medium">Loading materials...</span>
               </div>
             ) : materials.length === 0 ? (
@@ -254,7 +275,7 @@ export default function StockManagementPage() {
             )}
             {isFetchingNextPage && (
               <div className="py-6 flex justify-center items-center w-full">
-                <Loader2 className="w-6 h-6 text-[#6b21a8] animate-spin" />
+                <BowlLoader className="w-6 h-6 text-[#6b21a8]" />
                 <span className="ml-2 text-sm text-neutral-500 font-medium">Loading more...</span>
               </div>
             )}

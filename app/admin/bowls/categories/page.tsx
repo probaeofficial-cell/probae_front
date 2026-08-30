@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -211,7 +212,7 @@ export default function BowlCategoriesPage() {
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search for your category"
-            />
+             isLoading={isLoading} />
             <ProbaeButton
               onClick={() => router.push("/admin/bowls/categories/add")}
               className="w-full sm:w-auto px-8 shrink-0"
@@ -228,7 +229,7 @@ export default function BowlCategoriesPage() {
           <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
             {isLoading ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
-                <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
+                <BowlLoader className="w-8 h-8 text-[#7c3aed] animate-spin" />
                 <span className="text-neutral-500 text-sm font-medium">Loading categories...</span>
               </div>
             ) : categories.length === 0 ? (
@@ -334,7 +335,7 @@ export default function BowlCategoriesPage() {
             )}
             {isFetchingNextPage && (
               <div className="py-6 flex justify-center items-center w-full">
-                <Loader2 className="w-6 h-6 text-[#7c3aed] animate-spin" />
+                <BowlLoader className="w-6 h-6 text-[#7c3aed] animate-spin" />
                 <span className="ml-2 text-sm text-neutral-500 font-medium">Loading more...</span>
               </div>
             )}

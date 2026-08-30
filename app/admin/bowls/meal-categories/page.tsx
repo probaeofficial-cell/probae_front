@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -235,7 +236,7 @@ export default function MealCategoriesPage() {
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search for your category"
-            />
+             isLoading={isLoading} />
             <ProbaeButton onClick={handleOpenCreateModal} className="w-full sm:w-auto px-8 shrink-0">
               Add Meal Slot
             </ProbaeButton>
@@ -249,7 +250,7 @@ export default function MealCategoriesPage() {
           <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
           {isLoading ? (
             <div className="h-64 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
+              <BowlLoader className="w-8 h-8 text-[#7c3aed] animate-spin" />
               <span className="text-neutral-500 text-sm font-medium">Loading...</span>
             </div>
           ) : categories.length === 0 ? (

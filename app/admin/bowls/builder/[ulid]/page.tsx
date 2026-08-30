@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -259,7 +260,7 @@ export default function BowlBuilderPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-[#fafafa]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
+          <BowlLoader className="w-8 h-8 text-[#7c3aed] animate-spin" />
           <span className="text-neutral-500 font-medium">Loading bowl builder...</span>
         </div>
       </div>
@@ -626,7 +627,7 @@ export default function BowlBuilderPage() {
             disabled={isSaving}
             className="h-10 px-6 bg-[#6A0FAD] text-white font-bold text-sm rounded-lg hover:bg-white hover:text-[#6A0FAD] border border-[#6A0FAD] transition-all shadow-sm flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {isSaving ? <BowlLoader className="w-4 h-4 animate-spin" /> : null}
             {isEdit ? "Save Changes" : "Create Bowl"}
           </button>
         </div>

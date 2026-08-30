@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -326,7 +327,7 @@ export default function AddMacrosPage() {
                     {/* Loading indicator inside select list */}
                     {isDropdownLoading && (
                       <div className="py-2 flex items-center justify-center gap-1.5 text-neutral-400 text-[10px]">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <BowlLoader className="w-3.5 h-3.5 animate-spin" />
                         <span>Loading more...</span>
                       </div>
                     )}
@@ -491,7 +492,7 @@ export default function AddMacrosPage() {
                   disabled={isSaving || !selectedMaterial}
                   className="py-3.5 rounded-[20px] text-[15px]"
                 >
-                  {isSaving && <Loader2 className="w-4 h-4 animate-spin text-white mr-1.5" />}
+                  {isSaving && <BowlLoader className="w-4 h-4 animate-spin text-white mr-1.5" />}
                   Save
                 </ProbaeButton>
               </div>

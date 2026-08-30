@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -35,6 +36,7 @@ export default function IngredientsPage() {
   const [pageSize] = useState(6); // 6 items per page
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
@@ -50,35 +52,12 @@ export default function IngredientsPage() {
   // ─── Side Effects ──────────────────────────────────────────────────────────
   // Auth validation
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/admin/login");
-    }
-  }, [user, authLoading, router]);
-
-  // Load system settings
-  useEffect(() => {
-    async function fetchSystemSettings() {
-      try {
-        const data = await endpoints.settings.getSystemSettings();
-        if (data && data.R2_BASE_URL !== undefined) {
-          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
-        }
-      } catch (error) {
-        console.error("Error fetching system settings:", error);
-      }
-    }
-    if (user) {
-      fetchSystemSettings();
-    }
-  }, [user]);
-
-  // Search Debouncing (Debounce for 1.5 seconds)
-  useEffect(() => {
+    setIsTyping(true);
     const handler = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-      setPage(1); // Reset page to 1 when search query changes
-    }, 1500);
-
+      setPage(1);
+      setIsTyping(false);
+    }, 1000);
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
@@ -223,7 +202,7 @@ export default function IngredientsPage() {
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search for your order"
-            />
+             isLoading={isTyping || isLoading} />
 
             {/* Add Components button using ProbaeButton */}
             <ProbaeButton
@@ -241,9 +220,9 @@ export default function IngredientsPage() {
             </div>
           )}
           <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
-            {isLoading ? (
+            {isLoading || isTyping ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
-                <Loader2 className="w-8 h-8 text-[#7c3aed] animate-spin" />
+                <BowlLoader className="w-8 h-8 text-[#7c3aed]" />
                 <span className="text-neutral-500 text-sm font-medium">Loading ingredients...</span>
               </div>
             ) : ingredients.length === 0 ? (
@@ -365,7 +344,7 @@ export default function IngredientsPage() {
             )}
             {isFetchingNextPage && (
               <div className="py-6 flex justify-center items-center w-full">
-                <Loader2 className="w-6 h-6 text-[#7c3aed] animate-spin" />
+                <BowlLoader className="w-6 h-6 text-[#7c3aed]" />
                 <span className="ml-2 text-sm text-neutral-500 font-medium">Loading more...</span>
               </div>
             )}

@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -141,7 +142,7 @@ export default function OrderDetailPage() {
   if (isLoading) return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
       <div className="p-4 sm:p-8 h-full rounded-tl-3xl bg-white flex items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-[#6A0FAD]" />
+        <BowlLoader className="w-10 h-10 animate-spin text-[#6A0FAD]" />
       </div>
     </div>
   );
@@ -504,7 +505,7 @@ export default function OrderDetailPage() {
                 disabled={deleteLoading}
                 className="flex-1 !bg-rose-600 !border-rose-600 hover:!bg-white hover:!text-rose-600"
               >
-                {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
+                {deleteLoading ? <BowlLoader className="w-4 h-4 animate-spin" /> : "Delete"}
               </ProbaeButton>
             </div>
           </div>
@@ -537,7 +538,7 @@ export default function OrderDetailPage() {
                 disabled={statusLoading}
                 className="flex-1"
               >
-                {statusLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm"}
+                {statusLoading ? <BowlLoader className="w-4 h-4 animate-spin" /> : "Confirm"}
               </ProbaeButton>
             </div>
           </div>

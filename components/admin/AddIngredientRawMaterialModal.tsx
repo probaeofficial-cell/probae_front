@@ -1,3 +1,4 @@
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect } from "react";
 import { X, Search, Loader2 } from "lucide-react";
 import { RawMaterial } from "@/lib/types";
@@ -93,7 +94,7 @@ export function AddIngredientRawMaterialModal({ isOpen, onClose, onAdd, initialM
           <div className="h-64 overflow-y-auto border border-neutral-100 rounded-2xl">
             {isLoading ? (
               <div className="flex h-full items-center justify-center">
-                <Loader2 className="w-6 h-6 text-[#7c3aed] animate-spin" />
+                <BowlLoader className="w-6 h-6 text-[#7c3aed] animate-spin" />
               </div>
             ) : materials.length === 0 ? (
               <div className="flex h-full items-center justify-center text-neutral-500">

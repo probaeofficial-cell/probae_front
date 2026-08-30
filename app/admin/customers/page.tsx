@@ -74,7 +74,7 @@ export default function CustomersPage() {
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search customers..."
-            />
+             isLoading={isLoading} />
             <Link href="/admin/customers/new">
               <ProbaeButton  className="!w-auto flex items-center gap-2">
                 <Plus className="w-4 h-4" /> Add Customer
