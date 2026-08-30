@@ -680,11 +680,11 @@ export default function CostManagementPage() {
 
                             {/* Variance calculation */}
                             {(() => {
-                              const actualPrice = material.actual_price || (material.standard_price || material.price);
-                              const prevPrice = material.previous_price || (material.standard_price || material.price);
+                              const currentStandard = material.standard_price || material.price || 0;
+                              const prevPrice = material.previous_price || currentStandard;
                               
-                              if (actualPrice && prevPrice && prevPrice > 0) {
-                                const variance = ((actualPrice - prevPrice) / prevPrice) * 100;
+                              if (currentStandard > 0 && prevPrice > 0) {
+                                const variance = ((currentStandard - prevPrice) / prevPrice) * 100;
                                 if (Math.abs(variance) >= 0.01) {
                                   return variance > 0 ? (
                                     <span className="text-[11px] font-bold text-red-600 flex items-center gap-0.5 tracking-wide">
@@ -868,11 +868,11 @@ export default function CostManagementPage() {
 
                     {/* Variance */}
                     {(() => {
-                      const actualPrice = selectedMaterial?.actual_price || (selectedMaterial?.standard_price || selectedMaterial?.price || 0);
-                      const prevPrice = selectedMaterial?.previous_price || (selectedMaterial?.standard_price || selectedMaterial?.price || 0);
+                      const currentStandard = selectedMaterial?.standard_price || selectedMaterial?.price || 0;
+                      const prevPrice = selectedMaterial?.previous_price || currentStandard;
                       
-                      if (actualPrice && prevPrice && prevPrice > 0) {
-                        const variance = ((actualPrice - prevPrice) / prevPrice) * 100;
+                      if (currentStandard > 0 && prevPrice > 0) {
+                        const variance = ((currentStandard - prevPrice) / prevPrice) * 100;
                         if (Math.abs(variance) >= 0.01) {
                           return variance > 0 ? (
                             <div className="flex flex-col items-end">

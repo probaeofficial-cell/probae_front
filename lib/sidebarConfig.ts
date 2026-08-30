@@ -61,7 +61,15 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     },
   },
   planTiers: { label: "Plan Tiers", icon: Calendar, path: "/admin/plans" },
-  orders: { label: "Orders", icon: Package, path: "/admin/orders" },
+    orders: {
+    label: "Orders & KDS",
+    icon: Package,
+    subItems: {
+      daily: { label: "Daily Orders", dotColor: "bg-blue-500", path: "/admin/orders" },
+      prep: { label: "Kitchen Prep", dotColor: "bg-orange-500", path: "/admin/kds/prep" },
+      assembly: { label: "Bowl Assembly", dotColor: "bg-green-500", path: "/admin/kds/assembly" },
+    },
+  },
   customers: { label: "Customers", icon: Users, badge: 3, path: "/admin/customers" },
 };
 

@@ -250,6 +250,17 @@ export const api = {
 
 // ─── Application API Endpoints ───────────────────────────────────────────────
 export const endpoints = {
+  kds: {
+    getPrepList: async (date: string) => {
+      return api.get(`/kds/prep-list?target_date=${date}`);
+    },
+    updatePrepStatus: async (ingredientId: number, status: string, date: string) => {
+      return api.patch(`/kds/prep-list/${ingredientId}/status?target_date=${date}`, { status });
+    },
+    getAssemblyList: async (date: string) => {
+      return api.get(`/kds/assembly-list?target_date=${date}`);
+    }
+  },
   orders: {
     list: (params: { page?: number; limit?: number; source?: string; target_date?: string }) => {
       const searchParams = new URLSearchParams();

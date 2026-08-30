@@ -85,7 +85,7 @@ export function SelectCategoryModal({ isOpen, onClose, onSelect, selectedCategor
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search categories..."
-              className="w-full h-12 pl-11 pr-4 bg-neutral-100/70 border border-transparent rounded-2xl focus:outline-none focus:ring-0 focus:bg-white focus:border-neutral-200 transition-all text-sm font-medium placeholder:text-neutral-400"
+              className="w-full h-12 pl-11 pr-4 bg-neutral-100/70 border border-transparent rounded-2xl focus:outline-none focus:ring-0 focus:bg-white focus:border-neutral-200 transition-all text-sm font-medium text-neutral-900 placeholder:text-neutral-400"
             />
           </div>
 

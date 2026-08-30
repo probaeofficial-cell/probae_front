@@ -154,7 +154,7 @@ export default function CustomerDetailPage() {
   useEffect(() => {
     if (formData.selectedPlanId && formData.mealCalories && Object.keys(formData.mealCalories).length > 0) {
       const timer = setTimeout(() => {
-        fetchPreview(formData.selectedPlanId, formData.goal, formData.mealCalories);
+        fetchPreview(formData.selectedPlanId as string, formData.goal, formData.mealCalories);
       }, 500);
       return () => clearTimeout(timer);
     }
