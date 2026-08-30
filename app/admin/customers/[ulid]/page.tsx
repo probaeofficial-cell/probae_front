@@ -55,6 +55,9 @@ export default function CustomerDetailPage() {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
+    email: "",
+    latitude: "",
+    longitude: "",
     address: "",
     sex: "Male",
     age: "25",
@@ -120,6 +123,9 @@ export default function CustomerDetailPage() {
         setFormData({
           name: data.name || "",
           phone: data.phone || "",
+          email: data.email || "",
+          latitude: data.latitude !== null && data.latitude !== undefined ? data.latitude.toString() : "",
+          longitude: data.longitude !== null && data.longitude !== undefined ? data.longitude.toString() : "",
           address: data.address || "",
           sex: data.sex || "Male",
           age: data.age?.toString() || "25",
@@ -348,6 +354,9 @@ export default function CustomerDetailPage() {
       const payload = {
         name: formData.name,
         phone: formData.phone,
+        email: formData.email || null,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         address: formData.address,
         sex: formData.sex,
         age: parseInt(formData.age),
@@ -498,12 +507,36 @@ export default function CustomerDetailPage() {
                         <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.phone}</div>
                       )}
                     </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Email</label>
+                      {isEditMode ? (
+                        <input type="email" value={formData.email} onChange={e => updateField("email", e.target.value)} placeholder="Optional" className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
+                      ) : (
+                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.email || "N/A"}</div>
+                      )}
+                    </div>
                     <div className="sm:col-span-2">
                       <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Address</label>
                       {isEditMode ? (
                         <textarea value={formData.address} onChange={e => updateField("address", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] h-24 resize-none" />
                       ) : (
                         <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent min-h-[60px]">{customer.address || "N/A"}</div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Latitude</label>
+                      {isEditMode ? (
+                        <input type="text" value={formData.latitude} onChange={e => updateField("latitude", e.target.value)} placeholder="e.g. 12.9716" className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
+                      ) : (
+                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.latitude || "N/A"}</div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Longitude</label>
+                      {isEditMode ? (
+                        <input type="text" value={formData.longitude} onChange={e => updateField("longitude", e.target.value)} placeholder="e.g. 77.5946" className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
+                      ) : (
+                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.longitude || "N/A"}</div>
                       )}
                     </div>
                   </div>

@@ -7,6 +7,7 @@ interface ProbaeSearchProps {
   onChange: (value: string) => void;
   placeholder?: string;
   onFilterClick?: () => void;
+  isFilterActive?: boolean;
   sortByText?: string;
   onSortClick?: () => void;
   isLoading?: boolean;
@@ -17,6 +18,7 @@ export function ProbaeSearch({
   onChange,
   placeholder = "Search for your order",
   onFilterClick,
+  isFilterActive = false,
   sortByText = "A to Z",
   onSortClick,
   isLoading = false,
@@ -64,7 +66,7 @@ export function ProbaeSearch({
         <div className="h-5 w-[1px] bg-neutral-200" />
         <Filter 
           onClick={onFilterClick}
-          className="w-4 h-4 text-neutral-400 hover:text-[#7C3AED] cursor-pointer transition-colors" 
+          className={`w-4 h-4 cursor-pointer transition-colors ${isFilterActive ? "text-[#7C3AED]" : "text-neutral-400 hover:text-[#7C3AED]"}`} 
         />
       </div>
     </div>

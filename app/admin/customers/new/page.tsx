@@ -51,6 +51,9 @@ export default function NewCustomerPage() {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
+    email: "",
+    latitude: "",
+    longitude: "",
     image_filename: null as string | null,
     address: "",
     sex: "Male",
@@ -333,6 +336,9 @@ export default function NewCustomerPage() {
       const payload = {
         name: formData.name,
         phone: formData.phone,
+        email: formData.email || null,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         address: formData.address,
         sex: formData.sex,
         age: parseInt(formData.age),
@@ -407,9 +413,21 @@ export default function NewCustomerPage() {
                     <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Phone</label>
                     <input type="tel" required value={formData.phone} onChange={(e) => updateField("phone", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Email (Optional)</label>
+                    <input type="email" value={formData.email} onChange={(e) => updateField("email", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
+                  </div>
                   <div className="col-span-1 md:col-span-2">
                     <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Address</label>
                     <textarea required value={formData.address} onChange={(e) => updateField("address", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" rows={3} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Latitude (Optional)</label>
+                    <input type="text" value={formData.latitude} onChange={(e) => updateField("latitude", e.target.value)} placeholder="e.g. 12.9716" className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Longitude (Optional)</label>
+                    <input type="text" value={formData.longitude} onChange={(e) => updateField("longitude", e.target.value)} placeholder="e.g. 77.5946" className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 col-span-1 md:col-span-2">

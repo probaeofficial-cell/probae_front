@@ -256,7 +256,7 @@ function LoginView({
           </label>
         </div>
 
-        <ProbaeButton type="submit" disabled={!canSubmit || loading}>
+        <ProbaeButton className="w-full justify-center" type="submit" disabled={!canSubmit || loading}>
           {loading ? (
             <span className="animate-pulse">Logging in…</span>
           ) : (
@@ -329,7 +329,7 @@ function AuthenticatorView({
       <form onSubmit={handleSubmit} className="w-full flex flex-col items-center" noValidate>
         <OtpInput length={6} value={digits} onChange={setDigits} />
 
-        <ProbaeButton type="submit" disabled={!filled || loading}>
+        <ProbaeButton className="w-full justify-center" type="submit" disabled={!filled || loading}>
           {loading ? <span className="animate-pulse">Verifying…</span> : <>Submit <ChevronRightIcon /></>}
         </ProbaeButton>
       </form>
@@ -378,7 +378,7 @@ function ForgotView({
         <p className="text-neutral-500 text-sm mb-8 w-full leading-relaxed">
           We&apos;ve sent a recovery link to your email.
         </p>
-        <ProbaeButton type="button" onClick={onBack}>
+        <ProbaeButton className="w-full justify-center" type="button" onClick={onBack}>
           Back to Login
         </ProbaeButton>
       </div>
@@ -412,7 +412,7 @@ function ForgotView({
           disabled={loading}
         />
 
-        <ProbaeButton type="submit" disabled={!canSubmit || loading}>
+        <ProbaeButton className="w-full justify-center" type="submit" disabled={!canSubmit || loading}>
           {loading ? <span className="animate-pulse">Sending…</span> : <>Send Reset Link <ChevronRightIcon /></>}
         </ProbaeButton>
       </form>
@@ -505,7 +505,7 @@ function ResetView({
           />
         </div>
 
-        <ProbaeButton type="submit" disabled={!canSubmit || loading}>
+        <ProbaeButton className="w-full justify-center" type="submit" disabled={!canSubmit || loading}>
           {loading ? (
             <span className="animate-pulse">Updating…</span>
           ) : (
@@ -532,7 +532,7 @@ function PasswordChangedSuccessView({ onLogin }: { onLogin: () => void }) {
         Your password has been changed successfully.
       </p>
 
-      <ProbaeButton type="button" onClick={onLogin}>
+      <ProbaeButton className="w-full justify-center" type="button" onClick={onLogin}>
         Return to Login
       </ProbaeButton>
     </div>

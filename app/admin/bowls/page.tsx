@@ -1,5 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
+import { Filter, SlidersHorizontal, X } from "lucide-react";
+
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -14,6 +16,8 @@ import {
   Trash2,
   Plus
 } from "lucide-react";
+import AsyncMealCategorySelect from "@/components/admin/AsyncMealCategorySelect";
+import AsyncBowlCategorySelect from "@/components/admin/AsyncBowlCategorySelect";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -37,6 +41,16 @@ export default function BowlsListPage() {
   const [sort, setSort] = useState("A to Z");
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [filterMealCategoryId, setFilterMealCategoryId] = useState<number | 0>(0);
+  const [filterBowlCategoryId, setFilterBowlCategoryId] = useState<number | 0>(0);
+  const [filterBowlType, setFilterBowlType] = useState("");
+  const [filterCode, setFilterCode] = useState("");
+  const [filterCreatedById, setFilterCreatedById] = useState("");
+
+
+
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -73,7 +87,19 @@ export default function BowlsListPage() {
     }
     try {
       const [data, settingsRes] = await Promise.all([
-        endpoints.bowls.getBowls(page, pageSize, debouncedSearch, sort),
+        endpoints.bowls.getBowls(
+          page, 
+          pageSize, 
+          debouncedSearch, 
+          sort,
+          undefined,
+          undefined,
+          filterBowlType || undefined,
+          filterCode || undefined,
+          filterCreatedById ? parseInt(filterCreatedById) : undefined,
+          filterMealCategoryId || undefined,
+          filterBowlCategoryId || undefined
+        ),
         endpoints.settings.getSystemSettings()
       ]);
       if (settingsRes && (settingsRes as any).R2_BASE_URL) {
@@ -94,7 +120,7 @@ export default function BowlsListPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch, sort]);
+  }, [user, page, pageSize, debouncedSearch, sort, filterMealCategoryId, filterBowlCategoryId, filterBowlType, filterCode, filterCreatedById]);
 
   useEffect(() => {
     fetchBowls();
@@ -174,8 +200,13 @@ export default function BowlsListPage() {
             <ProbaeSearch
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search bowls..."
-             isLoading={isTyping || isLoading}  sortByText={sort} onSortClick={handleSortClick} />
+              placeholder="Search bowls by name..."
+              isLoading={isTyping || isLoading}
+              sortByText={sort}
+              onSortClick={handleSortClick}
+              onFilterClick={() => setIsFilterModalOpen(true)}
+              isFilterActive={!!(filterMealCategoryId || filterBowlCategoryId || filterBowlType || filterCode || filterCreatedById)}
+            />
             <ProbaeButton onClick={() => router.push("/admin/bowls/builder/add")} className="w-full sm:w-auto px-8 shrink-0">
               <Plus className="w-4 h-4 mr-2" />
               Add Bowl
@@ -339,6 +370,105 @@ export default function BowlsListPage() {
         type="delete"
         isLoading={isDeleting}
       />
+
+      {/* Filter Modal */}
+      {isFilterModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 bg-neutral-50/50">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-5 h-5 text-[#6A0FAD]" />
+                <h3 className="font-bold text-neutral-800 text-lg">Filter Bowls</h3>
+              </div>
+              <button onClick={() => setIsFilterModalOpen(false)} className="text-neutral-400 hover:text-neutral-600 transition-colors p-1 bg-white rounded-full border border-neutral-200 shadow-sm">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 flex flex-col gap-5 overflow-y-auto max-h-[60vh]">
+              
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5 uppercase tracking-wide">Bowl Code</label>
+                <input 
+                  type="text" 
+                  value={filterCode}
+                  onChange={(e) => setFilterCode(e.target.value)}
+                  placeholder="e.g. BWL-123"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#6A0FAD] focus:ring-2 focus:ring-[#6A0FAD]/20 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5 uppercase tracking-wide">Bowl Type</label>
+                <select
+                  value={filterBowlType}
+                  onChange={(e) => setFilterBowlType(e.target.value)}
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#6A0FAD] focus:ring-2 focus:ring-[#6A0FAD]/20 transition-all appearance-none"
+                >
+                  <option value="">All Types</option>
+                  <option value="BLEND">Blend</option>
+                  <option value="BLOCK">Block</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5 uppercase tracking-wide">Meal Slot</label>
+                <AsyncMealCategorySelect 
+                  value={filterMealCategoryId} 
+                  onChange={setFilterMealCategoryId} 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5 uppercase tracking-wide">Bowl Category</label>
+                <AsyncBowlCategorySelect 
+                  value={filterBowlCategoryId} 
+                  onChange={setFilterBowlCategoryId} 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5 uppercase tracking-wide">Creator ID (User ID)</label>
+                <input 
+                  type="number" 
+                  value={filterCreatedById}
+                  onChange={(e) => setFilterCreatedById(e.target.value)}
+                  placeholder="e.g. 1"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#6A0FAD] focus:ring-2 focus:ring-[#6A0FAD]/20 transition-all"
+                />
+              </div>
+              
+            </div>
+            
+            <div className="p-4 border-t border-neutral-100 flex gap-3 bg-neutral-50/50">
+              <button 
+                onClick={() => {
+                  setFilterCode("");
+                  setFilterBowlType("");
+                  setFilterMealCategoryId(0);
+                  setFilterBowlCategoryId(0);
+                  setFilterCreatedById("");
+                  setPage(1);
+                  setIsFilterModalOpen(false);
+                }}
+                className="flex-1 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-bold text-sm hover:bg-neutral-50 transition-colors shadow-sm"
+              >
+                Clear Filters
+              </button>
+              <button 
+                onClick={() => {
+                  setPage(1);
+                  setIsFilterModalOpen(false);
+                }}
+                className="flex-1 py-2.5 bg-[#6A0FAD] border border-transparent text-white rounded-xl font-bold text-sm hover:bg-[#5a0c94] transition-colors shadow-sm"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
