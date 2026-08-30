@@ -143,7 +143,7 @@ export function Sidebar() {
       )}
 
       {/* ── Scrollable Main Menu ───────────────────────────────────── */}
-      <div className={`flex-1 scrollbar-none py-6 ${collapsed ? "overflow-visible" : "overflow-y-auto overflow-x-hidden"}`}>
+      <div className="flex-1 scrollbar-none py-6 overflow-y-auto overflow-x-hidden">
         <div className="px-4 mb-2">
           {!collapsed && (
             <p className="text-[11px] font-semibold text-neutral-500 tracking-wider mb-4 px-2 uppercase">
@@ -170,6 +170,7 @@ export function Sidebar() {
                 <li key={menuKey} className="relative group">
                   <button
                     type="button"
+                    title={collapsed ? item.label : undefined}
                     onClick={() => {
                       if (hasSub) {
                         setOpenMenus((prev) => ({ ...prev, [menuKey]: !prev[menuKey] }));
@@ -211,12 +212,7 @@ export function Sidebar() {
                     )}
                   </button>
 
-                  {/* Tooltip for collapsed state */}
-                  {collapsed && (
-                    <div className="absolute left-14 top-1/2 -translate-y-1/2 bg-white text-black text-xs font-semibold px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-                      {item.label}
-                    </div>
-                  )}
+                  
 
                   {/* Collapsed sub-items */}
                   {hasSub && collapsed && openMenus[menuKey] && (
@@ -233,6 +229,7 @@ export function Sidebar() {
                             <button
                               type="button"
                               onClick={() => sub.path && router.push(sub.path)}
+                              title={sub.label}
                               className={`w-8 h-8 rounded-xl border flex items-center justify-center hover:bg-[#2a2a2a] transition-colors ${
                                 isSubActive
                                   ? "border-[#6A0FAD] bg-[#6A0FAD]/10"
@@ -243,9 +240,7 @@ export function Sidebar() {
                                 className={`w-2 h-2 rounded-full ${sub.dotColor}`}
                               />
                             </button>
-                            <div className="absolute left-12 top-1/2 -translate-y-1/2 bg-[#2a2a2a] border border-[#3a3a3a] text-white text-xs font-medium px-2.5 py-1.5 rounded-lg opacity-0 group-hover/sub:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
-                              {sub.label}
-                            </div>
+                            
                           </div>
                         );
                       })}
@@ -270,6 +265,7 @@ export function Sidebar() {
                                 <button
                                   type="button"
                                   onClick={() => sub.path && router.push(sub.path)}
+                              title={sub.label}
                                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors pl-11 ${
                                     isSubActive
                                       ? "text-white bg-[#6A0FAD]/15 font-semibold"
