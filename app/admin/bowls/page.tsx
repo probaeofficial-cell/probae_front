@@ -34,6 +34,7 @@ export default function BowlsListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [sort, setSort] = useState("A to Z");
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
@@ -55,6 +56,13 @@ export default function BowlsListPage() {
 
   const [systemSettings, setSystemSettings] = useState<any>({});
 
+  
+  const handleSortClick = () => {
+    const nextSort = sort === "A to Z" ? "Z to A" : sort === "Z to A" ? "Newest" : sort === "Newest" ? "Oldest" : "A to Z";
+    setSort(nextSort);
+    setPage(1);
+  };
+
   const fetchBowls = useCallback(async () => {
     if (!user) return;
         if (page === 1) {
@@ -65,7 +73,7 @@ export default function BowlsListPage() {
     }
     try {
       const [data, settingsRes] = await Promise.all([
-        endpoints.bowls.getBowls(page, pageSize, debouncedSearch),
+        endpoints.bowls.getBowls(page, pageSize, debouncedSearch, sort),
         endpoints.settings.getSystemSettings()
       ]);
       if (settingsRes && (settingsRes as any).R2_BASE_URL) {
@@ -86,7 +94,7 @@ export default function BowlsListPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch]);
+  }, [user, page, pageSize, debouncedSearch, sort]);
 
   useEffect(() => {
     fetchBowls();
@@ -167,7 +175,7 @@ export default function BowlsListPage() {
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search bowls..."
-             isLoading={isTyping || isLoading} />
+             isLoading={isTyping || isLoading}  sortByText={sort} onSortClick={handleSortClick} />
             <ProbaeButton onClick={() => router.push("/admin/bowls/builder/add")} className="w-full sm:w-auto px-8 shrink-0">
               <Plus className="w-4 h-4 mr-2" />
               Add Bowl

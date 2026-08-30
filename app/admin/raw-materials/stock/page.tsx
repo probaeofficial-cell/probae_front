@@ -33,6 +33,14 @@ export default function StockManagementPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [sort, setSort] = useState("A to Z");
+
+  const handleSortClick = () => {
+    const nextSort = sort === "A to Z" ? "Z to A" : sort === "Z to A" ? "Newest" : sort === "Newest" ? "Oldest" : "A to Z";
+    setSort(nextSort);
+    setPage(1);
+  };
+
   const [filterStockout, setFilterStockout] = useState(false);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
@@ -51,10 +59,8 @@ export default function StockManagementPage() {
       setPage(1);
       setIsTyping(false);
     }, 1000);
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
-
-  // ─── Fetch Data ────────────────────────────────────────────────────────────
+return () => clearTimeout(handler);
+  }, [searchQuery]);// ─── Fetch Data ────────────────────────────────────────────────────────────
   const fetchMaterials = useCallback(async () => {
     try {
           if (page === 1) {
@@ -63,7 +69,7 @@ export default function StockManagementPage() {
       setIsFetchingNextPage(true);
       await new Promise(r => setTimeout(r, 2000));
     }
-      const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch, filterStockout);
+      const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch, filterStockout, sort);
       setMaterials(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -78,7 +84,7 @@ export default function StockManagementPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [page, pageSize, debouncedSearch, filterStockout]);
+  }, [page, pageSize, debouncedSearch, filterStockout, sort]);
 
   const fetchSystemSettings = async () => {
     try {
@@ -104,9 +110,7 @@ export default function StockManagementPage() {
       fetchSystemSettings();
       fetchMaterials();
     }
-  }, [user, authLoading, router, fetchMaterials]);
-
-  // ─── Actions ───────────────────────────────────────────────────────────────
+  }, [user, authLoading, router, fetchMaterials]);// ─── Actions ───────────────────────────────────────────────────────────────
   const handleOpenAdjustment = (material: RawMaterial, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedMaterial(material);
@@ -169,7 +173,7 @@ export default function StockManagementPage() {
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search by name or code..."
-             isLoading={isTyping || isLoading} />
+             isLoading={isTyping || isLoading}  sortByText={sort} onSortClick={handleSortClick} />
             
             {/* Filter Toggle */}
             <div className="flex items-center gap-2">
@@ -207,7 +211,7 @@ export default function StockManagementPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-6 gap-4">
                 {materials.map((material) => {
                   const mediaUrl = getMediaUrl(systemSettings?.R2_BASE_URL, material.image_filename);
                   const isRunningLow = material.current_stock <= material.stock_threshold;

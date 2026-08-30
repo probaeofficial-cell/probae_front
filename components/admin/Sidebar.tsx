@@ -32,6 +32,18 @@ export function Sidebar() {
     setMobileOpen(false);
   }, [pathname]);
 
+  // Ensure sidebar is never in collapsed state on mobile screens
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setCollapsed(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize(); // Check initially
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
 
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   useEffect(() => {
@@ -104,7 +116,13 @@ export function Sidebar() {
         )}
         {!collapsed && (
           <button
-            onClick={() => setCollapsed(true)}
+            onClick={() => {
+              if (window.innerWidth < 768) {
+                setMobileOpen(false);
+              } else {
+                setCollapsed(true);
+              }
+            }}
             className="text-neutral-500 hover:text-white transition-colors"
             aria-label="Collapse sidebar"
           >
@@ -165,7 +183,7 @@ export function Sidebar() {
                         : "w-full justify-between px-3 py-2.5 rounded-xl"
                     } ${
                       isItemActive
-                        ? "bg-[#7c26d9] text-white font-semibold"
+                        ? "bg-[#6A0FAD] text-white font-semibold"
                         : "text-neutral-400 hover:bg-[#2a2a2a] hover:text-white"
                     }`}
                   >
@@ -217,7 +235,7 @@ export function Sidebar() {
                               onClick={() => sub.path && router.push(sub.path)}
                               className={`w-8 h-8 rounded-xl border flex items-center justify-center hover:bg-[#2a2a2a] transition-colors ${
                                 isSubActive
-                                  ? "border-[#7c26d9] bg-[#7c26d9]/10"
+                                  ? "border-[#6A0FAD] bg-[#6A0FAD]/10"
                                   : "border-transparent"
                               }`}
                             >
@@ -254,14 +272,14 @@ export function Sidebar() {
                                   onClick={() => sub.path && router.push(sub.path)}
                                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors pl-11 ${
                                     isSubActive
-                                      ? "text-white bg-[#7c26d9]/15 font-semibold"
+                                      ? "text-white bg-[#6A0FAD]/15 font-semibold"
                                       : "text-neutral-400 hover:text-white hover:bg-[#2a2a2a]"
                                   }`}
                                 >
                                   <div className="flex items-center gap-3">
                                     <span
                                       className={`w-1.5 h-1.5 rounded-full ${sub.dotColor} ${
-                                        isSubActive ? "ring-2 ring-[#7c26d9]/30" : ""
+                                        isSubActive ? "ring-2 ring-[#6A0FAD]/30" : ""
                                       }`}
                                     />
                                     <span className="text-sm">{sub.label}</span>
@@ -316,7 +334,7 @@ export function Sidebar() {
                       : "w-full gap-3 px-3 py-2.5 rounded-xl"
                   } ${
                     isItemActive
-                      ? "bg-[#7c26d9] text-white font-semibold"
+                      ? "bg-[#6A0FAD] text-white font-semibold"
                       : "text-neutral-400 hover:bg-[#2a2a2a] hover:text-white"
                   }`}
                 >
@@ -355,7 +373,7 @@ export function Sidebar() {
                       : "w-full gap-3 px-3 py-2.5 rounded-xl"
                   } ${
                     isProfileActive
-                      ? "bg-[#7c26d9] text-white font-semibold"
+                      ? "bg-[#6A0FAD] text-white font-semibold"
                       : "text-neutral-400 hover:bg-[#2a2a2a] hover:text-white"
                   }`}
                 >

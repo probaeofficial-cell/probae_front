@@ -75,7 +75,7 @@ export function TwoFactorSetup() {
   return (
     <div className="bg-white border border-neutral-100 rounded-2xl p-6 shadow-sm">
       <div className="flex items-start gap-4 mb-4">
-        <div className="w-12 h-12 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
+        <div className="w-12 h-12 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center text-[#6A0FAD] shrink-0">
           <QrCode className="w-6 h-6" />
         </div>
         <div>
@@ -101,7 +101,7 @@ export function TwoFactorSetup() {
           <button
             onClick={handleBeginSetup}
             disabled={loading}
-            className="border border-transparent bg-violet-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 hover:bg-white hover:text-violet-600 hover:border-violet-600 disabled:opacity-70 shadow-sm"
+            className="border border-transparent bg-[#6A0FAD] text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 hover:bg-white hover:text-[#6A0FAD] hover:border-[#6A0FAD] disabled:opacity-70 shadow-sm"
           >
             {loading ? "Starting Setup..." : "Set Up 2FA Verification"}
           </button>
@@ -127,7 +127,7 @@ export function TwoFactorSetup() {
           <div className="flex-1 w-full space-y-6">
             <div>
               <h4 className="text-sm font-bold text-neutral-800 mb-1.5 flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 text-xs flex items-center justify-center font-bold">1</span>
+                <span className="w-5 h-5 rounded-full bg-violet-100 text-[#6A0FAD] text-xs flex items-center justify-center font-bold">1</span>
                 Scan QR Code
               </h4>
               <p className="text-sm text-neutral-500 pl-7 leading-relaxed">
@@ -145,7 +145,7 @@ export function TwoFactorSetup() {
 
             <div>
               <h4 className="text-sm font-bold text-neutral-800 mb-2 flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 text-xs flex items-center justify-center font-bold">2</span>
+                <span className="w-5 h-5 rounded-full bg-violet-100 text-[#6A0FAD] text-xs flex items-center justify-center font-bold">2</span>
                 Enter Verification Code
               </h4>
               <p className="text-sm text-neutral-500 pl-7 mb-4 leading-relaxed">
@@ -159,12 +159,12 @@ export function TwoFactorSetup() {
                   maxLength={6}
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  className="border border-neutral-200 rounded-xl px-4 py-2.5 text-base font-semibold tracking-widest text-center text-neutral-800 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 w-36 transition-all bg-neutral-50/50"
+                  className="border border-neutral-200 rounded-xl px-4 py-2.5 text-base font-semibold tracking-widest text-center text-neutral-800 outline-none focus:border-[#6A0FAD] focus:ring-2 focus:ring-[#6A0FAD]/20 w-36 transition-all bg-neutral-50/50"
                 />
                 <button
                   type="submit"
                   disabled={loading || code.length !== 6}
-                  className="border border-transparent bg-violet-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 hover:bg-white hover:text-violet-600 hover:border-violet-600 disabled:opacity-70 shadow-sm"
+                  className="border border-transparent bg-[#6A0FAD] text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 hover:bg-white hover:text-[#6A0FAD] hover:border-[#6A0FAD] disabled:opacity-70 shadow-sm"
                 >
                   {loading ? "Verifying..." : "Verify & Activate"}
                 </button>

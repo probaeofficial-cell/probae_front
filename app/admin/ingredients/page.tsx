@@ -37,6 +37,7 @@ export default function IngredientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [sort, setSort] = useState("A to Z");
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
@@ -61,6 +62,13 @@ export default function IngredientsPage() {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
+
+  const handleSortClick = () => {
+    const nextSort = sort === "A to Z" ? "Z to A" : sort === "Z to A" ? "Newest" : sort === "Newest" ? "Oldest" : "A to Z";
+    setSort(nextSort);
+    setPage(1);
+  };
+
   // Load Ingredients
   const fetchIngredients = useCallback(async () => {
     if (!user) return;
@@ -71,7 +79,7 @@ export default function IngredientsPage() {
       await new Promise(r => setTimeout(r, 2000));
     }
     try {
-      const data = await endpoints.ingredients.getIngredients(page, pageSize, debouncedSearch);
+      const data = await endpoints.ingredients.getIngredients(page, pageSize, debouncedSearch, sort);
       setIngredients(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -87,7 +95,7 @@ export default function IngredientsPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch]);
+  }, [user, page, pageSize, debouncedSearch, sort]);
 
   useEffect(() => {
     fetchIngredients();
@@ -202,7 +210,7 @@ export default function IngredientsPage() {
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search for your order"
-             isLoading={isTyping || isLoading} />
+             isLoading={isTyping || isLoading}  sortByText={sort} onSortClick={handleSortClick} />
 
             {/* Add Components button using ProbaeButton */}
             <ProbaeButton

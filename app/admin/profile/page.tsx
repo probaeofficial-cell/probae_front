@@ -136,7 +136,7 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="absolute bottom-0 right-0 w-8 h-8 bg-violet-600 hover:bg-violet-700 rounded-full flex items-center justify-center shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="absolute bottom-0 right-0 w-8 h-8 bg-[#6A0FAD] hover:bg-[#580c91] rounded-full flex items-center justify-center shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Camera className="w-4 h-4 text-white" />
                 </button>
@@ -168,10 +168,10 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="mt-3 text-sm text-violet-600 hover:text-violet-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center sm:justify-start gap-1.5"
+                  className="mt-3 text-sm text-[#6A0FAD] hover:text-violet-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center sm:justify-start gap-1.5"
                 >
                   {isUploading && (
-                    <svg className="animate-spin w-3.5 h-3.5 text-violet-600" viewBox="0 0 24 24" fill="none">
+                    <svg className="animate-spin w-3.5 h-3.5 text-[#6A0FAD]" viewBox="0 0 24 24" fill="none">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                     </svg>
@@ -288,7 +288,7 @@ export default function ProfilePage() {
                     ? "bg-green-500 text-white border-transparent"
                     : saveStatus === "error"
                     ? "bg-red-500 text-white border-transparent"
-                    : "bg-violet-600 text-white border-transparent hover:bg-white hover:text-violet-600 hover:border-violet-600"
+                    : "bg-[#6A0FAD] text-white border-transparent hover:bg-white hover:text-[#6A0FAD] hover:border-[#6A0FAD]"
                 } disabled:opacity-60`}
               >
                 {saveStatus === "saving" && (

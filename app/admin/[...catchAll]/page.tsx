@@ -14,7 +14,7 @@ export default function AdminNotFound() {
         <Header />
 
         <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto text-center py-12 overflow-y-auto">
-          <div className="w-20 h-20 rounded-3xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 mb-6 shadow-sm">
+          <div className="w-20 h-20 rounded-3xl bg-violet-50 border border-violet-100 flex items-center justify-center text-[#6A0FAD] mb-6 shadow-sm">
             <AlertOctagon className="w-10 h-10 animate-pulse" />
           </div>
 
@@ -26,7 +26,7 @@ export default function AdminNotFound() {
           <button
             type="button"
             onClick={() => router.push("/admin/dashboard")}
-            className="mt-8 flex items-center gap-2 px-6 py-3 rounded-xl border border-transparent bg-violet-600 text-white font-semibold text-sm transition-colors duration-200 hover:bg-white hover:text-violet-600 hover:border-violet-600 shadow-sm"
+            className="mt-8 flex items-center gap-2 px-6 py-3 rounded-xl border border-transparent bg-[#6A0FAD] text-white font-semibold text-sm transition-colors duration-200 hover:bg-white hover:text-[#6A0FAD] hover:border-[#6A0FAD] shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard

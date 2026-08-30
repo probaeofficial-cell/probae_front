@@ -34,6 +34,14 @@ export default function VendorsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [sort, setSort] = useState("A to Z");
+
+  const handleSortClick = () => {
+    const nextSort = sort === "A to Z" ? "Z to A" : sort === "Z to A" ? "Newest" : sort === "Newest" ? "Oldest" : "A to Z";
+    setSort(nextSort);
+    setPage(1);
+  };
+
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
@@ -63,10 +71,8 @@ export default function VendorsPage() {
       setPage(1);
       setIsTyping(false);
     }, 1000);
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
-
-  // Load Vendors
+return () => clearTimeout(handler);
+  }, [searchQuery]);// Load Vendors
   const fetchVendors = useCallback(async () => {
     if (!user) return;
     try {
@@ -76,7 +82,7 @@ export default function VendorsPage() {
       setIsFetchingNextPage(true);
       await new Promise(r => setTimeout(r, 2000));
     }
-      const data = await endpoints.vendors.getVendors(page, pageSize, debouncedSearch);
+      const data = await endpoints.vendors.getVendors(page, pageSize, debouncedSearch, sort);
       setVendors(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -92,7 +98,7 @@ export default function VendorsPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch]);
+  }, [user, page, pageSize, debouncedSearch, sort]);
 
   useEffect(() => {
     if (user) {
@@ -106,9 +112,7 @@ export default function VendorsPage() {
     setTimeout(() => {
       setToast(null);
     }, 3500);
-  };
-
-  // ─── Actions ───────────────────────────────────────────────────────────────
+  };// ─── Actions ───────────────────────────────────────────────────────────────
   const openAddModal = () => {
     setModalMode("add");
     setEditingUlid(null);
@@ -236,7 +240,7 @@ export default function VendorsPage() {
                 value={searchQuery}
                 onChange={setSearchQuery}
                 placeholder="Search vendors by name or code..."
-               isLoading={isTyping || isLoading} />
+               isLoading={isTyping || isLoading}  sortByText={sort} onSortClick={handleSortClick} />
 
               <ProbaeButton 
                 onClick={openAddModal}

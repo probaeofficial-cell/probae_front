@@ -45,6 +45,7 @@ export default function CostManagementPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [sort, setSort] = useState("A to Z");
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
@@ -149,6 +150,13 @@ export default function CostManagementPage() {
     }
   }, [formState.standard_price, formState.yield_grams, formState.unit]);
 
+
+  const handleSortClick = () => {
+    const nextSort = sort === "A to Z" ? "Z to A" : sort === "Z to A" ? "Newest" : sort === "Newest" ? "Oldest" : "A to Z";
+    setSort(nextSort);
+    setPage(1);
+  };
+
   // Load Raw Materials
   const fetchMaterials = useCallback(async () => {
     if (!user) return;
@@ -159,7 +167,7 @@ export default function CostManagementPage() {
       await new Promise(r => setTimeout(r, 2000));
     }
     try {
-      const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch);
+      const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch, false, sort);
       setMaterials(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -175,7 +183,7 @@ export default function CostManagementPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch]);
+  }, [user, page, pageSize, debouncedSearch, sort]);
 
   useEffect(() => {
     if (user) {
@@ -564,7 +572,7 @@ export default function CostManagementPage() {
                 value={searchQuery}
                 onChange={setSearchQuery}
                 placeholder="Search for your order"
-               isLoading={isTyping || isLoading} />
+               isLoading={isTyping || isLoading}  sortByText={sort} onSortClick={handleSortClick} />
 
               {/* Actions */}
               <ProbaeButton
@@ -609,7 +617,7 @@ export default function CostManagementPage() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
                   {materials.map((material) => {
                     const mediaUrl = getMediaUrl(systemSettings?.R2_BASE_URL, material.image_filename);
                     return (

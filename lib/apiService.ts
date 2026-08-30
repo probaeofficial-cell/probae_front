@@ -335,13 +335,16 @@ export const endpoints = {
     getLowStockCount: async (): Promise<{ count: number }> => {
       return await api.get<{ count: number }>("/raw-materials/metrics/low-stock-count");
     },
-    getRawMaterials: async (page: number, size: number, search?: string, stockout?: boolean): Promise<PaginatedRawMaterials> => {
+    getRawMaterials: async (page: number, size: number, search?: string, stockout?: boolean, sort?: string): Promise<PaginatedRawMaterials> => {
       let query = `?page=${page}&size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
       }
       if (stockout) {
         query += `&stockout=true`;
+      }
+      if (sort) {
+        query += `&sort=${encodeURIComponent(sort)}`;
       }
       return await api.get<PaginatedRawMaterials>(`/raw-materials/${query}`);
     },
@@ -390,10 +393,13 @@ export const endpoints = {
   },
 
   rawMaterialCategories: {
-    getCategories: async (page: number, size: number, search?: string): Promise<PaginatedRawMaterialCategories> => {
+    getCategories: async (page: number, size: number, search?: string, sort?: string): Promise<PaginatedRawMaterialCategories> => {
       let query = `?page=${page}&size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
+      }
+      if (sort) {
+        query += `&sort=${encodeURIComponent(sort)}`;
       }
       return await api.get<PaginatedRawMaterialCategories>(`/raw-material-categories/${query}`);
     },
@@ -412,10 +418,13 @@ export const endpoints = {
   },
 
   ingredients: {
-    getIngredients: async (page: number, size: number, search?: string): Promise<PaginatedIngredients> => {
+    getIngredients: async (page: number, size: number, search?: string, sort?: string): Promise<PaginatedIngredients> => {
       let query = `?page=${page}&page_size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
+      }
+      if (sort) {
+        query += `&sort=${encodeURIComponent(sort)}`;
       }
       return await api.get<PaginatedIngredients>(`/ingredients/${query}`);
     },
@@ -443,10 +452,13 @@ export const endpoints = {
   },
 
   bowlCategories: {
-    getBowlCategories: async (page: number, size: number, search?: string): Promise<PaginatedBowlCategories> => {
+    getBowlCategories: async (page: number, size: number, search?: string, sort?: string): Promise<PaginatedBowlCategories> => {
       let query = `?page=${page}&page_size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
+      }
+      if (sort) {
+        query += `&sort=${encodeURIComponent(sort)}`;
       }
       return await api.get<PaginatedBowlCategories>(`/bowl-categories${query}`);
     },
@@ -465,10 +477,13 @@ export const endpoints = {
   },
   
   mealCategories: {
-    getMealCategories: async (page: number, size: number, search?: string): Promise<PaginatedMealCategories> => {
+    getMealCategories: async (page: number, size: number, search?: string, sort?: string): Promise<PaginatedMealCategories> => {
       let query = `?page=${page}&page_size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
+      }
+      if (sort) {
+        query += `&sort=${encodeURIComponent(sort)}`;
       }
       const data = await api.get<PaginatedMealCategories>(`/meal-categories${query}`);
       if (data && data.items) {
@@ -500,10 +515,13 @@ export const endpoints = {
   },
 
   vendors: {
-    getVendors: async (page: number, size: number, search?: string): Promise<PaginatedVendors> => {
+    getVendors: async (page: number, size: number, search?: string, sort?: string): Promise<PaginatedVendors> => {
       let query = `?page=${page}&page_size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
+      }
+      if (sort) {
+        query += `&sort=${encodeURIComponent(sort)}`;
       }
       return await api.get<PaginatedVendors>(`/vendors${query}`);
     },
@@ -522,10 +540,13 @@ export const endpoints = {
   },
 
   packagingComponents: {
-    getComponents: async (page: number, size: number, search?: string): Promise<PaginatedPackagingComponents> => {
+    getComponents: async (page: number, size: number, search?: string, sort?: string): Promise<PaginatedPackagingComponents> => {
       let query = `?page=${page}&page_size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
+      }
+      if (sort) {
+        query += `&sort=${encodeURIComponent(sort)}`;
       }
       return await api.get<PaginatedPackagingComponents>(`/packaging/components${query}`);
     },
@@ -541,10 +562,13 @@ export const endpoints = {
   },
 
   packaging: {
-    getBundles: async (page: number, size: number, search?: string): Promise<PaginatedPackaging> => {
+    getBundles: async (page: number, size: number, search?: string, sort?: string): Promise<PaginatedPackaging> => {
       let query = `?page=${page}&page_size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
+      }
+      if (sort) {
+        query += `&sort=${encodeURIComponent(sort)}`;
       }
       return await api.get<PaginatedPackaging>(`/packaging${query}`);
     },
@@ -590,10 +614,13 @@ export const endpoints = {
     delete: async (ulid: string) => await api.del(`/plans/${ulid}`),
   },
   bowls: {
-    getBowls: async (page: number, size: number, search?: string, mealCategoryUlid?: string): Promise<PaginatedBowls> => {
+    getBowls: async (page: number, size: number, search?: string, sort?: string, mealCategoryUlid?: string): Promise<PaginatedBowls> => {
       let query = `?page=${page}&page_size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
+      }
+      if (sort) {
+        query += `&sort=${encodeURIComponent(sort)}`;
       }
       if (mealCategoryUlid) {
         query += `&meal_category_ulid=${encodeURIComponent(mealCategoryUlid)}`;
