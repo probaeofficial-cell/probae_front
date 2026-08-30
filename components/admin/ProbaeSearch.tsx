@@ -11,6 +11,8 @@ interface ProbaeSearchProps {
   sortByText?: string;
   onSortClick?: () => void;
   isLoading?: boolean;
+  hideSort?: boolean;
+  hideFilter?: boolean;
 }
 
 export function ProbaeSearch({
@@ -22,6 +24,8 @@ export function ProbaeSearch({
   sortByText = "A to Z",
   onSortClick,
   isLoading = false,
+  hideSort = false,
+  hideFilter = false,
 }: ProbaeSearchProps) {
   return (
     <div
@@ -53,21 +57,29 @@ export function ProbaeSearch({
       />
       
       <div className="flex items-center gap-2 sm:gap-3 shrink-0 pr-1 select-none ml-2">
-        {/* Vertical line separator before Sort By text */}
-        <div className="h-5 w-[1px] bg-neutral-200" />
-        <span 
-          onClick={onSortClick}
-          className="text-xs text-neutral-400 font-bold tracking-wider cursor-pointer hover:text-[#7C3AED] transition-colors"
-        >
-          {sortByText}
-        </span>
+        {(!hideSort || !hideFilter) && (
+          <div className="h-5 w-[1px] bg-neutral-200" />
+        )}
         
-        {/* Vertical line separator before filter icon */}
-        <div className="h-5 w-[1px] bg-neutral-200" />
-        <Filter 
-          onClick={onFilterClick}
-          className={`w-4 h-4 cursor-pointer transition-colors ${isFilterActive ? "text-[#7C3AED]" : "text-neutral-400 hover:text-[#7C3AED]"}`} 
-        />
+        {!hideSort && (
+          <span 
+            onClick={onSortClick}
+            className="text-xs text-neutral-400 font-bold tracking-wider cursor-pointer hover:text-[#7C3AED] transition-colors"
+          >
+            {sortByText}
+          </span>
+        )}
+        
+        {(!hideSort && !hideFilter) && (
+          <div className="h-5 w-[1px] bg-neutral-200" />
+        )}
+
+        {!hideFilter && (
+          <Filter 
+            onClick={onFilterClick}
+            className={`w-4 h-4 cursor-pointer transition-colors ${isFilterActive ? "text-[#7C3AED]" : "text-neutral-400 hover:text-[#7C3AED]"}`} 
+          />
+        )}
       </div>
     </div>
   );

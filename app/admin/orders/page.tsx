@@ -1,20 +1,32 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Loader2, Calendar, Eye, ChevronLeft, ChevronRight, Plus, ListChecks } from "lucide-react";
+import { Loader2, Calendar, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, Filter, X } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
+import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
+import AsyncCustomerSelect from "@/components/admin/AsyncCustomerSelect";
 import { endpoints } from "@/lib/apiService";
 
 export default function OrdersPage() {
   const [targetDate, setTargetDate] = useState(new Date().toISOString().split("T")[0]);
+  const [search, setSearch] = useState("");
+  const [customerId, setCustomerId] = useState<number | 0>(0);
+  const [status, setStatus] = useState("");
+  
   const [activeTab, setActiveTab] = useState<"PLAN" | "CUSTOM">("PLAN");
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [tempSearch, setTempSearch] = useState("");
+  const [tempTargetDate, setTempTargetDate] = useState("");
+  const [tempCustomerId, setTempCustomerId] = useState<number | 0>(0);
+  const [tempStatus, setTempStatus] = useState("");
 
   const handleStatusChange = async (ulid: string, newStatus: string) => {
     try {
@@ -26,10 +38,10 @@ export default function OrdersPage() {
     }
   };
 
-  const fetchOrders = async (source: string, pageNum: number, dateFilter: string) => {
+  const fetchOrders = async (source: string, pageNum: number, dateFilter: string, searchQuery: string, customerIdFilter: number, statusFilter: string) => {
     setIsLoading(true);
     try {
-      const data = await endpoints.orders.list({ source, page: pageNum, limit: 10, target_date: dateFilter }) as any;
+      const data = await endpoints.orders.list({ source, page: pageNum, limit: 10, target_date: dateFilter, search: searchQuery || undefined, customer_id: customerIdFilter || 0, status: statusFilter || undefined }) as any;
       if (data.success) {
         setOrders(data.orders);
         setTotalPages(Math.ceil(data.total_count / data.limit) || 1);
@@ -42,10 +54,10 @@ export default function OrdersPage() {
   };
 
   useEffect(() => {
-    fetchOrders(activeTab, page, targetDate);
-  }, [activeTab, page, targetDate]);
+    fetchOrders(activeTab, page, targetDate, search, customerId, status);
+  }, [activeTab, page, targetDate, search, customerId, status]);
 
-  return (
+  return (<>
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
       <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden">
         <Header />
@@ -58,16 +70,23 @@ export default function OrdersPage() {
               <p className="text-neutral-500 font-medium mt-1">Manage subscription dispatches and custom orders</p>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="flex items-center bg-white border border-neutral-200 rounded-xl px-3 py-2 shadow-sm">
-                <Calendar className="w-4 h-4 text-neutral-400 mr-2" />
-                <input 
-                  type="date" 
-                  value={targetDate} 
-                  onChange={(e) => setTargetDate(e.target.value)}
-                  className="bg-transparent text-sm font-bold text-neutral-700 outline-none"
-                />
-              </div>
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4 w-full md:w-auto">
+              <button 
+                onClick={() => {
+                  setTempSearch(search);
+                  setTempTargetDate(targetDate);
+                  setTempCustomerId(customerId);
+                  setTempStatus(status);
+                  setIsFilterModalOpen(true);
+                }}
+                className={`flex items-center justify-center w-11 h-11 rounded-2xl border transition-all ${
+                  (search || targetDate || customerId || status) 
+                    ? "bg-[#6A0FAD]/10 border-[#6A0FAD]/30 text-[#6A0FAD]" 
+                    : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50"
+                }`}
+              >
+                <Filter className="w-5 h-5" />
+              </button>
 
               <Link href="/admin/orders/new">
                 <ProbaeButton className="!w-auto flex items-center gap-2">
@@ -195,6 +214,104 @@ export default function OrdersPage() {
           </div>
         </div>
       </div>
+      {isFilterModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 bg-neutral-50/50">
+              <div className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-[#6A0FAD]" />
+                <h3 className="font-bold text-neutral-800 text-lg">Filter Orders</h3>
+              </div>
+              <button onClick={() => setIsFilterModalOpen(false)} className="text-neutral-400 hover:text-neutral-600 transition-colors p-1 bg-white rounded-full border border-neutral-200 shadow-sm">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 flex flex-col gap-5 overflow-y-auto max-h-[60vh]">
+              
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5 uppercase tracking-wide">Customer</label>
+                <AsyncCustomerSelect 
+                  value={tempCustomerId}
+                  onChange={setTempCustomerId}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5 uppercase tracking-wide">Order ID</label>
+                <input 
+                  type="text" 
+                  value={tempSearch}
+                  onChange={(e) => setTempSearch(e.target.value)}
+                  placeholder="Enter specific Order ID..."
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none focus:border-[#6A0FAD] focus:ring-2 focus:ring-[#6A0FAD]/20 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5 uppercase tracking-wide">Status</label>
+                <select 
+                  value={tempStatus}
+                  onChange={(e) => setTempStatus(e.target.value)}
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none focus:border-[#6A0FAD] focus:ring-2 focus:ring-[#6A0FAD]/20 transition-all appearance-none"
+                >
+                  <option value="">Any Status</option>
+                  <option value="CREATED">CREATED</option>
+                  <option value="PREPARED">PREPARED</option>
+                  <option value="DISPATCHED">DISPATCHED</option>
+                  <option value="DELIVERED">DELIVERED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5 uppercase tracking-wide">Target Date</label>
+                <input 
+                  type="date" 
+                  value={tempTargetDate}
+                  onChange={(e) => setTempTargetDate(e.target.value)}
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none focus:border-[#6A0FAD] focus:ring-2 focus:ring-[#6A0FAD]/20 transition-all"
+                />
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-neutral-100 flex gap-3 bg-neutral-50/50">
+              <button 
+                onClick={() => {
+                  setSearch("");
+                  setTargetDate("");
+                  setCustomerId(0);
+                  setStatus("");
+                  setPage(1);
+                  setIsFilterModalOpen(false);
+                }}
+                className="flex-1 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-bold text-sm hover:bg-neutral-50 transition-colors shadow-sm"
+              >
+                Clear
+              </button>
+              <button 
+                onClick={() => setIsFilterModalOpen(false)}
+                className="flex-1 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-bold text-sm hover:bg-neutral-50 transition-colors shadow-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setSearch(tempSearch);
+                  setTargetDate(tempTargetDate);
+                  setCustomerId(tempCustomerId);
+                  setStatus(tempStatus);
+                  setPage(1);
+                  setIsFilterModalOpen(false);
+                }}
+                className="flex-1 py-2.5 bg-[#6A0FAD] border border-transparent text-white rounded-xl font-bold text-sm hover:bg-[#5a0c94] transition-colors shadow-sm"
+              >
+                Filter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
+</>);
 }

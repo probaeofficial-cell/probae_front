@@ -262,12 +262,15 @@ export const endpoints = {
     }
   },
   orders: {
-    list: (params: { page?: number; limit?: number; source?: string; target_date?: string }) => {
+    list: (params: { page?: number; limit?: number; source?: string; target_date?: string; search?: string; customer_id?: number | 0; status?: string }) => {
       const searchParams = new URLSearchParams();
       if (params.page) searchParams.append("page", params.page.toString());
       if (params.limit) searchParams.append("limit", params.limit.toString());
       if (params.source) searchParams.append("source", params.source);
       if (params.target_date) searchParams.append("target_date", params.target_date);
+      if (params.search) searchParams.append("search", params.search);
+      if (params.customer_id) searchParams.append("customer_id", params.customer_id.toString());
+      if (params.status) searchParams.append("status", params.status);
       return api.get(`/orders?${searchParams.toString()}`);
     },
     preview: (payload: { customer_ulid: string; bowl_ulid: string; meal_slot: string }) =>
