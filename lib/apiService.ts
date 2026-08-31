@@ -587,6 +587,21 @@ export const endpoints = {
     deleteBundle: async (ulid: string): Promise<void> => {
       return await api.del<void>(`/packaging/${ulid}`);
     },
+    // Component stock management
+    getComponents: async (page: number, size: number, search?: string): Promise<any> => {
+      let query = `?page=${page}&page_size=${size}`;
+      if (search) query += `&search=${encodeURIComponent(search)}`;
+      return await api.get(`/packaging/components${query}`);
+    },
+    adjustComponentStock: async (ulid: string, data: { quantity_change: number; description?: string }): Promise<any> => {
+      return await api.post(`/packaging/components/${ulid}/stock`, data);
+    },
+    updateComponentStockThreshold: async (ulid: string, data: { stock_threshold: number }): Promise<any> => {
+      return await api.patch(`/packaging/components/${ulid}/stock-threshold`, data);
+    },
+    getComponentStockLogs: async (ulid: string, page = 1, size = 20): Promise<any> => {
+      return await api.get(`/packaging/components/${ulid}/stock-logs?page=${page}&size=${size}`);
+    },
   },
 
     customers: {

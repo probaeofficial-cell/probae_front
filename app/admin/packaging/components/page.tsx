@@ -14,8 +14,10 @@ import {
   Trash2,
   Box,
   Plus,
-  X
+  X,
+  BarChart3,
 } from "lucide-react";
+import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -215,6 +217,12 @@ export default function PackagingComponentsPage() {
               onChange={setSearchQuery}
               placeholder="Search items by name..."
              isLoading={isLoading} />
+            <Link href="/admin/packaging/components/stock">
+              <button className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#6A0FAD]/10 text-[#6A0FAD] font-bold text-sm hover:bg-[#6A0FAD]/20 transition-colors shrink-0">
+                <BarChart3 className="w-4 h-4" />
+                Stock Management
+              </button>
+            </Link>
             <ProbaeButton onClick={openAddModal} className="w-full sm:w-auto px-8 shrink-0">
               <Plus className="w-4 h-4 mr-2" />
               Add Item

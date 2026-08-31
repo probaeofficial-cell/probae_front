@@ -316,8 +316,23 @@ export interface PackagingComponent {
   ulid: string;
   name: string;
   cost: number;
+  current_stock: number;
+  stock_threshold: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface PackagingComponentStockLog {
+  id: number;
+  ulid: string;
+  component_id: number;
+  quantity_change: number;
+  previous_stock: number;
+  new_stock: number;
+  description?: string | null;
+  order_ulid?: string | null;
+  created_at: string;
+  created_by?: { id: number; name: string } | null;
 }
 
 export interface PackagingComponentCreateInput {
