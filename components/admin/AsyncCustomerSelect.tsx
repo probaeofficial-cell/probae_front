@@ -4,7 +4,6 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
-import { Customer } from "@/lib/types";
 
 interface AsyncCustomerSelectProps {
   value: number | 0;
