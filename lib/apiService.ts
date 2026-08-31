@@ -10,7 +10,7 @@ import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMat
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.probae.in/api/v1";
 
 // ─── Types & Interfaces ──────────────────────────────────────────────────────
 export interface FetchOptions extends Omit<RequestInit, "body"> {
@@ -447,10 +447,10 @@ export const endpoints = {
 
   settings: {
     getSystemSettings: async (): Promise<{ R2_BASE_URL: string }> => {
-      return await api.get<{ R2_BASE_URL: string }>("/settings");
+      return await api.get<{ R2_BASE_URL: string }>("/settings/");
     },
     updateSystemSettings: async (payload: Record<string, string>): Promise<Record<string, string>> => {
-      return await api.put<Record<string, string>>("/settings", payload);
+      return await api.put<Record<string, string>>("/settings/", payload);
     },
   },
 
@@ -532,7 +532,7 @@ export const endpoints = {
       return await api.get<Vendor>(`/vendors/${ulid}`);
     },
     createVendor: async (data: VendorCreateInput): Promise<Vendor> => {
-      return await api.post<Vendor>("/vendors", data);
+      return await api.post<Vendor>("/vendors/", data);
     },
     updateVendor: async (ulid: string, data: VendorUpdateInput): Promise<Vendor> => {
       return await api.put<Vendor>(`/vendors/${ulid}`, data);
@@ -627,7 +627,7 @@ export const endpoints = {
       return await api.get(`/plans?${p.toString()}`);
     },
     get: async (ulid: string) => await api.get(`/plans/${ulid}`),
-    create: async (data: any) => await api.post("/plans", data),
+    create: async (data: any) => await api.post("/plans/", data),
     update: async (ulid: string, data: any) => await api.patch(`/plans/${ulid}`, data),
     delete: async (ulid: string) => await api.del(`/plans/${ulid}`),
   },
@@ -649,7 +649,7 @@ export const endpoints = {
       return await api.get<Bowl>(`/bowls/${ulid}`);
     },
     createBowl: async (data: BowlCreateInput): Promise<Bowl> => {
-      return await api.post<Bowl>("/bowls", data);
+      return await api.post<Bowl>("/bowls/", data);
     },
     updateBowl: async (ulid: string, data: BowlUpdateInput): Promise<Bowl> => {
       return await api.put<Bowl>(`/bowls/${ulid}`, data);
