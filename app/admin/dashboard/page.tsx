@@ -641,12 +641,12 @@ export default function DashboardPage() {
               </div>
 
               {/* Full-bleed photo */}
-              <img
+              {/* <img
                 src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&h=520&q=80"
                 alt="Customer with headset"
                 className="w-full h-full object-cover object-top absolute inset-0"
                 style={{ minHeight: "390px" }}
-              />
+              /> */}
 
               {/* Purple gradient overlay on top portion */}
               <div
