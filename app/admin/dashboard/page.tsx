@@ -649,13 +649,13 @@ export default function DashboardPage() {
               /> */}
 
               {/* Purple gradient overlay on top portion */}
-              <div
+              {/* <div
                 className="absolute inset-0"
                 style={{
                   background:
                     "linear-gradient(180deg, rgba(124,38,217,0.75) 0%, rgba(124,38,217,0.4) 35%, transparent 60%)",
                 }}
-              />
+              /> */}
 
               {/* Bottom white info panel pinned to bottom */}
               <div className="absolute bottom-0 left-0 right-0 z-10 bg-white rounded-t-3xl px-4 pt-4 pb-4 shadow-2xl">
