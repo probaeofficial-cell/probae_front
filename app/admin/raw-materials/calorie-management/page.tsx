@@ -51,6 +51,24 @@ export default function CalorieManagementPage() {
   const [isClearing, setIsClearing] = useState(false);
 
   // ─── Side Effects ──────────────────────────────────────────────────────────
+
+  // Load system settings
+  useEffect(() => {
+    async function loadSettings() {
+      if (!user) return;
+      try {
+        const settings = await endpoints.settings.getSystemSettings();
+        if (settings && settings.R2_BASE_URL !== undefined) {
+          setSystemSettings({ R2_BASE_URL: settings.R2_BASE_URL });
+        }
+      } catch (err) {
+        console.error("Failed to load settings:", err);
+      }
+    }
+    loadSettings();
+  }, [user]);
+
+
   // Auth validation
   useEffect(() => {
     setIsTyping(true);

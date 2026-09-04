@@ -47,11 +47,11 @@ export default function EditMacrosPage({ params }: PageProps) {
 
   // Form State
   const [formState, setFormState] = useState({
-    calories: "" as number | "",
-    protein: "" as number | "",
-    carbs: "" as number | "",
-    fiber: "" as number | "",
-    fat: "" as number | "",
+    calories: "" as any,
+    protein: "" as any,
+    carbs: "" as any,
+    fiber: "" as any,
+    fat: "" as any,
     microsString: "",
   });
 
@@ -272,8 +272,8 @@ export default function EditMacrosPage({ params }: PageProps) {
                   placeholder="125 Kcal"
                   value={formState.calories === "" ? "" : `${formState.calories} Kcal`}
                   onChange={(e) => {
-                    const cleaned = e.target.value.replace(/[^0-9]/g, "");
-                    setFormState(prev => ({ ...prev, calories: cleaned === "" ? "" : Number(cleaned) }));
+                    const cleaned = e.target.value.replace(/[^0-9.]/g, "");
+                    setFormState(prev => ({ ...prev, calories: cleaned }));
                   }}
                   className="w-full bg-[#f3f4f6] border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-5 py-4 text-[14px] text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold shadow-sm"
                 />
@@ -291,7 +291,7 @@ export default function EditMacrosPage({ params }: PageProps) {
                     value={formState.protein === "" ? "" : `${formState.protein}g`}
                     onChange={(e) => {
                       const cleaned = e.target.value.replace(/[^0-9.]/g, "");
-                      setFormState(prev => ({ ...prev, protein: cleaned === "" ? "" : Number(cleaned) }));
+                      setFormState(prev => ({ ...prev, protein: cleaned }));
                     }}
                     className="w-full bg-[#f3f4f6] border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-5 py-4 text-[14px] text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold shadow-sm"
                   />
@@ -307,7 +307,7 @@ export default function EditMacrosPage({ params }: PageProps) {
                     value={formState.carbs === "" ? "" : `${formState.carbs}g`}
                     onChange={(e) => {
                       const cleaned = e.target.value.replace(/[^0-9.]/g, "");
-                      setFormState(prev => ({ ...prev, carbs: cleaned === "" ? "" : Number(cleaned) }));
+                      setFormState(prev => ({ ...prev, carbs: cleaned }));
                     }}
                     className="w-full bg-[#f3f4f6] border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-5 py-4 text-[14px] text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold shadow-sm"
                   />
@@ -326,7 +326,7 @@ export default function EditMacrosPage({ params }: PageProps) {
                     value={formState.fiber === "" ? "" : `${formState.fiber}g`}
                     onChange={(e) => {
                       const cleaned = e.target.value.replace(/[^0-9.]/g, "");
-                      setFormState(prev => ({ ...prev, fiber: cleaned === "" ? "" : Number(cleaned) }));
+                      setFormState(prev => ({ ...prev, fiber: cleaned }));
                     }}
                     className="w-full bg-[#f3f4f6] border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-5 py-4 text-[14px] text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold shadow-sm"
                   />
@@ -342,7 +342,7 @@ export default function EditMacrosPage({ params }: PageProps) {
                     value={formState.fat === "" ? "" : `${formState.fat}g`}
                     onChange={(e) => {
                       const cleaned = e.target.value.replace(/[^0-9.]/g, "");
-                      setFormState(prev => ({ ...prev, fat: cleaned === "" ? "" : Number(cleaned) }));
+                      setFormState(prev => ({ ...prev, fat: cleaned }));
                     }}
                     className="w-full bg-[#f3f4f6] border border-transparent focus:border-neutral-200 focus:bg-white rounded-xl px-5 py-4 text-[14px] text-neutral-800 focus:outline-none transition-all placeholder:text-neutral-400 font-semibold shadow-sm"
                   />
