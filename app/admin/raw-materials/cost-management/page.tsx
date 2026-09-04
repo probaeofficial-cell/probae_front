@@ -123,10 +123,10 @@ export default function CostManagementPage() {
       // For kg/l base weight is 1000g/ml, for g/ml base weight is 1
       const baseUnitWeight = formState.unit === "g" || formState.unit === "ml" ? 1 : 1000;
       
-      if (sp > 0 && yg > 0) {
+      if (sp >= 0 && yg >= 0) {
         const yieldRatio = yg / baseUnitWeight;
         const yieldPerc = yieldRatio * 100;
-        const actualP = sp / yieldRatio;
+        const actualP = yieldRatio > 0 ? sp / yieldRatio : 0;
         
         setFormState(prev => {
           if (prev.yield_percentage === Number(yieldPerc.toFixed(2)) && prev.actual_price === Number(actualP.toFixed(2))) return prev;
@@ -380,8 +380,8 @@ export default function CostManagementPage() {
       return;
     }
     // Note: We check formState.standard_price now.
-    if (formState.standard_price === "" || Number(formState.standard_price) <= 0) {
-      showToast("Please enter a valid standard price greater than 0", "error");
+    if (formState.standard_price === "" || Number(formState.standard_price) < 0) {
+      showToast("Please enter a valid standard price (can be 0)", "error");
       return;
     }
 
@@ -693,13 +693,13 @@ export default function CostManagementPage() {
                             <div className="flex-1 p-3 border-r border-[#6b21a8]/10 flex flex-col justify-center">
                               <span className="text-[10px] font-semibold text-[#6b21a8]/60 mb-1 tracking-wide">Effective Cost</span>
                               <div className="text-sm font-bold text-[#6b21a8]">
-                                {material.actual_price ? `₹${material.actual_price.toFixed(2)}` : "--"} <span className="text-[10px] font-semibold text-[#6b21a8]/80">/ {formatUnit(material.unit)}</span>
+                                {material.actual_price !== null && material.actual_price !== undefined ? `₹${Number(material.actual_price).toFixed(2)}` : "--"} <span className="text-[10px] font-semibold text-[#6b21a8]/80">/ {formatUnit(material.unit)}</span>
                               </div>
                             </div>
                             <div className="flex-1 p-3 flex flex-col justify-center">
                               <span className="text-[10px] font-semibold text-neutral-400 mb-1 tracking-wide">Yield</span>
                               <div className="text-sm font-bold text-neutral-800">
-                                {material.yield_percentage ? `${material.yield_percentage}%` : "--%"}
+                                {material.yield_percentage !== null && material.yield_percentage !== undefined ? `${material.yield_percentage}%` : "--%"}
                               </div>
                             </div>
                           </div>
@@ -886,20 +886,20 @@ export default function CostManagementPage() {
                     <div className="p-4 border-b border-[#6b21a8]/10 flex justify-between items-center bg-[#fdfafF]">
                       <span className="text-xs font-bold text-[#6b21a8]/70 uppercase tracking-wide">Effective Cost</span>
                       <div className="text-xl font-black text-[#6b21a8]">
-                        {selectedMaterial?.actual_price ? `₹${selectedMaterial.actual_price.toFixed(2)}` : "--"} <span className="text-xs font-bold text-[#6b21a8]/60">/ {selectedMaterial ? formatUnit(selectedMaterial.unit) : ""}</span>
+                        {selectedMaterial?.actual_price !== null && selectedMaterial?.actual_price !== undefined ? `₹${Number(selectedMaterial.actual_price).toFixed(2)}` : "--"} <span className="text-xs font-bold text-[#6b21a8]/60">/ {selectedMaterial ? formatUnit(selectedMaterial.unit) : ""}</span>
                       </div>
                     </div>
                     <div className="flex divide-x divide-[#6b21a8]/10 bg-white">
                       <div className="flex-1 p-4 flex flex-col items-center justify-center text-center">
                         <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Yield %</span>
                         <div className="text-base font-bold text-neutral-800">
-                          {selectedMaterial?.yield_percentage ? `${selectedMaterial.yield_percentage}%` : "--%"}
+                          {selectedMaterial?.yield_percentage !== null && selectedMaterial?.yield_percentage !== undefined ? `${selectedMaterial.yield_percentage}%` : "--%"}
                         </div>
                       </div>
                       <div className="flex-1 p-4 flex flex-col items-center justify-center text-center">
                         <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Yield Wt.</span>
                         <div className="text-base font-bold text-neutral-800">
-                          {selectedMaterial?.yield_grams ? `${selectedMaterial.yield_grams}${selectedMaterial.unit === 'l' || selectedMaterial.unit === 'ml' ? 'ml' : 'g'}` : "--"}
+                          {selectedMaterial?.yield_grams !== null && selectedMaterial?.yield_grams !== undefined ? `${selectedMaterial.yield_grams}${selectedMaterial.unit === 'l' || selectedMaterial.unit === 'ml' ? 'ml' : 'g'}` : "--"}
                         </div>
                       </div>
                     </div>
@@ -1334,7 +1334,7 @@ export default function CostManagementPage() {
                   Yield % (Auto)
                 </label>
                 <div className="w-full bg-neutral-100 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-neutral-500 font-semibold h-[48px] flex items-center">
-                  {formState.yield_percentage ? `${formState.yield_percentage}%` : "--%"}
+                  {formState.yield_percentage !== "" && formState.yield_percentage !== null ? `${formState.yield_percentage}%` : "--%"}
                 </div>
               </div>
             </div>
@@ -1345,7 +1345,7 @@ export default function CostManagementPage() {
                 Actual Price / Effective Cost
               </label>
               <div className="w-full bg-[#fdfafF] border border-[#6b21a8]/20 rounded-2xl px-4 py-3.5 text-sm text-[#6b21a8] font-bold h-[48px] flex items-center">
-                {formState.actual_price ? `₹${formState.actual_price} / ${formState.unit.toUpperCase()}` : `₹-- / ${formState.unit.toUpperCase()}`}
+                {formState.actual_price !== "" && formState.actual_price !== null ? `₹${formState.actual_price} / ${formState.unit.toUpperCase()}` : `₹-- / ${formState.unit.toUpperCase()}`}
               </div>
             </div>
 
