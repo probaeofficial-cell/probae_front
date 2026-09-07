@@ -334,21 +334,21 @@ export default function CalorieManagementPage() {
                       </div>
 
                       {/* Info and Macros row */}
-                      <div className="flex justify-between items-start gap-2">
-                        {/* Left Column: Name & Calorie Badge */}
-                        <div className="flex flex-col justify-start w-[45%] shrink-0 pt-1 pr-2">
-                          <h3 className="text-[22px] font-bold text-[#111111] leading-tight">
+                      <div className="flex flex-col gap-3">
+                        {/* Top Row: Name & Calorie Badge */}
+                        <div className="flex justify-between items-start w-full gap-2 pt-1">
+                          <h3 className="text-[20px] sm:text-[22px] font-bold text-[#111111] leading-tight break-words pr-2 max-w-[70%]">
                             {material.name}
                           </h3>
-                          <div className="bg-[#4CAF50] text-white px-3 py-1.5 rounded-lg text-[13px] font-bold w-fit shadow-sm select-none mt-2">
+                          <div className="bg-[#4CAF50] text-white px-3 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-bold w-fit shadow-sm select-none shrink-0 mt-0.5">
                             {material.calories || 0} Kcal
                           </div>
                         </div>
 
-                        {/* Right Column: Macro labels + badges & Micronutrients list */}
-                        <div className="flex-1 flex flex-col items-start pt-1">
+                        {/* Bottom Row: Macro labels + badges & Micronutrients list */}
+                        <div className="w-full flex flex-col items-start">
                           {/* 4 Macros Badges */}
-                          <div className="flex gap-1 justify-between w-full">
+                          <div className="flex gap-2 justify-start w-full flex-wrap">
                             <div className="flex flex-col items-center gap-1">
                               <span className="text-[10px] text-[#333333] font-medium tracking-tight select-none">Protein</span>
                               <div className="bg-[#6A0FAD] text-white text-[10px] font-medium min-w-[30px] px-1 h-[22px] rounded-[8px] flex items-center justify-center select-none shadow-sm">

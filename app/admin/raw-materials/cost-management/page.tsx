@@ -667,7 +667,7 @@ export default function CostManagementPage() {
                           
                           {/* Name and Category Row */}
                           <div className="flex justify-between items-start mb-2">
-                            <h4 className="text-[17px] font-bold text-neutral-900 leading-tight pr-2">
+                            <h4 className="text-[17px] font-bold text-neutral-900 leading-tight pr-2 break-words max-w-[70%]">
                               {material.name}
                             </h4>
                             {material.category?.name && (
@@ -678,7 +678,7 @@ export default function CostManagementPage() {
                           </div>
 
                           {/* Price and Variance Row */}
-                          <div className="flex justify-between items-center mb-4">
+                          <div className="flex justify-between items-center mb-4 gap-2 flex-wrap">
                             <p className="text-base font-bold text-neutral-900 flex items-end">
                               ₹{material.standard_price || material.price} <span className="text-xs font-semibold text-neutral-400 ml-1 pb-[1px]">/ {formatUnit(material.unit)}</span>
                             </p>
@@ -939,7 +939,7 @@ export default function CostManagementPage() {
                 {(selectedMaterial?.current_stock !== undefined || selectedMaterial?.stock_threshold !== undefined) && (
                   <div className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100">
                     <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-4">Stock Info</h3>
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex justify-between items-center mb-4 gap-2 flex-wrap">
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-neutral-500 mb-1">Current Stock</span>
                         <span className={`text-xl font-bold ${
@@ -966,7 +966,7 @@ export default function CostManagementPage() {
                 
                 {/* Nutrition Grid */}
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100">
-                  <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-5">Nutritional Information <span className="text-xs font-medium normal-case ml-2 text-neutral-400">(per 100g/ml)</span></h3>
+                  <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-5">Nutritional Information <span className="text-xs font-medium normal-case ml-2 text-neutral-400"></span></h3>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div className="bg-orange-50 rounded-2xl p-4 flex flex-col items-center justify-center border border-orange-100">
                       <span className="text-xs font-bold text-orange-400 uppercase tracking-wide mb-1">Calories</span>

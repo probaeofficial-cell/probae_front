@@ -137,7 +137,7 @@ export default function AsyncIngredientSelect({
             ))}
 
             {options.length === 0 && !isLoading && (
-              <div className="p-4 text-center text-xs text-neutral-500">No ingredients found.</div>
+              <div className="p-4 text-center text-xs text-neutral-500">No Components found.</div>
             )}
 
             <div ref={loadingNodeRef} className="py-2 flex justify-center">

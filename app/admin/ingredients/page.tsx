@@ -259,7 +259,7 @@ export default function IngredientsPage() {
                 <p className="text-neutral-500 text-sm mt-2 max-w-sm">
                   {debouncedSearch 
                     ? `No results match your search "${debouncedSearch}". Try another query.` 
-                    : "No ingredients are available. Click 'Add Components' to create one."}
+                    : "No Components are available. Click 'Add Components' to create one."}
                 </p>
               </div>
             ) : (
