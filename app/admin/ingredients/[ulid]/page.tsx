@@ -25,6 +25,7 @@ export default function IngredientFormPage() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [description, setDescription] = useState("");
+  const [yieldWeight, setYieldWeight] = useState<number | "">("");
   
   // Image states
   const [bgImageFile, setBgImageFile] = useState<File | null>(null);
@@ -100,6 +101,7 @@ export default function IngredientFormPage() {
         setName(ingredient.name);
         setCode(ingredient.code || "");
         setDescription(ingredient.description || "");
+        setYieldWeight(ingredient.yield_weight ?? "");
         setBgImageFilename(ingredient.background_image_filename || null);
         setMainImageFilename(ingredient.image_filename || null);
 
@@ -297,6 +299,7 @@ export default function IngredientFormPage() {
         name,
         code: code || undefined,
         description: description || undefined,
+        yield_weight: yieldWeight === "" ? null : Number(yieldWeight),
         background_image_filename: finalBgFilename || undefined,
         image_filename: finalMainFilename || undefined,
         raw_materials: selectedRawMaterials.map(rm => ({
@@ -458,7 +461,17 @@ export default function IngredientFormPage() {
                 </div>
 
                 <div className="flex-1">
-                  <label className="text-sm font-semibold text-neutral-800 mb-2 block">Description</label>
+                  
+                  <label className="text-sm font-semibold text-neutral-800 mb-2 mt-4 block">Cooking Yield (g / ml) - Optional</label>
+                  <input 
+                    type="number"
+                    value={yieldWeight}
+                    onChange={(e) => setYieldWeight(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="w-full bg-neutral-100 rounded-full px-5 py-4 outline-none text-neutral-800 font-medium focus:ring-2 focus:ring-neutral-200"
+                    placeholder="E.g. 85"
+                  />
+
+                  <label className="text-sm font-semibold text-neutral-800 mb-2 block mt-4">Description</label>
                   <textarea 
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}

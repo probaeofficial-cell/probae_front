@@ -181,8 +181,9 @@ export default function BowlBuilderPage() {
 
     bowlIngredients.forEach(bi => {
       const ing = availableIngredients.find(i => i.id === bi.ingredient_id);
-      if (ing && bi.weight_g_or_ml > 0 && ing.total_weight > 0) {
-        const ratio = bi.weight_g_or_ml / ing.total_weight;
+      const baseWeight = ing ? (ing.yield_weight || ing.total_weight) : 0;
+      if (ing && bi.weight_g_or_ml > 0 && baseWeight > 0) {
+        const ratio = bi.weight_g_or_ml / baseWeight;
         totalWeight += bi.weight_g_or_ml;
         rawCost += (ing.total_price * ratio);
         totalCal += (ing.total_calories * ratio);
@@ -458,7 +459,8 @@ export default function BowlBuilderPage() {
                   {/* Items */}
                   {items.map((item, idx) => {
                      const ing = availableIngredients.find(i => i.id === item.ingredient_id);
-                     const ratio = ing && item.weight_g_or_ml > 0 && ing.total_weight > 0 ? item.weight_g_or_ml / ing.total_weight : 0;
+                     const baseW = ing ? (ing.yield_weight || ing.total_weight) : 0;
+                     const ratio = ing && item.weight_g_or_ml > 0 && baseW > 0 ? item.weight_g_or_ml / baseW : 0;
                      
                      return (
                        <div 

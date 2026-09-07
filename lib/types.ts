@@ -233,6 +233,7 @@ export interface Ingredient {
   total_carbs: number;
   total_fat: number;
   total_fiber: number;
+  yield_weight?: number | null;
   created_at: string;
   updated_at: string;
   raw_materials: IngredientRawMaterialResponse[];
@@ -244,6 +245,7 @@ export interface IngredientCreateInput {
   description?: string;
   image_filename?: string;
   background_image_filename?: string;
+  yield_weight?: number | null;
   raw_materials: RawMaterialWeightInput[];
 }
 
@@ -253,6 +255,7 @@ export interface IngredientUpdateInput {
   description?: string;
   image_filename?: string;
   background_image_filename?: string;
+  yield_weight?: number | null;
   raw_materials?: RawMaterialWeightInput[];
 }
 
@@ -440,6 +443,7 @@ export interface Bowl {
   total_carbs: number;
   total_fat: number;
   total_fiber: number;
+  yield_weight?: number | null;
   total_weight: number;
   
   created_by_id?: number | null;
