@@ -120,11 +120,11 @@ export default function IngredientFormPage() {
             if (!material) return null;
 
             const weight = rm.weight_g_or_ml;
-            const fraction = weight / 100.0;
             let baseUnitWeight = 1.0;
-            if (material.unit === "kg" || material.unit === "l") {
+            if (material.unit.toLowerCase() === "kg" || material.unit.toLowerCase() === "l") {
               baseUnitWeight = 1000.0;
             }
+            const fraction = weight / baseUnitWeight;
             const effectivePrice = Number(material.actual_price ?? material.standard_price ?? material.price ?? 0);
             const calculatedPrice = (effectivePrice / baseUnitWeight) * weight;
 
@@ -184,11 +184,11 @@ export default function IngredientFormPage() {
       return;
     }
 
-    const fraction = weight / 100.0;
     let baseUnitWeight = 1.0;
-    if (material.unit === "kg" || material.unit === "l") {
+    if (material.unit.toLowerCase() === "kg" || material.unit.toLowerCase() === "l") {
       baseUnitWeight = 1000.0;
     }
+    const fraction = weight / baseUnitWeight;
     const effectivePrice = Number(material.actual_price ?? material.standard_price ?? material.price ?? 0);
     const calculatedPrice = (effectivePrice / baseUnitWeight) * weight;
 
@@ -240,11 +240,11 @@ export default function IngredientFormPage() {
     setSelectedRawMaterials((prev) => {
       const updated = [...prev];
       const item = updated[index];
-      const fraction = newWeight / 100.0;
       let baseUnitWeight = 1.0;
-      if (item.material.unit === "kg" || item.material.unit === "l") {
+      if (item.material.unit.toLowerCase() === "kg" || item.material.unit.toLowerCase() === "l") {
         baseUnitWeight = 1000.0;
       }
+      const fraction = newWeight / baseUnitWeight;
       const effectivePrice = Number(item.material.actual_price ?? item.material.standard_price ?? item.material.price ?? 0);
       const calculatedPrice = (effectivePrice / baseUnitWeight) * newWeight;
 
