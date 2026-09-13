@@ -34,7 +34,7 @@ export default function PackagingComponentsPage() {
   const [components, setComponents] = useState<PackagingComponent[]>([]);
   const [totalComponents, setTotalComponents] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(48);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -108,7 +108,7 @@ export default function PackagingComponentsPage() {
   const totalPages = Math.ceil(totalComponents / pageSize);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const bottom = Math.abs(e.currentTarget.scrollHeight - e.currentTarget.scrollTop - e.currentTarget.clientHeight) < 2;
+    const bottom = e.currentTarget.scrollHeight - e.currentTarget.scrollTop - e.currentTarget.clientHeight <= 10;
     if (bottom && !isLoading && !isFetchingNextPage && page < totalPages) {
       setPage(prev => prev + 1);
     }

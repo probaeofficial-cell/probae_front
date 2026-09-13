@@ -131,7 +131,7 @@ export default function IngredientsPage() {
   const totalPages = Math.ceil(totalIngredients / pageSize);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const bottom = Math.abs(e.currentTarget.scrollHeight - e.currentTarget.scrollTop - e.currentTarget.clientHeight) < 2;
+    const bottom = e.currentTarget.scrollHeight - e.currentTarget.scrollTop - e.currentTarget.clientHeight <= 10;
     if (bottom && !isLoading && !isFetchingNextPage && page < totalPages) {
       setPage(prev => prev + 1);
     }
