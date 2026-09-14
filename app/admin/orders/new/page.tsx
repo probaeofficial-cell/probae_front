@@ -38,6 +38,8 @@ export default function NewOrderPage() {
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPaidNow, setIsPaidNow] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("UPI");
   const [showWarningModal, setShowWarningModal] = useState(false);
 
   useEffect(() => {
@@ -240,7 +242,9 @@ export default function NewOrderPage() {
       const data = await endpoints.orders.checkout({
         customer_ulid: selectedCustomer.ulid,
         target_date: targetDate,
-        items: payloadItems
+        items: payloadItems,
+        is_paid_now: isPaidNow,
+        payment_method: paymentMethod
       }) as any;
       
       if (data.success) {
@@ -526,9 +530,24 @@ export default function NewOrderPage() {
         {/* Global Floating Footer */}
         {orderItems.length > 0 && (
           <div className="shrink-0 w-full bg-[#1c1c1c] p-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4 z-30 rounded-2xl mt-4 shadow-xl">
-            <div>
-              <div className="text-neutral-400 font-bold text-sm">Grand Total ({orderItems.length} items)</div>
-              <div className="text-3xl font-black text-[#00E676]">₹{grandTotal.toFixed(2)}</div>
+            <div className="flex items-center gap-8">
+              <div>
+                <div className="text-neutral-400 font-bold text-sm">Grand Total ({orderItems.length} items)</div>
+                <div className="text-3xl font-black text-[#00E676]">₹{grandTotal.toFixed(2)}</div>
+              </div>
+              <div className="hidden sm:block w-px h-12 bg-neutral-700"></div>
+              <div className="flex flex-col gap-2 text-white">
+                <label className="flex items-center gap-2 text-sm font-bold cursor-pointer">
+                  <input type="checkbox" checked={isPaidNow} onChange={e => setIsPaidNow(e.target.checked)} className="w-5 h-5 rounded border-neutral-600 bg-neutral-800 accent-[#6A0FAD]" />
+                  Collect Payment Now
+                </label>
+                {isPaidNow && (
+                  <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#6A0FAD]">
+                    <option value="UPI">UPI / Scan</option>
+                    <option value="CASH">Cash</option>
+                  </select>
+                )}
+              </div>
             </div>
             <ProbaeButton 
               onClick={initiateCheckout}

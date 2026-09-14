@@ -12,6 +12,7 @@ import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { Loader2, Edit2, Check, ArrowLeft, Trash2, Camera, Upload, Lock, Unlock } from "lucide-react";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { CustomerLedger } from "../components/CustomerLedger";
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -48,6 +49,7 @@ export default function CustomerDetailPage() {
   const [mealCategories, setMealCategories] = useState<any[]>([]);
   const [allPlans, setAllPlans] = useState<any[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [activeTab, setActiveTab] = useState<"PROFILE" | "LEDGER">("PROFILE");
   const [previewData, setPreviewData] = useState<any>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -422,6 +424,28 @@ export default function CustomerDetailPage() {
         
         <div className="mt-4 flex-1 overflow-y-auto custom-scrollbar">
           <div className="max-w-5xl w-full mx-auto pb-12">
+
+            {/* Tabs */}
+            <div className="flex border-b border-neutral-200 mb-8 overflow-x-auto custom-scrollbar mt-2">
+              <button 
+                onClick={() => setActiveTab("PROFILE")}
+                className={`px-6 py-3 font-bold text-sm whitespace-nowrap transition-colors border-b-2 ${activeTab === "PROFILE" ? "border-[#6A0FAD] text-[#6A0FAD]" : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300"}`}
+              >
+                Profile & Plans
+              </button>
+              <button 
+                onClick={() => setActiveTab("LEDGER")}
+                className={`px-6 py-3 font-bold text-sm whitespace-nowrap transition-colors border-b-2 flex items-center gap-2 ${activeTab === "LEDGER" ? "border-[#6A0FAD] text-[#6A0FAD]" : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300"}`}
+              >
+                Wallet & Ledger
+                {customer.wallet_balance < 0 && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>}
+              </button>
+            </div>
+
+            {activeTab === "LEDGER" ? (
+              <CustomerLedger customerUlid={customer.ulid} initialBalance={customer.wallet_balance || 0} />
+            ) : (
+            <div className="animate-in fade-in zoom-in duration-300">
             
             {/* Action Bar */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -951,6 +975,8 @@ export default function CustomerDetailPage() {
               </div>
 
             </div>
+            </div>
+            )}
           </div>
         </div>
       </div>

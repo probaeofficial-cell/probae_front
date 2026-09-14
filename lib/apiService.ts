@@ -613,7 +613,13 @@ export const endpoints = {
     },
   },
 
-    customers: {
+    transactions: {
+    logPayment: (customerUlid: string, payload: { amount: number, method: string, description: string }) => 
+      api.post(`/customers/${customerUlid}/transactions`, payload),
+    list: (customerUlid: string, page: number = 1) => 
+      api.get(`/customers/${customerUlid}/transactions?page=${page}`),
+  },
+  customers: {
     list: async (params?: any) => {
       const p = new URLSearchParams();
       if (params?.page) p.append("page", params.page.toString());

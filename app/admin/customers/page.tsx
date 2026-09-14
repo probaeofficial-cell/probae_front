@@ -115,7 +115,14 @@ export default function CustomersPage() {
                               {c.name.charAt(0)}
                             </div>
                           )}
-                          <span>{c.name}</span>
+                          <div className="flex flex-col">
+                            <span>{c.name}</span>
+                            {c.wallet_balance < 0 && (
+                              <span className="text-[9px] font-black tracking-wider uppercase bg-red-100 text-red-700 px-1.5 py-0.5 rounded-sm mt-0.5 w-fit">
+                                Payment Due
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-neutral-600 whitespace-nowrap">{c.phone}</td>
