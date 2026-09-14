@@ -173,9 +173,7 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
           // By using credentials: "include", the cookie is automatically sent.
           const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            
             credentials: "include",
           });
 
