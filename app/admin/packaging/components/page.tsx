@@ -207,7 +207,7 @@ export default function PackagingComponentsPage() {
         <div className="text-[13px] text-neutral-500 font-medium select-none pl-1 mb-4 flex items-center gap-2">
           <span>Packaging</span>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-neutral-800 font-bold">Items</span>
+          <span className="text-neutral-900 font-bold">Items</span>
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden p-1 sm:p-2">
@@ -245,7 +245,7 @@ export default function PackagingComponentsPage() {
                 <div className="w-16 h-16 rounded-2xl bg-neutral-50 border border-neutral-100 flex items-center justify-center text-neutral-400 mb-4">
                   <Box className="w-8 h-8" />
                 </div>
-                <h3 className="text-neutral-800 font-bold text-lg">No items found</h3>
+                <h3 className="text-neutral-900 font-bold text-lg">No items found</h3>
                 <p className="text-neutral-500 text-sm mt-2 max-w-sm">
                   {debouncedSearch 
                     ? `No results match your search "${debouncedSearch}".` 
@@ -261,7 +261,7 @@ export default function PackagingComponentsPage() {
                         <Box className="w-6 h-6" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-bold text-neutral-800 text-lg leading-tight">{item.name}</span>
+                        <span className="font-bold text-neutral-900 text-lg leading-tight">{item.name}</span>
                         <span className="text-sm text-neutral-500 font-medium">₹{item.cost}</span>
                       </div>
                     </div>
@@ -315,7 +315,7 @@ export default function PackagingComponentsPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100">
-              <h2 className="text-xl font-bold text-neutral-800">
+              <h2 className="text-xl font-bold text-neutral-900">
                 {editingItem ? "Edit Item" : "Add Item"}
               </h2>
               <button onClick={() => setIsFormModalOpen(false)} className="p-2 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-full transition-colors">
@@ -332,7 +332,7 @@ export default function PackagingComponentsPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Medium Bowl Base"
-                  className="w-full h-12 bg-neutral-50 border border-neutral-200 rounded-xl px-4 text-sm font-medium text-neutral-800 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/20 focus:border-[#7c3aed] transition-all"
+                  className="w-full h-12 bg-neutral-50 border border-neutral-200 rounded-xl px-4 text-sm font-medium text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/20 focus:border-[#7c3aed] transition-all"
                 />
               </div>
 
@@ -346,7 +346,7 @@ export default function PackagingComponentsPage() {
                   value={formData.cost}
                   onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
                   placeholder="e.g. 15.50"
-                  className="w-full h-12 bg-neutral-50 border border-neutral-200 rounded-xl px-4 text-sm font-medium text-neutral-800 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/20 focus:border-[#7c3aed] transition-all"
+                  className="w-full h-12 bg-neutral-50 border border-neutral-200 rounded-xl px-4 text-sm font-medium text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/20 focus:border-[#7c3aed] transition-all"
                 />
               </div>
 

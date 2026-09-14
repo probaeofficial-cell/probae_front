@@ -21,11 +21,17 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.22",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "and": "^0.0.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "install": "^0.13.0",
+    "leaflet": "^1.9.4",
+    "npm": "^11.19.1",
+    "react-leaflet": "^5.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -9,6 +9,7 @@ import { ArrowRight, ArrowLeft, Check, Plus, Lock, Unlock, Loader2, Camera, Uplo
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { LocationPicker } from "@/components/admin/LocationPicker";
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -421,13 +422,15 @@ export default function NewCustomerPage() {
                     <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Address</label>
                     <textarea required value={formData.address} onChange={(e) => updateField("address", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" rows={3} />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Latitude (Optional)</label>
-                    <input type="text" value={formData.latitude} onChange={(e) => updateField("latitude", e.target.value)} placeholder="e.g. 12.9716" className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Longitude (Optional)</label>
-                    <input type="text" value={formData.longitude} onChange={(e) => updateField("longitude", e.target.value)} placeholder="e.g. 77.5946" className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
+                  <div className="md:col-span-2">
+                    <LocationPicker 
+                      latitude={formData.latitude ? parseFloat(formData.latitude) : null}
+                      longitude={formData.longitude ? parseFloat(formData.longitude) : null}
+                      onChange={(lat, lng) => {
+                        updateField("latitude", lat ? lat.toString() : "");
+                        updateField("longitude", lng ? lng.toString() : "");
+                      }}
+                    />
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 col-span-1 md:col-span-2">

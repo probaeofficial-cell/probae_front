@@ -4,6 +4,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { LocationPicker } from "@/components/admin/LocationPicker";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -523,22 +524,29 @@ export default function CustomerDetailPage() {
                         <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent min-h-[60px]">{customer.address || "N/A"}</div>
                       )}
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Latitude</label>
-                      {isEditMode ? (
-                        <input type="text" value={formData.latitude} onChange={e => updateField("latitude", e.target.value)} placeholder="e.g. 12.9716" className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
-                      ) : (
-                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.latitude || "N/A"}</div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Longitude</label>
-                      {isEditMode ? (
-                        <input type="text" value={formData.longitude} onChange={e => updateField("longitude", e.target.value)} placeholder="e.g. 77.5946" className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
-                      ) : (
-                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.longitude || "N/A"}</div>
-                      )}
-                    </div>
+                    {isEditMode ? (
+                      <div className="sm:col-span-2">
+                        <LocationPicker 
+                          latitude={formData.latitude ? parseFloat(formData.latitude) : null}
+                          longitude={formData.longitude ? parseFloat(formData.longitude) : null}
+                          onChange={(lat, lng) => {
+                            updateField("latitude", lat ? lat.toString() : "");
+                            updateField("longitude", lng ? lng.toString() : "");
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Latitude</label>
+                          <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.latitude || "N/A"}</div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Longitude</label>
+                          <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.longitude || "N/A"}</div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 

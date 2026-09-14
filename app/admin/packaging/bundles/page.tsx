@@ -153,7 +153,7 @@ export default function PackagingBundlesPage() {
         <div className="text-[13px] text-neutral-500 font-medium select-none pl-1 mb-4 flex items-center gap-2">
           <span>Packaging</span>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-neutral-800 font-bold">Packaging Sets</span>
+          <span className="text-neutral-900 font-bold">Packaging Sets</span>
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden p-1 sm:p-2">
@@ -185,7 +185,7 @@ export default function PackagingBundlesPage() {
                 <div className="w-16 h-16 rounded-2xl bg-neutral-50 border border-neutral-100 flex items-center justify-center text-neutral-400 mb-4">
                   <Package className="w-8 h-8" />
                 </div>
-                <h3 className="text-neutral-800 font-bold text-lg">No packaging sets found</h3>
+                <h3 className="text-neutral-900 font-bold text-lg">No packaging sets found</h3>
                 <p className="text-neutral-500 text-sm mt-2 max-w-sm">
                   {debouncedSearch 
                     ? `No results match your search "${debouncedSearch}".` 

@@ -53,7 +53,7 @@ export function ProbaeSearch({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 min-w-0 w-full bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none font-medium truncate"
+        className="flex-1 min-w-0 w-full bg-transparent text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none font-medium truncate"
       />
       
       <div className="flex items-center gap-2 sm:gap-3 shrink-0 pr-1 select-none ml-2">
