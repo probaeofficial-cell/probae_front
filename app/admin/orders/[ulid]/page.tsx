@@ -45,6 +45,8 @@ export default function OrderDetailPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [statusConfirm, setStatusConfirm] = useState<string | null>(null); // holds the pending new status
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [prepList, setPrepList] = useState<any>(null);
+  const [isPrepWarning, setIsPrepWarning] = useState<boolean>(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   // ─── fetch ───────────────────────────────────────────────────────────────
@@ -92,6 +94,24 @@ export default function OrderDetailPage() {
   // ─── status ───────────────────────────────────────────────────────────────
   const requestStatusChange = (newStatus: string) => {
     if (newStatus === order?.status) return;
+    
+    let hasUnprepared = false;
+    if (newStatus === "DISPATCHED" && prepList && prepList.components) {
+      // Check if any ingredient in the order is not PREPARED
+      const orderIngredientIds = new Set<number>();
+      order?.items?.forEach((item: any) => {
+        item.adjusted_ingredients?.forEach((ing: any) => {
+          const id = ing.ingredient_id || ing.id;
+          if (id) orderIngredientIds.add(id);
+        });
+      });
+      
+      hasUnprepared = prepList.components.some((comp: any) => 
+        orderIngredientIds.has(comp.ingredient_id) && comp.status !== "PREPARED"
+      );
+    }
+    
+    setIsPrepWarning(hasUnprepared);
     setStatusConfirm(newStatus);
   };
 
@@ -399,7 +419,16 @@ export default function OrderDetailPage() {
                  return (
                    <div key={item.ulid} className="bg-white rounded-3xl shadow-[0_2px_15px_rgba(0,0,0,0.03)] border border-neutral-100 overflow-hidden flex flex-col transition-all">
                      <div className={`px-4 py-3 flex justify-between items-center ${headerBg}`}>
-                        <span className="font-black text-sm uppercase tracking-widest">{item.meal_slot}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="font-black text-sm uppercase tracking-widest">{item.meal_slot}</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider ${
+                            item.assembly_status === "ASSEMBLED" 
+                              ? "bg-green-500/20 text-green-800" 
+                              : "bg-white/30"
+                          }`}>
+                            {item.assembly_status === "ASSEMBLED" ? "ASSEMBLED" : "UNASSEMBLED"}
+                          </span>
+                        </div>
                         <Icon className="w-4 h-4" />
                      </div>
                      <div className="aspect-[4/3] bg-neutral-100 overflow-hidden relative group cursor-pointer" onClick={() => toggleItem(item.ulid)}>
@@ -502,9 +531,20 @@ export default function OrderDetailPage() {
               <CheckCircle2 className="w-7 h-7" />
             </div>
             <h2 className="text-xl font-black text-neutral-900 text-center mb-2">Change Status?</h2>
-            <p className="text-sm text-neutral-500 text-center mb-2 font-medium">
-              You are about to change this order's status to:
-            </p>
+            {isPrepWarning ? (
+              <div className="bg-orange-50 border border-orange-200 text-orange-800 p-3 rounded-xl mb-4">
+                <p className="text-xs font-bold flex items-center justify-center gap-1.5 mb-1">
+                  <AlertTriangle className="w-4 h-4" /> INGREDIENTS NOT PREPARED
+                </p>
+                <p className="text-xs text-center font-medium">
+                  Some ingredients for this order have not been marked as PREPARED in the Kitchen Display System yet. Are you sure you want to dispatch?
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-neutral-500 text-center mb-2 font-medium">
+                You are about to change this order's status to:
+              </p>
+            )}
             <p className={`text-center text-lg font-black uppercase tracking-wider mb-8 ${(STATUS_STYLES[statusConfirm as keyof typeof STATUS_STYLES] || "").split(" ")[1]}`}>
               {statusConfirm}
             </p>

@@ -34,7 +34,7 @@ export class ApiError extends Error {
 // ─── Token Management Helpers (Storage Backed) ───────────────────────────────
 let memoryAccessToken: string | null = null;
 
-export const setMemoryAccessToken = (token: string | null, rememberMe?: boolean) => {
+export const setMemoryAccessToken = (token: string | null, rememberMe?: boolean, refreshToken?: string) => {
   memoryAccessToken = token;
   if (typeof window !== "undefined") {
     if (token) {
@@ -47,14 +47,20 @@ export const setMemoryAccessToken = (token: string | null, rememberMe?: boolean)
 
       if (shouldRemember) {
         localStorage.setItem("access_token", token);
+        if (refreshToken) localStorage.setItem("refresh_token", refreshToken);
         sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("refresh_token");
       } else {
         sessionStorage.setItem("access_token", token);
+        if (refreshToken) sessionStorage.setItem("refresh_token", refreshToken);
         localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
       }
     } else {
       localStorage.removeItem("access_token");
       sessionStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      sessionStorage.removeItem("refresh_token");
     }
   }
 };
@@ -83,6 +89,8 @@ const clearTokens = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem("access_token");
     sessionStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    sessionStorage.removeItem("refresh_token");
   }
 };
 
@@ -257,6 +265,9 @@ export const endpoints = {
     },
     getAssemblyList: async (date: string) => {
       return api.get(`/kds/assembly-list?target_date=${date}`);
+    },
+    updateAssemblyStatus: async (order_item_ulid: string, status: string) => {
+      return api.patch(`/kds/assembly-list/${order_item_ulid}/status`, { status });
     }
   },
   orders: {
@@ -288,7 +299,7 @@ export const endpoints = {
   auth: {
     login: async (payload: { identifier: string; password: string; totp_code?: string }, rememberMe?: boolean): Promise<LoginResponse> => {
       const response = await api.post<LoginResponse>("/auth/login", payload);
-      setMemoryAccessToken(response.access_token, rememberMe);
+      setMemoryAccessToken(response.access_token, rememberMe, response.refresh_token);
       return response;
     },
     logout: async () => {

@@ -19,6 +19,8 @@ export default function OrdersPage() {
   const [status, setStatus] = useState("");
   
   const [activeTab, setActiveTab] = useState<"PLAN" | "CUSTOM">("PLAN");
+  const [prepList, setPrepList] = useState<any>(null);
+  const [isPrepWarning, setIsPrepWarning] = useState<boolean>(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -42,6 +44,26 @@ export default function OrdersPage() {
   };
 
   const requestStatusChange = (ulid: string, newStatus: string) => {
+    let hasUnprepared = false;
+    
+    if (newStatus === "DISPATCHED" && prepList && prepList.components) {
+      const order = orders.find(o => o.ulid === ulid);
+      if (order) {
+        const orderIngredientIds = new Set<number>();
+        order.items?.forEach((item: any) => {
+          item.adjusted_ingredients?.forEach((ing: any) => {
+            const id = ing.ingredient_id || ing.id;
+            if (id) orderIngredientIds.add(id);
+          });
+        });
+        
+        hasUnprepared = prepList.components.some((comp: any) => 
+          orderIngredientIds.has(comp.ingredient_id) && comp.status !== "PREPARED"
+        );
+      }
+    }
+    
+    setIsPrepWarning(hasUnprepared);
     setConfirmAction({ ulid, status: newStatus });
   };
 
@@ -77,6 +99,13 @@ export default function OrdersPage() {
 
   useEffect(() => {
     fetchOrders(activeTab, page, targetDate, search, customerId, status);
+    
+    // Also fetch prep list for the same date to validate DISPATCH status changes
+    if (targetDate) {
+      endpoints.kds.getPrepList(targetDate)
+        .then((res: any) => setPrepList(res))
+        .catch(console.error);
+    }
   }, [activeTab, page, targetDate, search, customerId, status]);
 
   return (<>
