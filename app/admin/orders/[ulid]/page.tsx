@@ -10,6 +10,7 @@ import {
   Flame, Beef, Wheat, Droplets, Leaf, AlertTriangle,
   ClipboardList, CheckCircle2
 } from "lucide-react";
+import { Phone, MapPin, Printer, Sun, Moon, UtensilsCrossed } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -47,6 +48,33 @@ export default function OrderDetailPage() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   // ─── fetch ───────────────────────────────────────────────────────────────
+
+  // ─── settings ─────────────────────────────────────────────────────────────
+  const [systemSettings, setSystemSettings] = useState<any>({});
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const settings = await endpoints.settings.getSystemSettings();
+        setSystemSettings(settings);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const getMediaUrl = (r2Base: string, filename?: string) => {
+    if (!filename) return null;
+    return `${r2Base.replace(/\/$/, '')}/${filename}`;
+  };
+
+  const getNextStatus = (currentStatus: string) => {
+    if (currentStatus === "CREATED") return { label: "Mark as Prepared", value: "PREPARED" };
+    if (currentStatus === "PREPARED") return { label: "Dispatch >", value: "DISPATCHED" };
+    if (currentStatus === "DISPATCHED") return { label: "Mark Delivered", value: "DELIVERED" };
+    return null;
+  };
+
   const fetchOrder = async () => {
     setIsLoading(true);
     try {
@@ -158,6 +186,16 @@ export default function OrderDetailPage() {
 
   const totalCalories = order.items.reduce((s: number, i: any) => s + i.adjusted_calories, 0);
 
+  const totalMacros = order.items.reduce((acc: any, item: any) => {
+    return {
+      protein: acc.protein + (item.adjusted_macros?.protein || 0),
+      carbs: acc.carbs + (item.adjusted_macros?.carbs || 0),
+      fat: acc.fat + (item.adjusted_macros?.fat || 0),
+      fiber: acc.fiber + (item.adjusted_macros?.fiber || 0),
+    };
+  }, { protein: 0, carbs: 0, fat: 0, fiber: 0 });
+
+
   // ─── invoice template (rendered off-screen) ───────────────────────────────
   const InvoiceTemplate = () => (
     <div ref={invoiceRef} style={{ display: "none" }}>
@@ -205,330 +243,269 @@ export default function OrderDetailPage() {
     </div>
   );
 
-  return (
-    <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
-      <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-y-auto">
-        <Header />
-        <Breadcrumbs segments={["Orders", `Order #${order.ulid.slice(-6)}`]} />
-
-        {/* ── Top Bar ── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6 mb-8">
-          <div className="flex items-center gap-4">
-            <Link href="/admin/orders"
-              className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition-colors shrink-0">
-              <ArrowLeft className="w-5 h-5 text-neutral-600" />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-black text-neutral-900">Order Detail</h1>
-              <p className="text-xs font-mono text-neutral-400 mt-0.5">{order.ulid}</p>
-            </div>
+  return (<>
+    <div className="flex flex-col flex-1 h-full bg-[#f8f9fa] overflow-y-auto">
+      <div className="p-4 sm:p-8 flex flex-col mx-auto w-full max-w-7xl">
+        <Breadcrumbs segments={["Admin", "Orders & KDS", `Order #${order.ulid.slice(-6)}`]} />
+        
+        <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Order Details</h1>
+            <p className="text-neutral-500 font-medium mt-1">Manage fulfilment for #{order.ulid}</p>
           </div>
-          <div className="flex items-center gap-3">
-            {canDelete && (
-              <button
-                onClick={() => setDeleteModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100 text-sm font-bold transition-colors"
+          <div className="flex gap-3">
+            <button 
+              onClick={handleDownloadInvoice} 
+              className="px-6 py-2.5 rounded-full border border-neutral-300 font-bold text-neutral-700 bg-white hover:bg-neutral-50 flex items-center gap-2 shadow-sm transition-colors"
+            >
+              <Printer className="w-4 h-4" /> Print Ticket
+            </button>
+            {getNextStatus(order.status) && (
+              <button 
+                onClick={() => requestStatusChange(getNextStatus(order.status)!.value)} 
+                className="px-6 py-2.5 rounded-full bg-[#4B0082] text-white font-bold hover:bg-[#3a0066] flex items-center gap-2 shadow-sm transition-colors"
               >
-                <Trash2 className="w-4 h-4" /> Delete
+                {getNextStatus(order.status)!.label}
               </button>
             )}
-            <button
-              onClick={handleDownloadInvoice}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-neutral-200 text-neutral-700 bg-white hover:bg-neutral-50 text-sm font-bold transition-colors"
-            >
-              <Download className="w-4 h-4" /> Invoice
-            </button>
           </div>
         </div>
 
-        {/* ── Main Grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* LEFT: bowls */}
-          <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-xs font-black text-neutral-500 uppercase tracking-widest flex items-center gap-2">
-              <ClipboardList className="w-4 h-4" /> Bowl Breakdown
-            </h2>
-
-            {order.items.map((item: any, idx: number) => {
-              const isOpen = expandedItems.has(item.ulid);
-              const macros = item.adjusted_macros || {};
-              return (
-                <div key={item.ulid} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
-                  {/* Collapsed header */}
-                  <button
-                    onClick={() => toggleItem(item.ulid)}
-                    className="w-full flex items-center justify-between p-5 hover:bg-neutral-50 transition-colors text-left"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-[#6A0FAD]/10 flex items-center justify-center shrink-0">
-                        <span className="text-sm font-black text-[#6A0FAD]">{idx + 1}</span>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-black text-[#6A0FAD] uppercase tracking-widest mb-0.5">{item.meal_slot}</div>
-                        <div className="font-bold text-neutral-900 text-sm">{item.bowl_name}</div>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs text-neutral-500 font-medium flex items-center gap-1">
-                            <Flame className="w-3 h-3 text-orange-500" /> {Math.round(item.adjusted_calories)} kcal
-                          </span>
-                          <span className="text-xs text-neutral-400">×{item.quantity}</span>
-                          <span className="text-xs font-bold text-neutral-700">₹{item.adjusted_price.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="hidden sm:flex items-center gap-2 mr-2">
-                        {[
-                          { label: "P", val: macros.protein, color: "text-rose-500" },
-                          { label: "C", val: macros.carbs, color: "text-amber-500" },
-                          { label: "F", val: macros.fat, color: "text-blue-500" },
-                        ].map(({ label, val, color }) => (
-                          <span key={label} className={`text-[10px] font-black ${color}`}>
-                            {label} {Math.round(val || 0)}g
-                          </span>
-                        ))}
-                      </div>
-                      {isOpen
-                        ? <ChevronUp className="w-5 h-5 text-neutral-400" />
-                        : <ChevronDown className="w-5 h-5 text-neutral-400" />
-                      }
-                    </div>
-                  </button>
-
-                  {/* Expanded: ingredient table */}
-                  {isOpen && (
-                    <div className="border-t border-neutral-100">
-                      {/* Macro summary strip */}
-                      <div className="grid grid-cols-4 divide-x divide-neutral-100 bg-neutral-50/60">
-                        {[
-                          { icon: <Beef className="w-3.5 h-3.5 text-rose-500" />, label: "Protein", val: macros.protein },
-                          { icon: <Wheat className="w-3.5 h-3.5 text-amber-500" />, label: "Carbs", val: macros.carbs },
-                          { icon: <Droplets className="w-3.5 h-3.5 text-blue-500" />, label: "Fat", val: macros.fat },
-                          { icon: <Leaf className="w-3.5 h-3.5 text-green-500" />, label: "Fiber", val: macros.fiber },
-                        ].map(({ icon, label, val }) => (
-                          <div key={label} className="flex flex-col items-center py-3 px-2">
-                            <div className="flex items-center gap-1 mb-0.5">{icon}
-                              <span className="text-[10px] font-bold text-neutral-500 uppercase">{label}</span>
-                            </div>
-                            <span className="text-sm font-black text-neutral-900">{(val || 0).toFixed(1)}g</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Ingredient rows */}
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <tbody className="divide-y divide-neutral-50">
-                            {(item.adjusted_ingredients || []).map((ing: any, i: number) => {
-                              const tagStyle = MACRO_COLORS[ing.macro_tag] || MACRO_COLORS["ADD_ON"];
-                              const weightChanged = Math.abs(ing.new_weight - ing.original_weight) > 0.5;
-                              return (
-                                <tr key={i} className="hover:bg-neutral-50/80">
-                                  <td className="px-5 py-3 font-medium text-neutral-800">{ing.name}</td>
-                                  <td className="px-3 py-3">
-                                    <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-black border ${tagStyle}`}>
-                                      {ing.macro_tag}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-3 text-right text-neutral-400 text-xs">{ing.original_weight}g</td>
-                                  <td className="px-5 py-3 text-right">
-                                    <span className={`text-sm font-black ${weightChanged ? "text-[#6A0FAD]" : "text-neutral-700"}`}>
-                                      {ing.new_weight}g
-                                    </span>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Per-item footer */}
-                      <div className="flex items-center justify-between px-5 py-3 bg-neutral-50 border-t border-neutral-100">
-                        <span className="text-xs text-neutral-500 font-medium">
-                          {Math.round(item.adjusted_calories)} kcal &nbsp;·&nbsp; Qty: {item.quantity}
-                        </span>
-                        <span className="text-sm font-black text-neutral-900">₹{(item.adjusted_price * item.quantity).toFixed(2)}</span>
-                      </div>
+        <div className="flex flex-col lg:flex-row gap-6">
+          
+          {/* Left Column */}
+          <div className="lg:w-[320px] shrink-0 space-y-6">
+            
+            {/* Customer Profile Card */}
+            <div className="bg-[#fff9ff] rounded-3xl p-6 shadow-sm border border-[#f3e8f5]">
+              <div className="flex gap-4 items-center mb-6">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-neutral-200 shrink-0 border border-neutral-200">
+                  {order.customer?.image_filename ? (
+                    <img src={getMediaUrl(systemSettings?.R2_BASE_URL, order.customer.image_filename) || undefined} className="object-cover w-full h-full" alt="avatar" />
+                  ) : (
+                    <div className="w-full h-full bg-[#6A0FAD]/10 text-[#6A0FAD] flex items-center justify-center font-black text-xl">
+                      {order.customer?.name?.[0]?.toUpperCase() || "?"}
                     </div>
                   )}
                 </div>
-              );
-            })}
+                <div>
+                  <h2 className="text-lg font-black text-neutral-900 leading-tight">{order.customer?.name}</h2>
+                  <span className="inline-block mt-1 bg-neutral-800 text-white text-[10px] uppercase font-black px-2 py-0.5 rounded-full tracking-wider">
+                    {order.order_source === "PLAN" ? "SUBSCRIBER" : "CUSTOM"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-3 text-neutral-500 text-sm font-medium">
+                  <Phone className="w-4 h-4 text-neutral-400" /> 
+                  <span>{order.customer?.phone || "No phone"}</span>
+                </div>
+                <div className="flex items-start gap-3 text-neutral-500 text-sm font-medium">
+                  <MapPin className="w-4 h-4 text-neutral-400 mt-0.5 shrink-0" /> 
+                  <span className="break-words line-clamp-2">{order.customer?.location_name || order.customer?.address || (order.customer?.latitude ? "Location pinned" : "No address set")}</span>
+                </div>
+              </div>
+              
+              <div className="bg-[#e8f5e9] rounded-2xl p-4 flex justify-between items-center mb-6">
+                <span className="font-bold text-[#2e7d32] text-sm">Wallet Balance</span>
+                <span className="text-xl font-black text-[#2e7d32]">₹0</span>
+              </div>
+
+              {order.plan_id && (
+                <div>
+                  <div className="flex justify-between text-xs font-bold mb-2">
+                    <span className="text-neutral-700">Plan Progress</span>
+                    <span className="text-neutral-500">Active</span>
+                  </div>
+                  <div className="h-2 w-full bg-[#ede7f6] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#4B0082]" style={{ width: '50%' }} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Order Summary Card */}
+            <div className="bg-[#fff9ff] rounded-3xl p-6 shadow-sm border border-[#f3e8f5] space-y-5">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-neutral-500 text-sm">Payment Status</span>
+                <span className="bg-[#008000] text-white font-black text-[10px] tracking-wider px-3 py-1 rounded-full uppercase">PAID</span>
+              </div>
+              <div className="h-px bg-neutral-200/50" />
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-neutral-500 text-sm">Total Amount</span>
+                <span className="text-xl font-black text-neutral-900">₹{order.total_order_price.toFixed(2)}</span>
+              </div>
+              <div className="h-px bg-neutral-200/50" />
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-neutral-500 text-sm">Delivery Zone</span>
+                <span className="bg-neutral-100 border border-neutral-200 text-neutral-800 font-black text-[10px] tracking-wider px-3 py-1 rounded-full">Zone A</span>
+              </div>
+            </div>
+
           </div>
 
-          {/* RIGHT: info sidebar */}
-          <div className="space-y-5">
-
-            {/* Status card */}
-            <div className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm">
-              <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-4">Order Status</h3>
-              <div className="space-y-2">
-                {STATUS_ORDER.map((s) => {
-                  const isActive = order.status === s;
-                  const isPast   = STATUS_ORDER.indexOf(s) < STATUS_ORDER.indexOf(order.status) && order.status !== "CANCELLED";
-                  
-                  // Disable if: currently loading, is the active status, is a past status (can't revert), or if the order is already in a final state (DELIVERED/CANCELLED)
-                  const isFinalState = order.status === "DELIVERED" || order.status === "CANCELLED";
-                  const isDisabled = statusLoading || isActive || isPast || (isFinalState && !isActive);
-
-                  return (
-                    <button
-                      key={s}
-                      disabled={isDisabled}
-                      onClick={() => requestStatusChange(s)}
-                      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all
-                        ${isActive ? STATUS_STYLES[s as keyof typeof STATUS_STYLES] + " ring-2 ring-offset-1 ring-current" : ""}
-                        ${isDisabled && !isActive ? "border-neutral-100 text-neutral-300 bg-neutral-50 cursor-not-allowed opacity-50" : ""}
-                        ${!isDisabled && !isActive ? "border-neutral-100 text-neutral-400 hover:border-neutral-300 hover:text-neutral-600" : ""}
-                      `}
-                    >
-                      <span>{s}</span>
-                      {isActive && <CheckCircle2 className="w-4 h-4" />}
-                      {isPast && !isActive && <Check className="w-3 h-3 opacity-40" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Customer card */}
-            {order.customer && (
-              <div className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm">
-                <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <User className="w-4 h-4" /> Customer
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="font-black text-neutral-900">{order.customer.name}</p>
-                    <p className="text-xs text-neutral-500 font-medium">{order.customer.phone}</p>
-                    {order.customer.email && <p className="text-xs text-neutral-400">{order.customer.email}</p>}
+          {/* Right Column */}
+          <div className="flex-1 space-y-6">
+            
+            {/* Daily Macro Summary */}
+            <div className="bg-white rounded-3xl shadow-[0_2px_15px_rgba(0,0,0,0.03)] border border-neutral-100 border-l-[6px] border-l-[#008000] p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div>
+                <h3 className="text-sm font-black text-neutral-400 uppercase tracking-widest">Daily Macro Summary</h3>
+                <p className="text-xs font-medium text-neutral-400 mt-1">Auto-summed from today's bowls</p>
+                <div className="grid grid-cols-4 gap-2 mt-4 w-full max-w-sm">
+                  <div className="bg-[#4B0082] rounded-xl px-2 py-3 text-center flex flex-col justify-center">
+                    <div className="text-white font-black text-lg sm:text-xl leading-none">{Math.round(totalMacros.protein)}g</div>
+                    <div className="text-[#d1b3ff] text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mt-1.5">Protein</div>
                   </div>
-                  {order.customer.goal && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Goal</span>
-                      <span className="px-2 py-0.5 rounded-full bg-[#6A0FAD]/10 text-[#6A0FAD] text-[10px] font-black uppercase">{order.customer.goal}</span>
-                    </div>
-                  )}
-                  {order.customer.calorie_profile?.mealCalories && (
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2">Calorie Targets</p>
-                      <div className="space-y-1">
-                        {Object.entries(order.customer.calorie_profile.mealCalories).map(([slot, cals]: [string, any]) => (
-                          <div key={slot} className="flex justify-between text-xs">
-                            <span className="text-neutral-500 font-medium capitalize">{slot}</span>
-                            <span className="font-bold text-neutral-800">{Math.round(cals)} kcal</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <Link href={`/admin/customers/${order.customer.ulid}`}
-                    className="block text-center text-xs font-bold text-[#6A0FAD] hover:underline mt-2">
-                    View Full Profile →
-                  </Link>
+                  <div className="bg-[#4B0082] rounded-xl px-2 py-3 text-center flex flex-col justify-center">
+                    <div className="text-white font-black text-lg sm:text-xl leading-none">{Math.round(totalMacros.carbs)}g</div>
+                    <div className="text-[#d1b3ff] text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mt-1.5">Carbs</div>
+                  </div>
+                  <div className="bg-[#4B0082] rounded-xl px-2 py-3 text-center flex flex-col justify-center">
+                    <div className="text-white font-black text-lg sm:text-xl leading-none">{Math.round(totalMacros.fiber)}g</div>
+                    <div className="text-[#d1b3ff] text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mt-1.5">Fiber</div>
+                  </div>
+                  <div className="bg-[#4B0082] rounded-xl px-2 py-3 text-center flex flex-col justify-center">
+                    <div className="text-white font-black text-lg sm:text-xl leading-none">{Math.round(totalMacros.fat)}g</div>
+                    <div className="text-[#d1b3ff] text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mt-1.5">Fat</div>
+                  </div>
                 </div>
               </div>
-            )}
-
-            {/* Order summary card */}
-            <div className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm">
-              <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Package className="w-4 h-4" /> Order Summary
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500 font-medium flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" /> Target Date
-                  </span>
-                  <span className="font-bold text-neutral-900">
-                    {new Date(order.target_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500 font-medium">Source</span>
-                  <span className="font-bold text-neutral-900">{order.order_source}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500 font-medium flex items-center gap-1.5">
-                    <Flame className="w-3.5 h-3.5 text-orange-400" /> Total Calories
-                  </span>
-                  <span className="font-bold text-neutral-900">{Math.round(totalCalories)} kcal</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500 font-medium">Bowls</span>
-                  <span className="font-bold text-neutral-900">{order.items.length}</span>
-                </div>
-                <div className="h-px bg-neutral-100 my-1" />
-                <div className="flex justify-between">
-                  <span className="text-sm font-black text-neutral-900">Total Price</span>
-                  <span className="text-lg font-black text-[#6A0FAD]">₹{order.total_order_price.toFixed(2)}</span>
-                </div>
+              
+              <div className="bg-[#e8f5e9] rounded-2xl p-6 text-center shrink-0 min-w-[160px]">
+                <div className="text-4xl font-black text-[#2e7d32]">{Math.round(totalCalories)}</div>
+                <div className="text-[#2e7d32] text-xs font-black uppercase tracking-widest mt-1">Total Kcal</div>
               </div>
             </div>
 
-            {/* Edit / Expand all */}
-            {canEdit && (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-                <p className="text-xs font-bold text-amber-700 flex items-center gap-2 mb-3">
-                  <Edit3 className="w-3.5 h-3.5" /> This order can be edited
-                </p>
-                <Link href={`/admin/orders/new?edit=${ulid}`}>
-                  <ProbaeButton className="!w-full !text-sm !py-2.5 !bg-amber-500 !border-amber-500 hover:!bg-white hover:!text-amber-600">
-                    <Edit3 className="w-4 h-4 mr-2" /> Edit Order
-                  </ProbaeButton>
-                </Link>
+            {/* Bowls Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
+              {order.items.map((item: any, idx: number) => {
+                 let headerBg = "bg-purple-100 text-[#4B0082]";
+                 let Icon = Moon;
+                 const slotLower = item.meal_slot.toLowerCase();
+                 if (slotLower.includes("break")) {
+                   headerBg = "bg-[#fff3e0] text-[#e65100]";
+                   Icon = Sun;
+                 } else if (slotLower.includes("lunch")) {
+                   headerBg = "bg-[#ffebee] text-[#c62828]";
+                   Icon = Sun;
+                 }
+
+                 const isExpanded = expandedItems.has(item.ulid);
+                 const totalWeight = item.adjusted_ingredients?.reduce((sum: number, ing: any) => sum + (ing.original_weight || 0), 0) || 0;
+
+                 return (
+                   <div key={item.ulid} className="bg-white rounded-3xl shadow-[0_2px_15px_rgba(0,0,0,0.03)] border border-neutral-100 overflow-hidden flex flex-col transition-all">
+                     <div className={`px-4 py-3 flex justify-between items-center ${headerBg}`}>
+                        <span className="font-black text-sm uppercase tracking-widest">{item.meal_slot}</span>
+                        <Icon className="w-4 h-4" />
+                     </div>
+                     <div className="aspect-[4/3] bg-neutral-100 overflow-hidden relative group cursor-pointer" onClick={() => toggleItem(item.ulid)}>
+                        {item.image_filename ? (
+                          <img src={getMediaUrl(systemSettings?.R2_BASE_URL, item.image_filename) || undefined} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" alt={item.bowl_name} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-neutral-300">
+                            <UtensilsCrossed className="w-12 h-12" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 text-neutral-800 shadow-lg">
+                            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                          </div>
+                        </div>
+                     </div>
+                     <div className="p-5 flex flex-col flex-1">
+                        <h4 className="font-bold text-neutral-900 text-sm mb-4 leading-snug">{item.bowl_name}</h4>
+                        <div className="mt-auto flex flex-wrap justify-between items-center gap-y-2 gap-x-3">
+                           <div className="flex flex-wrap items-center gap-2">
+                             <span className="text-neutral-500 text-xs font-bold bg-neutral-100 px-2 py-1.5 rounded-md whitespace-nowrap">
+                               {totalWeight > 0 ? `${Math.round(totalWeight)}g` : `${item.quantity}x`}
+                             </span>
+                             <span className="text-orange-600 text-xs font-bold bg-orange-50 px-2 py-1.5 rounded-md flex items-center gap-1 whitespace-nowrap">
+                               <Flame className="w-3.5 h-3.5 shrink-0" /> {Math.round(item.adjusted_calories || 0)} kcal
+                             </span>
+                           </div>
+                           <span className="text-lg font-black text-[#6A0FAD] shrink-0 ml-auto md:ml-0">₹{item.adjusted_price}</span>
+                        </div>
+                     </div>
+
+                     {/* Expanded Ingredients Details */}
+                     {isExpanded && (
+                       <div className="bg-neutral-50 border-t border-neutral-100 p-4 text-xs animate-in slide-in-from-top-2">
+                         <div className="flex justify-between items-center mb-3">
+                           <h5 className="font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-2">
+                             <Leaf className="w-3.5 h-3.5" /> Bowl Contents
+                           </h5>
+                         </div>
+                         
+                         <div className="flex gap-3 mb-4 p-3 bg-white rounded-xl border border-neutral-100 justify-between">
+                           <div className="text-center">
+                             <div className="text-[10px] font-black text-neutral-400 uppercase">Pro</div>
+                             <div className="text-xs font-bold text-neutral-800">{Math.round(item.adjusted_macros?.protein || 0)}g</div>
+                           </div>
+                           <div className="text-center">
+                             <div className="text-[10px] font-black text-neutral-400 uppercase">Carb</div>
+                             <div className="text-xs font-bold text-neutral-800">{Math.round(item.adjusted_macros?.carbs || 0)}g</div>
+                           </div>
+                           <div className="text-center">
+                             <div className="text-[10px] font-black text-neutral-400 uppercase">Fib</div>
+                             <div className="text-xs font-bold text-neutral-800">{Math.round(item.adjusted_macros?.fiber || 0)}g</div>
+                           </div>
+                           <div className="text-center">
+                             <div className="text-[10px] font-black text-neutral-400 uppercase">Fat</div>
+                             <div className="text-xs font-bold text-neutral-800">{Math.round(item.adjusted_macros?.fat || 0)}g</div>
+                           </div>
+                         </div>
+                         <div className="space-y-2">
+                           {item.adjusted_ingredients?.map((ing: any, i: number) => (
+                             <div key={i} className="flex justify-between items-center border-b border-neutral-200/50 pb-2 last:border-0 last:pb-0">
+                               <span className="font-medium text-neutral-800 flex-1">{ing.name}</span>
+                               <span className="text-neutral-400 font-medium ml-2">{Math.round(ing.original_weight)}g</span>
+                             </div>
+                           ))}
+                           {(!item.adjusted_ingredients || item.adjusted_ingredients.length === 0) && (
+                             <p className="text-neutral-400 italic">No ingredients found.</p>
+                           )}
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 )
+              })}
+            </div>
+            
+            {/* Cancel Button */}
+            {order.status !== "DELIVERED" && order.status !== "CANCELLED" && (
+              <div className="flex justify-end pt-6">
+                <button 
+                  onClick={() => requestStatusChange("CANCELLED")} 
+                  className="px-8 py-3 rounded-full border-2 border-[#ff751f] text-[#ff751f] font-bold hover:bg-[#fff3eb] transition-colors"
+                >
+                  Cancel Order
+                </button>
               </div>
             )}
+
           </div>
         </div>
       </div>
 
-      {/* Hidden invoice template */}
       <InvoiceTemplate />
-
-      {/* ── Delete Confirm Modal ── */}
-      {deleteModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
-            <div className="w-14 h-14 bg-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-7 h-7 text-rose-600" />
-            </div>
-            <h2 className="text-xl font-black text-neutral-900 text-center mb-2">Delete Order?</h2>
-            <p className="text-sm text-neutral-500 text-center mb-8 font-medium">
-              This will permanently remove the order and all its bowl items. This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteModal(false)}
-                className="flex-1 py-3 rounded-2xl border border-neutral-200 font-bold text-neutral-700 hover:bg-neutral-50"
-              >
-                Cancel
-              </button>
-              <ProbaeButton
-                onClick={handleDelete}
-                disabled={deleteLoading}
-                className="flex-1 !bg-rose-600 !border-rose-600 hover:!bg-white hover:!text-rose-600"
-              >
-                {deleteLoading ? <BowlLoader className="w-4 h-4 animate-spin" /> : "Delete"}
-              </ProbaeButton>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Status Confirm Modal ── */}
       {statusConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${STATUS_STYLES[statusConfirm]}`}>
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${STATUS_STYLES[statusConfirm as keyof typeof STATUS_STYLES] || "bg-neutral-100 text-neutral-600"}`}>
               <CheckCircle2 className="w-7 h-7" />
             </div>
             <h2 className="text-xl font-black text-neutral-900 text-center mb-2">Change Status?</h2>
             <p className="text-sm text-neutral-500 text-center mb-2 font-medium">
               You are about to change this order's status to:
             </p>
-            <p className={`text-center text-lg font-black uppercase tracking-wider mb-8 ${STATUS_STYLES[statusConfirm].split(" ")[1]}`}>
+            <p className={`text-center text-lg font-black uppercase tracking-wider mb-8 ${(STATUS_STYLES[statusConfirm as keyof typeof STATUS_STYLES] || "").split(" ")[1]}`}>
               {statusConfirm}
             </p>
             <div className="flex gap-3">
@@ -549,7 +526,7 @@ export default function OrderDetailPage() {
           </div>
         </div>
       )}
-
+      
       {/* ── Error Modal ── */}
       {errorMsg && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4">
@@ -566,5 +543,5 @@ export default function OrderDetailPage() {
         </div>
       )}
     </div>
-  );
+  </>);
 }
