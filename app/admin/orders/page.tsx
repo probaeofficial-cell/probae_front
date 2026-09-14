@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Loader2, Calendar, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, Filter, X } from "lucide-react";
+import { Loader2, Calendar, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, Filter, X, Clock } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -10,6 +10,7 @@ import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import AsyncCustomerSelect from "@/components/admin/AsyncCustomerSelect";
 import { endpoints } from "@/lib/apiService";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { OrderWindowModal } from "@/components/admin/OrderWindowModal";
 
 export default function OrdersPage() {
   const [targetDate, setTargetDate] = useState(new Date().toISOString().split("T")[0]);
@@ -24,6 +25,7 @@ export default function OrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
 
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isWindowModalOpen, setIsWindowModalOpen] = useState(false);
   const [tempSearch, setTempSearch] = useState("");
   const [tempTargetDate, setTempTargetDate] = useState("");
   const [tempCustomerId, setTempCustomerId] = useState<number | 0>(0);
@@ -91,6 +93,13 @@ export default function OrdersPage() {
             </div>
             
             <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4 w-full md:w-auto">
+              <button
+                onClick={() => setIsWindowModalOpen(true)}
+                className="flex items-center gap-2 h-11 px-4 rounded-2xl bg-white border border-neutral-200 text-neutral-700 font-bold text-sm hover:bg-neutral-50 hover:border-neutral-300 shadow-sm transition-colors"
+              >
+                <Clock className="w-4 h-4 text-[#6A0FAD]" /> Order Window
+              </button>
+
               <button 
                 onClick={() => {
                   setTempSearch(search);
@@ -334,5 +343,22 @@ export default function OrdersPage() {
         </div>
       )}
     </div>
-</>);
+
+    <ConfirmationModal
+      isOpen={!!confirmAction}
+      onClose={() => setConfirmAction(null)}
+      onConfirm={handleConfirmStatusChange}
+      title="Confirm Status Change"
+      message={`Are you sure you want to change this order's status to ${confirmAction?.status}?`}
+      type="warning"
+      confirmText="Yes, Change Status"
+      cancelText="Cancel"
+      isLoading={isUpdatingStatus}
+    />
+
+    <OrderWindowModal 
+      isOpen={isWindowModalOpen} 
+      onClose={() => setIsWindowModalOpen(false)} 
+    />
+  </>);
 }
