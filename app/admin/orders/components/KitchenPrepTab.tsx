@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Loader2, CheckCircle2, Circle, Clock } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
   const [data, setData] = useState<any>(null);
@@ -25,12 +26,24 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
     }
   };
 
-  const updateStatus = async (ingredientId: number, newStatus: string) => {
+  const [confirmAction, setConfirmAction] = useState<{id: number, status: string} | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const requestUpdateStatus = (ingredientId: number, newStatus: string) => {
+    setConfirmAction({ id: ingredientId, status: newStatus });
+  };
+
+  const handleConfirmUpdate = async () => {
+    if (!confirmAction) return;
+    setIsUpdating(true);
     try {
-      await endpoints.kds.updatePrepStatus(ingredientId, newStatus, targetDate);
+      await endpoints.kds.updatePrepStatus(confirmAction.id, confirmAction.status, targetDate);
       fetchData();
     } catch (e) {
       console.error("Failed to update status", e);
+    } finally {
+      setIsUpdating(false);
+      setConfirmAction(null);
     }
   };
 
@@ -79,21 +92,35 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
                   </div>
                   
                   <div className="flex gap-2">
+                    {comp.status === "UNCOOKED" && (
+                      <button
+                        disabled={true}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold border transition-colors bg-red-50 text-red-600 border-red-200 cursor-default"
+                      >
+                        <Circle className="w-4 h-4" /> Uncooked
+                      </button>
+                    )}
+                    
+                    {(comp.status === "UNCOOKED" || comp.status === "PREPARING") && (
+                      <button
+                        disabled={comp.status === "PREPARING"}
+                        onClick={() => requestUpdateStatus(comp.ingredient_id, "PREPARING")}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold border transition-colors ${
+                          comp.status === "PREPARING" ? "bg-yellow-50 text-yellow-600 border-yellow-200 cursor-default" 
+                          : "bg-white text-neutral-400 border-neutral-200 hover:bg-neutral-50"
+                        }`}
+                      >
+                        <Clock className="w-4 h-4" /> Preparing
+                      </button>
+                    )}
+                    
                     <button
-                      onClick={() => updateStatus(comp.ingredient_id, "UNCOOKED")}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold border transition-colors ${comp.status === "UNCOOKED" ? "bg-red-50 text-red-600 border-red-200" : "bg-white text-neutral-400 border-neutral-200 hover:bg-neutral-50"}`}
-                    >
-                      <Circle className="w-4 h-4" /> Uncooked
-                    </button>
-                    <button
-                      onClick={() => updateStatus(comp.ingredient_id, "PREPARING")}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold border transition-colors ${comp.status === "PREPARING" ? "bg-yellow-50 text-yellow-600 border-yellow-200" : "bg-white text-neutral-400 border-neutral-200 hover:bg-neutral-50"}`}
-                    >
-                      <Clock className="w-4 h-4" /> Preparing
-                    </button>
-                    <button
-                      onClick={() => updateStatus(comp.ingredient_id, "PREPARED")}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold border transition-colors ${comp.status === "PREPARED" ? "bg-green-50 text-green-600 border-green-200" : "bg-white text-neutral-400 border-neutral-200 hover:bg-neutral-50"}`}
+                      disabled={comp.status === "PREPARED"}
+                      onClick={() => requestUpdateStatus(comp.ingredient_id, "PREPARED")}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold border transition-colors ${
+                        comp.status === "PREPARED" ? "bg-green-50 text-green-600 border-green-200 cursor-default" 
+                        : "bg-white text-neutral-400 border-neutral-200 hover:bg-neutral-50"
+                      }`}
                     >
                       <CheckCircle2 className="w-4 h-4" /> Prepared
                     </button>
@@ -104,6 +131,18 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
           )}
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirmUpdate}
+        title="Confirm Status Change"
+        message={`Are you sure you want to mark this item as ${confirmAction?.status}?`}
+        type="warning"
+        confirmText="Yes, Update"
+        cancelText="Cancel"
+        isLoading={isUpdating}
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import AsyncCustomerSelect from "@/components/admin/AsyncCustomerSelect";
 import { endpoints } from "@/lib/apiService";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function OrdersPage() {
   const [targetDate, setTargetDate] = useState(new Date().toISOString().split("T")[0]);
@@ -27,14 +28,33 @@ export default function OrdersPage() {
   const [tempTargetDate, setTempTargetDate] = useState("");
   const [tempCustomerId, setTempCustomerId] = useState<number | 0>(0);
   const [tempStatus, setTempStatus] = useState("");
+  const [confirmAction, setConfirmAction] = useState<{ulid: string, status: string} | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  const handleStatusChange = async (ulid: string, newStatus: string) => {
+  const getAvailableStatuses = (currentStatus: string) => {
+    if (currentStatus === "DELIVERED") return ["DELIVERED"];
+    if (currentStatus === "CANCELLED") return ["CANCELLED"];
+    if (currentStatus === "DISPATCHED") return ["DISPATCHED", "DELIVERED", "CANCELLED"];
+    if (currentStatus === "PREPARED") return ["PREPARED", "DISPATCHED", "DELIVERED", "CANCELLED"];
+    return ["CREATED", "PREPARED", "DISPATCHED", "DELIVERED", "CANCELLED"];
+  };
+
+  const requestStatusChange = (ulid: string, newStatus: string) => {
+    setConfirmAction({ ulid, status: newStatus });
+  };
+
+  const handleConfirmStatusChange = async () => {
+    if (!confirmAction) return;
+    setIsUpdatingStatus(true);
     try {
-      await endpoints.orders.updateStatus(ulid, newStatus);
-      setOrders(orders.map(o => o.ulid === ulid ? { ...o, status: newStatus } : o));
+      await endpoints.orders.updateStatus(confirmAction.ulid, confirmAction.status);
+      setOrders(orders.map(o => o.ulid === confirmAction.ulid ? { ...o, status: confirmAction.status } : o));
     } catch (e) {
       console.error("Failed to update status", e);
       alert("Failed to update status");
+    } finally {
+      setIsUpdatingStatus(false);
+      setConfirmAction(null);
     }
   };
 
@@ -161,14 +181,15 @@ export default function OrdersPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <select 
                               value={order.status}
-                              onChange={(e) => handleStatusChange(order.ulid, e.target.value)}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 outline-none cursor-pointer hover:bg-blue-200 transition-colors appearance-none"
+                              onChange={(e) => requestStatusChange(order.ulid, e.target.value)}
+                              disabled={order.status === "DELIVERED" || order.status === "CANCELLED"}
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider outline-none transition-colors appearance-none ${
+                                order.status === "DELIVERED" || order.status === "CANCELLED" ? "bg-neutral-100 text-neutral-500 cursor-not-allowed" : "bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200"
+                              }`}
                             >
-                              <option value="CREATED">CREATED</option>
-                              <option value="PREPARED">PREPARED</option>
-                              <option value="DISPATCHED">DISPATCHED</option>
-                              <option value="DELIVERED">DELIVERED</option>
-                              <option value="CANCELLED">CANCELLED</option>
+                              {getAvailableStatuses(order.status).map(st => (
+                                <option key={st} value={st}>{st}</option>
+                              ))}
                             </select>
                           </td>
                           <td className="px-6 py-4 text-right whitespace-nowrap">

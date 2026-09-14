@@ -367,15 +367,20 @@ export default function OrderDetailPage() {
                 {STATUS_ORDER.map((s) => {
                   const isActive = order.status === s;
                   const isPast   = STATUS_ORDER.indexOf(s) < STATUS_ORDER.indexOf(order.status) && order.status !== "CANCELLED";
+                  
+                  // Disable if: currently loading, is the active status, is a past status (can't revert), or if the order is already in a final state (DELIVERED/CANCELLED)
+                  const isFinalState = order.status === "DELIVERED" || order.status === "CANCELLED";
+                  const isDisabled = statusLoading || isActive || isPast || (isFinalState && !isActive);
+
                   return (
                     <button
                       key={s}
-                      disabled={statusLoading || s === order.status}
+                      disabled={isDisabled}
                       onClick={() => requestStatusChange(s)}
                       className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all
-                        ${isActive ? STATUS_STYLES[s] + " ring-2 ring-offset-1 ring-current" : ""}
-                        ${!isActive && !statusLoading ? "border-neutral-100 text-neutral-400 hover:border-neutral-300 hover:text-neutral-600" : ""}
-                        ${statusLoading ? "opacity-50 cursor-wait" : ""}
+                        ${isActive ? STATUS_STYLES[s as keyof typeof STATUS_STYLES] + " ring-2 ring-offset-1 ring-current" : ""}
+                        ${isDisabled && !isActive ? "border-neutral-100 text-neutral-300 bg-neutral-50 cursor-not-allowed opacity-50" : ""}
+                        ${!isDisabled && !isActive ? "border-neutral-100 text-neutral-400 hover:border-neutral-300 hover:text-neutral-600" : ""}
                       `}
                     >
                       <span>{s}</span>
