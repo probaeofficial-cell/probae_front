@@ -78,6 +78,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     subItems: {
       dashboard: { label: "Dashboard", dotColor: "bg-blue-500", path: "/admin/delivery/dashboard" },
       today: { label: "Delivery Today", dotColor: "bg-orange-500", path: "/admin/delivery/today" },
+      zones: { label: "Delivery Zones", dotColor: "bg-purple-500", path: "/admin/delivery/zones" },
     },
   },
 };

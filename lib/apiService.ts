@@ -256,6 +256,23 @@ export const api = {
 
 // ─── Application API Endpoints ───────────────────────────────────────────────
 export const endpoints = {
+  logistics: {
+    getZones: async (activeOnly: boolean = true) => {
+      return api.get(`/logistics/zones?active_only=${activeOnly}`);
+    },
+    createZone: async (data: any) => {
+      return api.post(`/logistics/zones`, data);
+    },
+    updateZone: async (ulid: string, data: any) => {
+      return api.patch(`/logistics/zones/${ulid}`, data);
+    },
+    getDrivers: async (activeOnly: boolean = true) => {
+      return api.get(`/logistics/drivers?active_only=${activeOnly}`);
+    },
+    createDriver: async (data: any) => {
+      return api.post(`/logistics/drivers`, data);
+    },
+  },
   kds: {
     getPrepList: async (date: string, mealSlot?: string) => {
       let url = `/kds/prep-list?target_date=${date}`;
