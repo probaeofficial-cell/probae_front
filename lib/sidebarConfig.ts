@@ -9,6 +9,7 @@ import {
   Users,
   CircleUser,
   Settings,
+  Truck,
 } from "lucide-react";
 
 export type SubMenuItem = {
@@ -71,6 +72,14 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     },
   },
   customers: { label: "Customers", icon: Users, badge: 3, path: "/admin/customers" },
+  delivery: {
+    label: "Delivery",
+    icon: Truck,
+    subItems: {
+      dashboard: { label: "Dashboard", dotColor: "bg-blue-500", path: "/admin/delivery/dashboard" },
+      today: { label: "Delivery Today", dotColor: "bg-orange-500", path: "/admin/delivery/today" },
+    },
+  },
 };
 
 export const BOTTOM_MENU: Record<string, MenuItem> = {

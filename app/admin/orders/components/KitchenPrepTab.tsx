@@ -9,15 +9,57 @@ import { ConfirmationModal } from "@/components/ConfirmationModal";
 export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mealSlots, setMealSlots] = useState<any[]>([]);
+  const [activeSlot, setActiveSlot] = useState<string>("ALL");
 
   useEffect(() => {
-    fetchData();
-  }, [targetDate]);
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (mealSlots.length > 0) {
+      fetchData();
+    }
+  }, [targetDate, activeSlot]);
+
+  const fetchInitialData = async () => {
+    try {
+      const catData = await endpoints.mealCategories.getMealCategories(1, 100) as any;
+      const categories = catData.items || catData.categories || [];
+      setMealSlots(categories);
+
+      const now = new Date();
+      let foundSlot = "ALL";
+      for (const cat of categories) {
+        if (cat.time_from && cat.time_to) {
+          const [fH, fM] = cat.time_from.split(':').map(Number);
+          const [tH, tM] = cat.time_to.split(':').map(Number);
+          
+          const from = new Date(now);
+          from.setHours(fH, fM, 0, 0);
+          
+          const to = new Date(now);
+          to.setHours(tH, tM, 0, 0);
+          
+          if (to < from) to.setDate(to.getDate() + 1);
+          
+          if (now >= from && now <= to) {
+            foundSlot = cat.name;
+            break;
+          }
+        }
+      }
+      setActiveSlot(foundSlot);
+    } catch (e) {
+      console.error(e);
+      fetchData(); // fallback
+    }
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const res = await endpoints.kds.getPrepList(targetDate) as any;
+      const res = await endpoints.kds.getPrepList(targetDate, activeSlot) as any;
       setData(res);
     } catch (e) {
       console.error(e);
@@ -55,6 +97,34 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
 
   return (
     <div className="space-y-6">
+      {/* Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
+        <button
+          onClick={() => setActiveSlot("ALL")}
+          className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
+            activeSlot === "ALL" ? "bg-[#6A0FAD] text-white" : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50"
+          }`}
+        >
+          All Slots
+        </button>
+        {mealSlots.map(slot => (
+          <button
+            key={slot.id}
+            onClick={() => setActiveSlot(slot.name)}
+            className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
+              activeSlot === slot.name ? "bg-[#6A0FAD] text-white" : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50"
+            }`}
+          >
+            {slot.name}
+            {slot.time_from && slot.time_to && (
+              <span className="ml-2 text-xs opacity-70">
+                {slot.time_from.substring(0,5)} - {slot.time_to.substring(0,5)}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-[#6A0FAD]">Total Bowls for Today</h2>

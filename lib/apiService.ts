@@ -257,14 +257,18 @@ export const api = {
 // ─── Application API Endpoints ───────────────────────────────────────────────
 export const endpoints = {
   kds: {
-    getPrepList: async (date: string) => {
-      return api.get(`/kds/prep-list?target_date=${date}`);
+    getPrepList: async (date: string, mealSlot?: string) => {
+      let url = `/kds/prep-list?target_date=${date}`;
+      if (mealSlot && mealSlot !== 'ALL') url += `&meal_slot=${encodeURIComponent(mealSlot)}`;
+      return api.get(url);
     },
     updatePrepStatus: async (ingredientId: number, status: string, date: string) => {
       return api.patch(`/kds/prep-list/${ingredientId}/status?target_date=${date}`, { status });
     },
-    getAssemblyList: async (date: string) => {
-      return api.get(`/kds/assembly-list?target_date=${date}`);
+    getAssemblyList: async (date: string, mealSlot?: string) => {
+      let url = `/kds/assembly-list?target_date=${date}`;
+      if (mealSlot && mealSlot !== 'ALL') url += `&meal_slot=${encodeURIComponent(mealSlot)}`;
+      return api.get(url);
     },
     updateAssemblyStatus: async (order_item_ulid: string, status: string) => {
       return api.patch(`/kds/assembly-list/${order_item_ulid}/status`, { status });

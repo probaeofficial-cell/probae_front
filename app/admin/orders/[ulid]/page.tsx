@@ -73,7 +73,7 @@ export default function OrderDetailPage() {
   const getNextStatus = (currentStatus: string) => {
     if (currentStatus === "CREATED") return { label: "Mark as Prepared", value: "PREPARED" };
     if (currentStatus === "PREPARED") return { label: "Dispatch >", value: "DISPATCHED" };
-    if (currentStatus === "DISPATCHED") return { label: "Mark Delivered", value: "DELIVERED" };
+    // Removed DISPATCHED -> DELIVERED to force using Delivery Today dashboard
     return null;
   };
 
