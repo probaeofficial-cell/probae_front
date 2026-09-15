@@ -2,7 +2,7 @@
 import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { 
   Loader2, 
   ArrowLeft,
@@ -42,6 +42,8 @@ export default function BowlBuilderPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const cloneUlid = searchParams.get("clone");
   
   const isEdit = params.ulid !== "add";
   const bowlUlid = params.ulid as string;
@@ -120,10 +122,10 @@ export default function BowlBuilderPage() {
         setCategories(catRes.items || []);
         setPackagings(packRes.items || []);
 
-        if (isEdit) {
-          const bowl = await endpoints.bowls.getBowl(bowlUlid);
-          setName(bowl.name);
-          setCode(bowl.code || "");
+        if (isEdit || cloneUlid) {
+          const bowl = await endpoints.bowls.getBowl((isEdit ? bowlUlid : cloneUlid) as string);
+          setName(isEdit ? bowl.name : `${bowl.name} (Copy)`);
+          setCode(isEdit ? (bowl.code || "") : "");
           setDescription(bowl.description || "");
           setBowlType(bowl.bowl_type);
           setStatus(bowl.status);

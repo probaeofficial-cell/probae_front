@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Pencil,
   Trash2,
+  Copy,
   Plus
 } from "lucide-react";
 import AsyncMealCategorySelect from "@/components/admin/AsyncMealCategorySelect";
@@ -57,6 +58,9 @@ export default function BowlsListPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Bowl | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
+  const [bowlToClone, setBowlToClone] = useState<Bowl | null>(null);
 
   useEffect(() => {
     setIsTyping(true);
@@ -137,6 +141,13 @@ export default function BowlsListPage() {
     const bottom = Math.abs(e.currentTarget.scrollHeight - e.currentTarget.scrollTop - e.currentTarget.clientHeight) < 2;
     if (bottom && !isLoading && !isFetchingNextPage && page < totalPages) {
       setPage(prev => prev + 1);
+    }
+  };
+
+  const handleClone = () => {
+    if (bowlToClone) {
+      setIsCloneModalOpen(false);
+      router.push(`/admin/bowls/builder/add?clone=${bowlToClone.ulid}`);
     }
   };
 
@@ -260,8 +271,16 @@ export default function BowlsListPage() {
                       
                       <div className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm">
                         <button
+                          onClick={(e) => { e.stopPropagation(); setBowlToClone(item); setIsCloneModalOpen(true); }}
+                          className="w-8 h-8 rounded-full text-neutral-600 hover:bg-neutral-200 flex items-center justify-center transition-all"
+                          title="Duplicate Bowl"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={(e) => { e.stopPropagation(); router.push(`/admin/bowls/builder/${item.ulid}`); }}
                           className="w-8 h-8 rounded-full text-neutral-600 hover:bg-neutral-200 flex items-center justify-center transition-all"
+                          title="Edit Bowl"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -359,6 +378,16 @@ export default function BowlsListPage() {
           
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isCloneModalOpen}
+        onClose={() => setIsCloneModalOpen(false)}
+        onConfirm={handleClone}
+        title="Duplicate Bowl"
+        message={`Are you sure you want to duplicate "${bowlToClone?.name}"? You will be redirected to the builder to customize the copy before saving.`}
+        confirmText="Duplicate"
+        type="info"
+      />
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
