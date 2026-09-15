@@ -179,9 +179,15 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
         try {
           // The backend handles the refresh_token via an HttpOnly cookie.
           // By using credentials: "include", the cookie is automatically sent.
+          // As a fallback (if cookies are blocked cross-origin or by Safari ITP), we also send it in the body.
+          const storedRefreshToken = localStorage.getItem("refresh_token") || sessionStorage.getItem("refresh_token");
+          
           const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
             method: "POST",
-            
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: storedRefreshToken ? JSON.stringify({ refresh_token: storedRefreshToken }) : undefined,
             credentials: "include",
           });
 
@@ -191,8 +197,9 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
 
           const refreshData = await refreshResponse.json();
           const newAccessToken = refreshData.access_token; 
+          const newRefreshToken = refreshData.refresh_token;
           
-          setMemoryAccessToken(newAccessToken);
+          setMemoryAccessToken(newAccessToken, undefined, newRefreshToken);
           isRefreshing = false;
           onTokenRefreshed(newAccessToken); 
         } catch (refreshError) {
