@@ -43,36 +43,8 @@ export default function NewOrderPage() {
   const [paymentIntent, setPaymentIntent] = useState<string>("");
   const [showWarningModal, setShowWarningModal] = useState(false);
 
-  const availableMealCategories = useMemo(() => {
-    const today = new Date();
-    // YYYY-MM-DD in local time
-    const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-    
-    if (targetDate !== todayStr) {
-      return mealCategories;
-    }
-    
-    const currentHours = today.getHours();
-    const currentMinutes = today.getMinutes();
-    const currentTimeStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}:00`;
-
-    return mealCategories.filter(cat => {
-      if (cat.time_from) {
-        return currentTimeStr <= cat.time_from;
-      }
-      return true;
-    });
-  }, [mealCategories, targetDate]);
-
-  // Auto-select first available slot if current selected is invalid
-  useEffect(() => {
-    if (availableMealCategories.length > 0) {
-      const isValid = availableMealCategories.some(c => (c.slug || c.name) === selectedMealSlot);
-      if (!isValid) {
-        setSelectedMealSlot(availableMealCategories[0].slug || availableMealCategories[0].name);
-      }
-    }
-  }, [availableMealCategories, selectedMealSlot]);
+  // All meal categories are shown — no time-based filtering
+  const availableMealCategories = useMemo(() => mealCategories, [mealCategories]);
 
 
   useEffect(() => {

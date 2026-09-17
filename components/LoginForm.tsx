@@ -154,7 +154,7 @@ function LoginView({
   rememberMe: boolean;
   onChangeRememberMe: (val: boolean) => void;
   onForgot: () => void;
-  onSuccess: (token: string) => void;
+  onSuccess: (token: string, role?: string) => void;
   onRequires2FA: (email: string, pass: string) => void;
 }) {
   const [email, setEmail] = useState("");
@@ -172,7 +172,7 @@ function LoginView({
     setLoading(true);
     try {
       const data = await endpoints.auth.login({ identifier: email, password }, rememberMe);
-      onSuccess(data.access_token);
+      onSuccess(data.access_token, data.role);
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 403 && err.detail === "2FA verification required") {
         onRequires2FA(email, password);
@@ -286,7 +286,7 @@ function AuthenticatorView({
   email: string;
   password: string;
   rememberMe: boolean;
-  onSuccess: (token: string) => void;
+  onSuccess: (token: string, role?: string) => void;
 }) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [loading, setLoading] = useState(false);
@@ -301,7 +301,7 @@ function AuthenticatorView({
     setError(null);
     try {
       const data = await endpoints.auth.login({ identifier: email, password, totp_code: digits.join("") }, rememberMe);
-      onSuccess(data.access_token);
+      onSuccess(data.access_token, data.role);
     } catch (err: any) {
       setError(err.message || "Invalid code. Please try again.");
       setDigits(Array(6).fill(""));
@@ -585,12 +585,16 @@ export default function LoginForm() {
     }
   }, []);
 
-  const handleLoginSuccess = async (tokenVal: string) => {
+  const handleLoginSuccess = async (tokenVal: string, role?: string) => {
     setAccessToken(tokenVal, rememberMe);
     setView("success");
     await fetchMe(tokenVal);
     setTimeout(() => {
-      router.push("/admin/dashboard");
+      if (role === "delivery") {
+        router.push("/delivery");
+      } else {
+        router.push("/admin/dashboard");
+      }
     }, 1000);
   };
 

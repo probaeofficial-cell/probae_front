@@ -280,6 +280,9 @@ export const endpoints = {
     createDriver: async (data: any) => {
       return api.post(`/logistics/drivers`, data);
     },
+    updateDriver: async (ulid: string, data: any) => {
+      return api.patch(`/logistics/drivers/${ulid}`, data);
+    },
   },
   kds: {
     getPrepList: async (date: string, mealSlot?: string) => {
@@ -323,6 +326,12 @@ export const endpoints = {
       api.del(`/orders/${ulid}`),
     updateItem: (orderUlid: string, itemUlid: string, payload: any) =>
       api.patch(`/orders/${orderUlid}/items/${itemUlid}`, payload),
+    bulkAssignDriver: (payload: { order_ulids: string[], driver_ulid: string }) =>
+      api.post(`/orders/bulk-assign-driver`, payload),
+    myDeliveries: () =>
+      api.get(`/orders/my-deliveries`),
+    confirmCod: (ulid: string) =>
+      api.post(`/orders/${ulid}/confirm-cod`, {}),
   },
 
   auth: {
