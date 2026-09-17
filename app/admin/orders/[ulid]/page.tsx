@@ -96,19 +96,29 @@ export default function OrderDetailPage() {
     if (newStatus === order?.status) return;
     
     let hasUnprepared = false;
-    if (newStatus === "DISPATCHED" && prepList && prepList.components) {
-      // Check if any ingredient in the order is not PREPARED
-      const orderIngredientIds = new Set<number>();
-      order?.items?.forEach((item: any) => {
-        item.adjusted_ingredients?.forEach((ing: any) => {
-          const id = ing.ingredient_id || ing.id;
-          if (id) orderIngredientIds.add(id);
-        });
-      });
-      
-      hasUnprepared = prepList.components.some((comp: any) => 
-        orderIngredientIds.has(comp.ingredient_id) && comp.status !== "PREPARED"
+    if (newStatus === "DISPATCHED") {
+      const hasUnassembled = order?.items?.some((item: any) => 
+        item.assembly_status !== "COMPLETED" && item.assembly_status !== "ASSEMBLED"
       );
+      if (hasUnassembled) {
+        setErrorMsg("Cannot dispatch: One or more bowls are still unassembled.");
+        return;
+      }
+
+      if (prepList && prepList.components) {
+        // Check if any ingredient in the order is not PREPARED
+        const orderIngredientIds = new Set<number>();
+        order?.items?.forEach((item: any) => {
+          item.adjusted_ingredients?.forEach((ing: any) => {
+            const id = ing.ingredient_id || ing.id;
+            if (id) orderIngredientIds.add(id);
+          });
+        });
+        
+        hasUnprepared = prepList.components.some((comp: any) => 
+          orderIngredientIds.has(comp.ingredient_id) && comp.status !== "PREPARED"
+        );
+      }
     }
     
     setIsPrepWarning(hasUnprepared);

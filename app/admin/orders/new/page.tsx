@@ -1,6 +1,6 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Loader2, ArrowLeft, CheckCircle2, Search, Plus, Trash2, User, Activity } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -40,7 +40,40 @@ export default function NewOrderPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPaidNow, setIsPaidNow] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("UPI");
+  const [paymentIntent, setPaymentIntent] = useState<string>("");
   const [showWarningModal, setShowWarningModal] = useState(false);
+
+  const availableMealCategories = useMemo(() => {
+    const today = new Date();
+    // YYYY-MM-DD in local time
+    const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    
+    if (targetDate !== todayStr) {
+      return mealCategories;
+    }
+    
+    const currentHours = today.getHours();
+    const currentMinutes = today.getMinutes();
+    const currentTimeStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}:00`;
+
+    return mealCategories.filter(cat => {
+      if (cat.time_from) {
+        return currentTimeStr <= cat.time_from;
+      }
+      return true;
+    });
+  }, [mealCategories, targetDate]);
+
+  // Auto-select first available slot if current selected is invalid
+  useEffect(() => {
+    if (availableMealCategories.length > 0) {
+      const isValid = availableMealCategories.some(c => (c.slug || c.name) === selectedMealSlot);
+      if (!isValid) {
+        setSelectedMealSlot(availableMealCategories[0].slug || availableMealCategories[0].name);
+      }
+    }
+  }, [availableMealCategories, selectedMealSlot]);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -243,8 +276,8 @@ export default function NewOrderPage() {
         customer_ulid: selectedCustomer.ulid,
         target_date: targetDate,
         items: payloadItems,
-        is_paid_now: isPaidNow,
-        payment_method: paymentMethod
+        payment_intent: paymentIntent,
+        payment_method: paymentIntent === 'UPFRONT_PAYMENT' ? paymentMethod : null
       }) as any;
       
       if (data.success) {
@@ -373,9 +406,11 @@ export default function NewOrderPage() {
                     onChange={(e) => setSelectedMealSlot(e.target.value)}
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] outline-none appearance-none"
                   >
-                    {mealCategories.map(cat => (
+                    {availableMealCategories.length > 0 ? availableMealCategories.map(cat => (
                       <option key={cat.ulid} value={cat.slug || cat.name}>{cat.name} Target</option>
-                    ))}
+                    )) : (
+                      <option value="" disabled>No slots available for today</option>
+                    )}
                   </select>
                 </div>
                 <div className="md:col-span-5 relative">
@@ -537,11 +572,13 @@ export default function NewOrderPage() {
               </div>
               <div className="hidden sm:block w-px h-12 bg-neutral-700"></div>
               <div className="flex flex-col gap-2 text-white">
-                <label className="flex items-center gap-2 text-sm font-bold cursor-pointer">
-                  <input type="checkbox" checked={isPaidNow} onChange={e => setIsPaidNow(e.target.checked)} className="w-5 h-5 rounded border-neutral-600 bg-neutral-800 accent-[#6A0FAD]" />
-                  Collect Payment Now
-                </label>
-                {isPaidNow && (
+                <select value={paymentIntent} onChange={e => setPaymentIntent(e.target.value)} className="bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#6A0FAD]">
+                  <option value="" disabled>Select Payment Method...</option>
+                  <option value="UPFRONT_PAYMENT">Pay Now (Cash/UPI)</option>
+                  <option value="WALLET_DEDUCTION">Deduct from Wallet</option>
+                  <option value="PAY_ON_DELIVERY">Pay on Delivery (COD)</option>
+                </select>
+                {paymentIntent === 'UPFRONT_PAYMENT' && (
                   <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#6A0FAD]">
                     <option value="UPI">UPI / Scan</option>
                     <option value="CASH">Cash</option>
@@ -551,8 +588,8 @@ export default function NewOrderPage() {
             </div>
             <ProbaeButton 
               onClick={initiateCheckout}
-              disabled={isSubmitting}
-              className="w-full md:w-auto md:!px-10"
+              disabled={isSubmitting || !paymentIntent || (paymentIntent === 'UPFRONT_PAYMENT' && !paymentMethod)}
+              className="w-full md:w-auto md:!px-10 disabled:opacity-50"
             >
               {isSubmitting ? <BowlLoader className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
               Approve & Create Order

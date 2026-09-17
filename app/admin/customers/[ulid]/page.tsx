@@ -61,6 +61,7 @@ export default function CustomerDetailPage() {
     email: "",
     latitude: "",
     longitude: "",
+    locationDescription: "",
     address: "",
     sex: "Male",
     age: "25",
@@ -129,6 +130,7 @@ export default function CustomerDetailPage() {
           email: data.email || "",
           latitude: data.latitude !== null && data.latitude !== undefined ? data.latitude.toString() : "",
           longitude: data.longitude !== null && data.longitude !== undefined ? data.longitude.toString() : "",
+          locationDescription: data.location_description || "",
           address: data.address || "",
           sex: data.sex || "Male",
           age: data.age?.toString() || "25",
@@ -360,6 +362,7 @@ export default function CustomerDetailPage() {
         email: formData.email || null,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+        location_description: formData.locationDescription || null,
         address: formData.address,
         sex: formData.sex,
         age: parseInt(formData.age),
@@ -558,6 +561,15 @@ export default function CustomerDetailPage() {
                             updateField("longitude", lng ? lng.toString() : "");
                           }}
                         />
+                        <div className="mt-4">
+                          <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Location Description</label>
+                          <textarea 
+                            value={formData.locationDescription} 
+                            onChange={e => updateField("locationDescription", e.target.value)} 
+                            className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] h-20 resize-none" 
+                            placeholder="e.g. Leave at the front desk, second building on the left..."
+                          />
+                        </div>
                       </div>
                     ) : (
                       <>

@@ -55,6 +55,7 @@ export default function NewCustomerPage() {
     email: "",
     latitude: "",
     longitude: "",
+    locationDescription: "",
     image_filename: null as string | null,
     address: "",
     sex: "Male",
@@ -340,6 +341,7 @@ export default function NewCustomerPage() {
         email: formData.email || null,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+        location_description: formData.locationDescription || null,
         address: formData.address,
         sex: formData.sex,
         age: parseInt(formData.age),
@@ -430,6 +432,16 @@ export default function NewCustomerPage() {
                         updateField("latitude", lat ? lat.toString() : "");
                         updateField("longitude", lng ? lng.toString() : "");
                       }}
+                    />
+                  </div>
+                  <div className="md:col-span-2 mt-4">
+                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Location Description</label>
+                    <textarea 
+                      placeholder="e.g. Leave at the front desk, second building on the left..."
+                      value={formData.locationDescription} 
+                      onChange={(e) => updateField("locationDescription", e.target.value)} 
+                      className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" 
+                      rows={2} 
                     />
                   </div>
                   

@@ -273,7 +273,7 @@ export default function DeliveryDashboard() {
                     <input 
                       type="text" 
                       placeholder="Search ID, Name..." 
-                      className="w-full pl-9 pr-4 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#6A0FAD]"
+                      className="w-full pl-9 pr-4 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#6A0FAD] text-neutral-900"
                     />
                   </div>
                   <select className="border border-neutral-200 rounded-lg px-3 py-2 text-sm text-neutral-700 bg-white outline-none hidden sm:block">

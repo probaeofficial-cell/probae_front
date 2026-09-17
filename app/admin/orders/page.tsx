@@ -33,6 +33,7 @@ export default function OrdersPage() {
   const [tempCustomerId, setTempCustomerId] = useState<number | 0>(0);
   const [tempStatus, setTempStatus] = useState("");
   const [confirmAction, setConfirmAction] = useState<{ulid: string, status: string} | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const getAvailableStatuses = (currentStatus: string) => {
@@ -46,20 +47,30 @@ export default function OrdersPage() {
   const requestStatusChange = (ulid: string, newStatus: string) => {
     let hasUnprepared = false;
     
-    if (newStatus === "DISPATCHED" && prepList && prepList.components) {
+    if (newStatus === "DISPATCHED") {
       const order = orders.find(o => o.ulid === ulid);
       if (order) {
-        const orderIngredientIds = new Set<number>();
-        order.items?.forEach((item: any) => {
-          item.adjusted_ingredients?.forEach((ing: any) => {
-            const id = ing.ingredient_id || ing.id;
-            if (id) orderIngredientIds.add(id);
-          });
-        });
-        
-        hasUnprepared = prepList.components.some((comp: any) => 
-          orderIngredientIds.has(comp.ingredient_id) && comp.status !== "PREPARED"
+        const hasUnassembled = order.items?.some((item: any) => 
+          item.assembly_status !== "COMPLETED" && item.assembly_status !== "ASSEMBLED"
         );
+        if (hasUnassembled) {
+          setValidationError("Cannot dispatch: One or more bowls are still unassembled.");
+          return;
+        }
+
+        if (prepList && prepList.components) {
+          const orderIngredientIds = new Set<number>();
+          order.items?.forEach((item: any) => {
+            item.adjusted_ingredients?.forEach((ing: any) => {
+              const id = ing.ingredient_id || ing.id;
+              if (id) orderIngredientIds.add(id);
+            });
+          });
+          
+          hasUnprepared = prepList.components.some((comp: any) => 
+            orderIngredientIds.has(comp.ingredient_id) && comp.status !== "PREPARED"
+          );
+        }
       }
     }
     
@@ -75,7 +86,7 @@ export default function OrdersPage() {
       setOrders(orders.map(o => o.ulid === confirmAction.ulid ? { ...o, status: confirmAction.status } : o));
     } catch (e) {
       console.error("Failed to update status", e);
-      alert("Failed to update status");
+      setValidationError("Failed to update status");
     } finally {
       setIsUpdatingStatus(false);
       setConfirmAction(null);
@@ -205,7 +216,7 @@ export default function OrdersPage() {
                     ) : (
                       orders.map((order) => (
                         <tr key={order.ulid} className="hover:bg-neutral-50/50 transition-colors">
-                          <td className="px-6 py-4 font-mono text-xs text-neutral-500 whitespace-nowrap">{order.ulid.substring(order.ulid.length - 6)}</td>
+                          <td className="px-6 py-4 font-mono text-xs text-neutral-500 whitespace-nowrap">#{order.order_number || order.ulid.substring(order.ulid.length - 6)}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="font-bold text-neutral-900">{order.customer?.name || "Unknown"}</div>
                             <div className="text-xs text-neutral-500 font-medium">#{order.customer?.ulid.substring(order.customer.ulid.length - 6) || ""}</div>
@@ -372,6 +383,15 @@ export default function OrdersPage() {
         </div>
       )}
     </div>
+
+    <ConfirmationModal
+      isOpen={!!validationError}
+      onClose={() => setValidationError(null)}
+      title="Action Blocked"
+      message={validationError}
+      type="warning"
+      cancelText="OK"
+    />
 
     <ConfirmationModal
       isOpen={!!confirmAction}

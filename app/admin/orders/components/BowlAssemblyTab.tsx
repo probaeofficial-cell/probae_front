@@ -10,8 +10,9 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [mealSlots, setMealSlots] = useState<any[]>([]);
   const [activeSlot, setActiveSlot] = useState<string>("ALL");
+  const [hasInitialized, setHasInitialized] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "ASSEMBLED">("PENDING");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "COMPLETED">("PENDING");
 
   const [confirmAction, setConfirmAction] = useState<{ulid: string, status: string} | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -21,10 +22,10 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
   }, []);
 
   useEffect(() => {
-    if (mealSlots.length > 0) {
+    if (hasInitialized) {
       fetchData();
     }
-  }, [targetDate, activeSlot]);
+  }, [targetDate, activeSlot, hasInitialized]);
 
   const fetchInitialData = async () => {
     try {
@@ -48,7 +49,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
           if (to < from) to.setDate(to.getDate() + 1);
           
           if (now >= from && now <= to) {
-            foundSlot = cat.name;
+            foundSlot = cat.slug;
             break;
           }
         }
@@ -56,7 +57,8 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
       setActiveSlot(foundSlot);
     } catch (e) {
       console.error(e);
-      fetchData(); // fallback
+    } finally {
+      setHasInitialized(true);
     }
   };
 
@@ -91,9 +93,12 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
     return data.bowls.filter((bowl: any) => {
       const matchesSearch = 
         bowl.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bowl.bowl_name.toLowerCase().includes(searchQuery.toLowerCase());
+        bowl.bowl_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (bowl.order_number && bowl.order_number.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (bowl.order_ulid && bowl.order_ulid.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      const matchesStatus = statusFilter === "ALL" || bowl.assembly_status === statusFilter;
+      const isBowlCompleted = bowl.assembly_status === "COMPLETED" || bowl.assembly_status === "ASSEMBLED";
+      const matchesStatus = statusFilter === "ALL" || (statusFilter === "COMPLETED" && isBowlCompleted) || (statusFilter === "PENDING" && !isBowlCompleted);
 
       return matchesSearch && matchesStatus;
     });
@@ -120,9 +125,9 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
         {mealSlots.map(slot => (
           <button
             key={slot.id}
-            onClick={() => setActiveSlot(slot.name)}
+            onClick={() => setActiveSlot(slot.slug)}
             className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
-              activeSlot === slot.name ? "bg-[#6A0FAD] text-white" : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50"
+              activeSlot === slot.slug ? "bg-[#6A0FAD] text-white" : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50"
             }`}
           >
             {slot.name}
@@ -161,7 +166,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
         </div>
 
         <div className="flex gap-2 p-1 bg-neutral-100 rounded-xl w-full md:w-auto overflow-x-auto">
-          {(["PENDING", "ASSEMBLED", "ALL"] as const).map(s => (
+          {(["PENDING", "COMPLETED", "ALL"] as const).map(s => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -169,7 +174,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
                 statusFilter === s ? "bg-white text-[#6A0FAD] shadow-sm" : "text-neutral-500 hover:text-neutral-700"
               }`}
             >
-              {s === "PENDING" ? "Unassembled" : s === "ASSEMBLED" ? "Assembled" : "All Bowls"}
+              {s === "PENDING" ? "Unassembled" : s === "COMPLETED" ? "Assembled" : "All Bowls"}
             </button>
           ))}
         </div>
@@ -188,7 +193,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                      bowl.assembly_status === "ASSEMBLED" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                      (bowl.assembly_status === "COMPLETED" || bowl.assembly_status === "ASSEMBLED") ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
                     }`}>
                       {bowl.assembly_status}
                     </span>
@@ -201,6 +206,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
                     <div className="flex items-center gap-1.5 text-neutral-700 font-medium">
                       <User className="w-3.5 h-3.5" />
                       <span className="truncate">{bowl.customer_name}</span>
+                      <span className="text-neutral-400 ml-1 font-mono text-xs">#{bowl.order_number || bowl.order_ulid?.slice(-6)}</span>
                     </div>
                     {bowl.packaging_name && (
                       <div className="flex items-center gap-1.5 text-neutral-500 text-xs">
@@ -214,7 +220,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
                 <div className="shrink-0 flex flex-col gap-2">
                   {bowl.assembly_status === "PENDING" ? (
                     <button
-                      onClick={() => setConfirmAction({ ulid: bowl.order_item_ulid, status: "ASSEMBLED" })}
+                      onClick={() => setConfirmAction({ ulid: bowl.order_item_ulid, status: "COMPLETED" })}
                       className="flex flex-col items-center justify-center bg-white border border-neutral-200 text-neutral-400 hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-colors w-16 h-16 rounded-xl"
                     >
                       <Circle className="w-6 h-6 mb-1" />

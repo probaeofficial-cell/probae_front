@@ -151,6 +151,7 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
 
   // Inject Access Token
   const token = getAccessToken();
+  console.log(token);
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }

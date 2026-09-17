@@ -140,7 +140,7 @@ export default function DeliveryToday() {
                   placeholder="Search by name, address, or Order ID..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none text-sm text-neutral-900"
                 />
               </div>
               <div className="relative shrink-0">
@@ -148,7 +148,7 @@ export default function DeliveryToday() {
                 <select
                   value={mealSlotFilter}
                   onChange={e => setMealSlotFilter(e.target.value)}
-                  className="w-full sm:w-48 pl-9 pr-8 py-2.5 rounded-xl border border-neutral-200 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none text-sm appearance-none bg-white font-medium"
+                  className="w-full sm:w-48 pl-9 pr-8 py-2.5 rounded-xl border border-neutral-200 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none text-sm appearance-none bg-white font-medium text-neutral-900"
                 >
                   <option value="ALL">All Meal Slots</option>
                   {mealSlots.map(slot => (

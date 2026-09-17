@@ -1,4 +1,6 @@
 import {
+  Wallet,
+  Banknote,
   Home,
   Calendar,
   Wheat,
@@ -67,8 +69,10 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     icon: Package,
     subItems: {
       daily: { label: "Daily Orders", dotColor: "bg-blue-500", path: "/admin/orders" },
+      procurement: { label: "Daily Purchase", dotColor: "bg-red-500", path: "/admin/kds/procurement" },
       prep: { label: "Kitchen Prep", dotColor: "bg-orange-500", path: "/admin/kds/prep" },
       assembly: { label: "Bowl Assembly", dotColor: "bg-green-500", path: "/admin/kds/assembly" },
+      packaging: { label: "Packaging Prep", dotColor: "bg-teal-500", path: "/admin/kds/packaging" },
     },
   },
   customers: { label: "Customers", icon: Users, badge: 3, path: "/admin/customers" },
