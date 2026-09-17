@@ -2,42 +2,57 @@
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/admin/Header";
-import { MapPin, Phone, User, Plus, Search, Filter, Loader2, RefreshCw, Briefcase, Map, ClipboardList, MoreVertical } from "lucide-react";
-import { ProbaeButton } from "@/components/admin/ProbaeButton";
+import { User, Search, Filter, Loader2, RefreshCw, Briefcase, Map, ClipboardList, MoreVertical, ChevronLeft, ChevronRight, Phone } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 
+function toLocalDateStr(d: Date) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function addDays(dateStr: string, n: number) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return toLocalDateStr(d);
+}
+function formatDisplay(dateStr: string) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export default function DeliveryDashboard() {
+  const todayStr = toLocalDateStr(new Date());
+  const [selectedDate, setSelectedDate] = useState(todayStr);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Bulk Assign states
   const [assignDriverUlid, setAssignDriverUlid] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
+  const [assignSuccess, setAssignSuccess] = useState("");
+  const [assignError, setAssignError] = useState("");
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(selectedDate);
+  }, [selectedDate]);
 
-  const fetchData = async () => {
+  const fetchData = async (date: string) => {
     setIsLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
       const [ordersRes, driversRes] = await Promise.all([
-        endpoints.orders.list({ target_date: today, limit: 100 }),
+        endpoints.orders.list({ target_date: date, limit: 100 }),
         endpoints.logistics.getDrivers()
       ]);
-      
-      const allOrders = (ordersRes as any).orders || [];
-      // Include pending/unassembled for assignment, plus dispatched/delivered
-      setOrders(allOrders);
+      setOrders((ordersRes as any).orders || []);
       setDrivers((driversRes as any) || []);
     } catch (e) {
       console.error(e);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const goDate = (delta: number) => {
+    setSelectedIds([]);
+    setSelectedDate(prev => addDays(prev, delta));
   };
 
   const toggleSelect = (id: string) => {
@@ -49,26 +64,30 @@ export default function DeliveryDashboard() {
   const handleBulkAssign = async () => {
     if (!assignDriverUlid || selectedIds.length === 0) return;
     setIsAssigning(true);
+    setAssignError("");
+    setAssignSuccess("");
     try {
-      await endpoints.orders.bulkAssignDriver({
+      const res = await endpoints.orders.bulkAssignDriver({
         order_ulids: selectedIds,
         driver_ulid: assignDriverUlid
-      });
+      }) as any;
+      setAssignSuccess(`✓ ${res.updated || selectedIds.length} order(s) assigned successfully.`);
       setSelectedIds([]);
       setAssignDriverUlid("");
-      fetchData();
+      fetchData(selectedDate);
+      setTimeout(() => setAssignSuccess(""), 4000);
     } catch (e: any) {
-      alert("Failed to assign driver: " + (e.detail || e.message));
+      setAssignError("Failed: " + (e.detail || e.message || "Unknown error"));
     } finally {
       setIsAssigning(false);
     }
   };
 
-  // Metrics
   const totalOrders = orders.length;
   const completedOrders = orders.filter(o => o.status === "DELIVERED").length;
   const pendingOrders = orders.filter(o => o.status === "PENDING" || o.status === "DISPATCHED").length;
   const completionPercentage = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
+  const isToday = selectedDate === todayStr;
 
   return (
     <div className="flex flex-col flex-1 h-full bg-[#F5F6F8]">
@@ -78,27 +97,29 @@ export default function DeliveryDashboard() {
         <div className="mt-4 flex-1 overflow-y-auto custom-scrollbar">
           <div className="max-w-[1400px] mx-auto pb-12">
             
-            {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
               <div>
                 <h1 className="text-3xl font-bold text-neutral-900">Delivery Management</h1>
-                <p className="text-neutral-500 font-medium mt-1">Track today's deliveries, zone performance and completion status.</p>
+                <p className="text-neutral-500 font-medium mt-1">Track deliveries, zone performance and completion status.</p>
               </div>
               
               <div className="flex items-center gap-3">
-                <div className="bg-white px-4 py-2.5 rounded-xl border border-neutral-200 flex items-center font-bold text-sm text-neutral-700 shadow-sm">
-                  <span className="text-neutral-400 mr-3">&lt;</span>
-                  {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  <span className="text-neutral-400 ml-3 mr-3">&gt;</span>
-                  <span className="text-[#6A0FAD] bg-purple-50 px-2 py-0.5 rounded">Today</span>
+                {/* Navigable date picker */}
+                <div className="bg-white rounded-xl border border-neutral-200 flex items-center shadow-sm overflow-hidden">
+                  <button onClick={() => goDate(-1)} className="px-3 h-10 text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700 transition-colors border-r border-neutral-100">
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <div className="px-4 flex items-center gap-2 font-bold text-sm text-neutral-900 min-w-[160px] justify-center">
+                    {formatDisplay(selectedDate)}
+                    {isToday && <span className="text-[#6A0FAD] bg-purple-50 px-2 py-0.5 rounded text-[10px] font-bold">TODAY</span>}
+                  </div>
+                  <button onClick={() => goDate(1)} className="px-3 h-10 text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700 transition-colors border-l border-neutral-100">
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
-                <button onClick={fetchData} className="w-10 h-10 bg-white rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-50 transition-colors shadow-sm">
+                <button onClick={() => fetchData(selectedDate)} className="w-10 h-10 bg-white rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-50 transition-colors shadow-sm" title="Refresh">
                   <RefreshCw className="w-4 h-4" />
                 </button>
-                <ProbaeButton variant="primary" onClick={() => {}} className="shadow-lg shadow-purple-500/20">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add / Assign Delivery
-                </ProbaeButton>
               </div>
             </div>
 
@@ -194,25 +215,40 @@ export default function DeliveryDashboard() {
             </div>
 
             {/* Bulk Actions */}
+            {assignSuccess && (
+              <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-5 py-3 mb-4 font-medium text-sm">{assignSuccess}</div>
+            )}
+            {assignError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-5 py-3 mb-4 font-medium text-sm">{assignError}</div>
+            )}
             {selectedIds.length > 0 && (
-              <div className="bg-white p-4 rounded-xl shadow-sm mb-4 flex items-center justify-between border border-purple-100">
-                <span className="font-bold text-[#6A0FAD] text-sm">{selectedIds.length} delivery selected</span>
-                <div className="flex items-center gap-3">
+              <div className="bg-[#FCF9FF] border border-purple-200 p-4 rounded-xl shadow-sm mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <span className="font-bold text-[#6A0FAD] text-sm">{selectedIds.length} order{selectedIds.length > 1 ? "s" : ""} selected</span>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
                   <select 
                     value={assignDriverUlid}
                     onChange={(e) => setAssignDriverUlid(e.target.value)}
-                    className="bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-1.5 text-xs font-bold outline-none text-neutral-700"
+                    className="flex-1 sm:flex-none bg-white border border-neutral-200 rounded-lg px-3 py-2 text-xs font-bold outline-none text-neutral-700 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD]"
                   >
                     <option value="">Select Agent...</option>
-                    {drivers.map(d => (
-                      <option key={d.ulid} value={d.ulid}>{d.name}</option>
+                    {drivers.length === 0 ? (
+                      <option disabled>No agents available</option>
+                    ) : drivers.map(d => (
+                      <option key={d.ulid} value={d.ulid}>{d.name} ({d.phone})</option>
                     ))}
                   </select>
-                  <button onClick={handleBulkAssign} disabled={!assignDriverUlid || isAssigning} className="bg-white border border-neutral-200 text-neutral-700 text-xs font-bold px-4 py-2 rounded-lg hover:bg-neutral-50">
-                    {isAssigning ? <Loader2 className="w-3 h-3 animate-spin" /> : "Assign Agent"}
+                  <button 
+                    onClick={handleBulkAssign} 
+                    disabled={!assignDriverUlid || isAssigning}
+                    className="bg-[#6A0FAD] hover:bg-[#5a0d91] disabled:bg-neutral-300 disabled:cursor-not-allowed text-white text-xs font-bold px-5 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    {isAssigning ? <><Loader2 className="w-3 h-3 animate-spin" /> Assigning...</> : "Assign Agent"}
                   </button>
-                  <button className="bg-white border border-neutral-200 text-neutral-700 text-xs font-bold px-4 py-2 rounded-lg hover:bg-neutral-50">
-                    Mark Selected Complete
+                  <button 
+                    onClick={() => { setSelectedIds([]); setAssignDriverUlid(""); }}
+                    className="text-neutral-400 hover:text-neutral-700 text-xs font-bold px-3 py-2 rounded-lg hover:bg-neutral-100 transition-colors"
+                  >
+                    Cancel
                   </button>
                 </div>
               </div>

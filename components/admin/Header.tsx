@@ -54,7 +54,8 @@ export function Header() {
     setIsProfileOpen(false);
     try {
       await logout();
-      router.push("/admin/login");
+      const loginRoute = user?.role === "delivery" ? "/delivery/login" : "/admin/login";
+      router.push(loginRoute);
     } catch (err) {
       console.error("Logout failed", err);
     }
@@ -186,7 +187,8 @@ export function Header() {
                   type="button"
                   onClick={() => {
                     setIsProfileOpen(false);
-                    router.push("/admin/profile");
+                    const profilePath = user?.role === "delivery" ? "/delivery/profile" : "/admin/profile";
+                    router.push(profilePath);
                   }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 hover:text-black hover:bg-neutral-100 rounded-xl transition-colors"
                 >
@@ -197,7 +199,9 @@ export function Header() {
                   type="button"
                   onClick={() => {
                     setIsProfileOpen(false);
-                    router.push("/admin/settings");
+                    // Delivery settings not implemented, fallback to profile or admin settings
+                    const settingsPath = user?.role === "delivery" ? "/delivery/profile" : "/admin/settings";
+                    router.push(settingsPath);
                   }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 hover:text-black hover:bg-neutral-100 rounded-xl transition-colors"
                 >

@@ -9,8 +9,11 @@ import { endpoints } from "@/lib/apiService";
 import Image from "next/image";
 
 export default function DeliveryAgents() {
+  const PAGE_SIZE = 10;
   const [agents, setAgents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,6 +61,14 @@ export default function DeliveryAgents() {
   };
 
   const activeCount = agents.filter(a => a.is_active).length;
+
+  const filteredAgents = agents.filter(a =>
+    a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    a.phone.includes(searchQuery)
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredAgents.length / PAGE_SIZE));
+  const pagedAgents = filteredAgents.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const handleSearch = (q: string) => { setSearchQuery(q); setCurrentPage(1); };
 
   return (
     <div className="flex flex-col flex-1 h-full bg-[#F5F6F8]">
@@ -119,7 +130,9 @@ export default function DeliveryAgents() {
                 <Search className="w-5 h-5 text-neutral-400 mr-3" />
                 <input 
                   type="text" 
-                  placeholder="Search by agent name, code or phone number..." 
+                  value={searchQuery}
+                  onChange={e => handleSearch(e.target.value)}
+                  placeholder="Search by agent name or phone number..." 
                   className="w-full bg-transparent outline-none text-neutral-900 font-medium"
                 />
               </div>
@@ -156,56 +169,84 @@ export default function DeliveryAgents() {
                 <tbody className="divide-y divide-neutral-100">
                   {isLoading ? (
                     <tr><td colSpan={7} className="py-12 text-center text-neutral-500"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></td></tr>
-                  ) : agents.length === 0 ? (
-                    <tr><td colSpan={7} className="py-12 text-center text-neutral-500 font-medium">No agents found.</td></tr>
-                  ) : agents.map((agent, idx) => (
-                    <tr key={agent.ulid} className="hover:bg-neutral-50/50 group">
-                      <td className="py-5 px-6">
-                        <span className="font-mono text-neutral-400 font-medium text-sm">DA-{String(idx + 1).padStart(3, '0')}</span>
-                      </td>
-                      <td className="py-5 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#f0e6f7] text-[#6A0FAD] flex items-center justify-center font-bold text-sm shadow-inner">
-                            {agent.name.substring(0, 2).toUpperCase()}
+                  ) : pagedAgents.length === 0 ? (
+                    <tr><td colSpan={7} className="py-12 text-center text-neutral-500 font-medium">No agents found matching your search.</td></tr>
+                  ) : pagedAgents.map((agent, localIdx) => {
+                    const globalIdx = (currentPage - 1) * PAGE_SIZE + localIdx;
+                    return (
+                      <tr key={agent.ulid} className="hover:bg-neutral-50/50 group">
+                        <td className="py-5 px-6">
+                          <span className="font-mono text-neutral-400 font-medium text-sm">DA-{String(globalIdx + 1).padStart(3, '0')}</span>
+                        </td>
+                        <td className="py-5 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#f0e6f7] text-[#6A0FAD] flex items-center justify-center font-bold text-sm shadow-inner">
+                              {agent.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <span className="font-bold text-neutral-900">{agent.name}</span>
                           </div>
-                          <span className="font-bold text-neutral-900">{agent.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-5 px-6">
-                        <span className="text-neutral-500 font-mono text-sm">{agent.phone}</span>
-                      </td>
-                      <td className="py-5 px-6 text-center">
-                        <span className="inline-flex px-3 py-1 bg-neutral-100 text-neutral-600 rounded-lg text-xs font-bold">All Zones</span>
-                      </td>
-                      <td className="py-5 px-6 text-center">
-                        <span className="font-black text-[#6A0FAD] text-lg">0</span>
-                      </td>
-                      <td className="py-5 px-6 text-center">
-                        {agent.is_active ? (
-                          <span className="inline-flex items-center justify-center px-4 py-1.5 bg-green-100 text-green-700 font-bold text-xs rounded-full">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></span>
-                            Available
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center justify-center px-4 py-1.5 bg-neutral-100 text-neutral-500 font-bold text-xs rounded-full">
-                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 mr-2"></span>
-                            Offline
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-5 px-6 text-center relative">
-                        <button 
-                          className="w-8 h-8 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-400 mx-auto transition-colors"
-                          onClick={() => toggleAgentStatus(agent.ulid, agent.is_active)}
-                          title={agent.is_active ? "Disable Agent" : "Enable Agent"}
-                        >
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="py-5 px-6">
+                          <span className="text-neutral-500 font-mono text-sm">{agent.phone}</span>
+                        </td>
+                        <td className="py-5 px-6 text-center">
+                          <span className="inline-flex px-3 py-1 bg-neutral-100 text-neutral-600 rounded-lg text-xs font-bold">All Zones</span>
+                        </td>
+                        <td className="py-5 px-6 text-center">
+                          <span className="font-black text-[#6A0FAD] text-lg">0</span>
+                        </td>
+                        <td className="py-5 px-6 text-center">
+                          {agent.is_active ? (
+                            <span className="inline-flex items-center justify-center px-4 py-1.5 bg-green-100 text-green-700 font-bold text-xs rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></span>
+                              Available
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center px-4 py-1.5 bg-neutral-100 text-neutral-500 font-bold text-xs rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 mr-2"></span>
+                              Offline
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-5 px-6 text-center relative">
+                          <button 
+                            className="w-8 h-8 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-400 mx-auto transition-colors"
+                            onClick={() => toggleAgentStatus(agent.ulid, agent.is_active)}
+                            title={agent.is_active ? "Disable Agent" : "Enable Agent"}
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
+                  <span className="text-sm font-medium text-neutral-500">
+                    Showing <span className="text-neutral-900 font-bold">{(currentPage - 1) * PAGE_SIZE + 1}</span> to <span className="text-neutral-900 font-bold">{Math.min(currentPage * PAGE_SIZE, filteredAgents.length)}</span> of <span className="text-neutral-900 font-bold">{filteredAgents.length}</span> agents
+                  </span>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm font-bold text-neutral-700 disabled:opacity-50 hover:bg-neutral-50"
+                    >
+                      Previous
+                    </button>
+                    <button 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm font-bold text-neutral-700 disabled:opacity-50 hover:bg-neutral-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>

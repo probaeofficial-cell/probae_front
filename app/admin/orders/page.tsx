@@ -13,7 +13,7 @@ import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { OrderWindowModal } from "@/components/admin/OrderWindowModal";
 
 export default function OrdersPage() {
-  const [targetDate, setTargetDate] = useState(new Date().toISOString().split("T")[0]);
+  const [targetDate, setTargetDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
   const [search, setSearch] = useState("");
   const [customerId, setCustomerId] = useState<number | 0>(0);
   const [status, setStatus] = useState("");

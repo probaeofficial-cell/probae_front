@@ -19,6 +19,7 @@ export type SubMenuItem = {
   dotColor: string;
   badge?: number;
   path?: string;
+  roles?: string[];
 };
 
 export type MenuItem = {
@@ -28,14 +29,16 @@ export type MenuItem = {
   subItems?: Record<string, SubMenuItem>;
   active?: boolean;
   path?: string;
+  roles?: string[];
 };
 
 export const MAIN_MENU: Record<string, MenuItem> = {
-  dashboard: { label: "Dashboard", icon: Home, path: "/admin/dashboard" },
+  dashboard: { label: "Dashboard", icon: Home, path: "/admin/dashboard", roles: ["ADMIN"] },
+  deliveryDashboard: { label: "Dashboard", icon: Home, path: "/delivery", roles: ["DELIVERY"] },
   rawMaterials: {
     label: "Raw materials",
     icon: Wheat,
-    active: true, // For demo purposes, matching the screenshot
+    roles: ["ADMIN"],
     subItems: {
       vendors: { label: "Vendors", dotColor: "bg-purple-500", path: "/admin/raw-materials/vendors" },
       categories: { label: "Categories", dotColor: "bg-blue-500", path: "/admin/raw-materials/categories" },
@@ -45,10 +48,11 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       purchaseHistory: { label: "Purchase History", dotColor: "bg-teal-500", path: "/admin/raw-materials/purchase-history" },
     },
   },
-  ingredients: { label: "Components", icon: Layers, path: "/admin/ingredients" },
+  ingredients: { label: "Components", icon: Layers, path: "/admin/ingredients", roles: ["ADMIN"] },
   bowls: {
     label: "Bowls",
     icon: Coffee,
+    roles: ["ADMIN"],
     subItems: {
       mealCategories: { label: "Meal Slots", dotColor: "bg-green-500", path: "/admin/bowls/meal-categories" },
       categories: { label: "Categories", dotColor: "bg-blue-500", path: "/admin/bowls/categories" },
@@ -58,15 +62,17 @@ export const MAIN_MENU: Record<string, MenuItem> = {
   packaging: {
     label: "Packaging",
     icon: Box,
+    roles: ["ADMIN"],
     subItems: {
       components: { label: "Items", dotColor: "bg-orange-500", path: "/admin/packaging/components" },
       bundles: { label: "Packaging Sets", dotColor: "bg-teal-500", path: "/admin/packaging/bundles" },
     },
   },
-  planTiers: { label: "Plan Tiers", icon: Calendar, path: "/admin/plans" },
-    orders: {
+  planTiers: { label: "Plan Tiers", icon: Calendar, path: "/admin/plans", roles: ["ADMIN"] },
+  orders: {
     label: "Orders & KDS",
     icon: Package,
+    roles: ["ADMIN"],
     subItems: {
       daily: { label: "Daily Orders", dotColor: "bg-blue-500", path: "/admin/orders" },
       procurement: { label: "Daily Purchase", dotColor: "bg-red-500", path: "/admin/kds/procurement" },
@@ -75,10 +81,11 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       packaging: { label: "Packaging Prep", dotColor: "bg-teal-500", path: "/admin/kds/packaging" },
     },
   },
-  customers: { label: "Customers", icon: Users, badge: 3, path: "/admin/customers" },
+  customers: { label: "Customers", icon: Users, badge: 3, path: "/admin/customers", roles: ["ADMIN"] },
   delivery: {
     label: "Delivery",
     icon: Truck,
+    roles: ["ADMIN"],
     subItems: {
       dashboard: { label: "Dashboard", dotColor: "bg-blue-500", path: "/admin/delivery/dashboard" },
       today: { label: "Delivery Today", dotColor: "bg-orange-500", path: "/admin/delivery/today" },
@@ -89,6 +96,6 @@ export const MAIN_MENU: Record<string, MenuItem> = {
 };
 
 export const BOTTOM_MENU: Record<string, MenuItem> = {
-  profile: { label: "Profile", icon: CircleUser, path: "/admin/profile" },
-  settings: { label: "Settings", icon: Settings, path: "/admin/settings" },
+  profile: { label: "Profile", icon: CircleUser, path: "/admin/profile", roles: ["ADMIN", "DELIVERY"] },
+  settings: { label: "Settings", icon: Settings, path: "/admin/settings", roles: ["ADMIN"] },
 };

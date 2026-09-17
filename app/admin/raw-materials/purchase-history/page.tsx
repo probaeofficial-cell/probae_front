@@ -60,7 +60,7 @@ export default function PurchaseHistoryPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Form State
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
   const [searchRM, setSearchRM] = useState("");
   const [debouncedSearchRM, setDebouncedSearchRM] = useState("");
   const [isRMDropdownOpen, setIsRMDropdownOpen] = useState(false);
@@ -73,8 +73,8 @@ export default function PurchaseHistoryPage() {
   const [draftPurchases, setDraftPurchases] = useState<DraftPurchase[]>([]);
 
   // Daily/Monthly View State
-  const [dailyDate, setDailyDate] = useState<string>(new Date().toISOString().split("T")[0]);
-  const [monthlyMonth, setMonthlyMonth] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [dailyDate, setDailyDate] = useState<string>(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
+  const [monthlyMonth, setMonthlyMonth] = useState<string>(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 7)); // YYYY-MM
   const [fetchedPurchases, setFetchedPurchases] = useState<any[]>([]);
   
   useEffect(() => {

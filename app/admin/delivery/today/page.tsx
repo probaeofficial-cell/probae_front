@@ -8,7 +8,7 @@ import { getMediaUrl } from "@/lib/utils";
 import { MapPin, Phone, Truck, CheckCircle2, User, Loader2, Search, Filter, Navigation } from "lucide-react";
 
 export default function DeliveryToday() {
-  const [targetDate, setTargetDate] = useState(new Date().toISOString().split("T")[0]);
+  const [targetDate, setTargetDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");

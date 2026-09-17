@@ -11,10 +11,16 @@ import {
 } from "lucide-react";
 import { MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
 import { endpoints } from "@/lib/apiService";
+import { useAuth } from "@/lib/AuthContext";
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useAuth();
+  
+  // Default to null if user is not loaded to prevent premature admin-only API calls
+  const userRole = user ? (user.role === "delivery" ? "DELIVERY" : "ADMIN") : null;
+
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
@@ -48,6 +54,7 @@ export function Sidebar() {
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   useEffect(() => {
     const fetchLowStockCount = async () => {
+      if (userRole !== "ADMIN") return;
       try {
         const data = await endpoints.rawMaterials.getLowStockCount();
         setLowStockCount(data.count);
@@ -56,7 +63,7 @@ export function Sidebar() {
       }
     };
     fetchLowStockCount();
-  }, [pathname]);
+  }, [pathname, userRole]);
 
   const BowlIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
@@ -152,7 +159,9 @@ export function Sidebar() {
           )}
 
           <ul className="space-y-1">
-            {Object.entries(MAIN_MENU).map(([menuKey, item]) => {
+            {Object.entries(MAIN_MENU)
+              .filter(([_, item]) => !item.roles || item.roles.includes(userRole))
+              .map(([menuKey, item]) => {
               const Icon = item.label === "Bowls" ? BowlIcon : item.icon;
               const hasSub = !!item.subItems;
               const isOpen = hasSub && openMenus[menuKey] && !collapsed;
@@ -314,7 +323,7 @@ export function Sidebar() {
 
         {/* Settings and other non-profile bottom items */}
         {Object.entries(BOTTOM_MENU)
-          .filter(([key]) => key !== "profile")
+          .filter(([key, item]) => key !== "profile" && (!item.roles || item.roles.includes(userRole)))
           .map(([menuKey, item]) => {
             const isItemActive = item.path
               ? pathname === item.path || pathname.startsWith(item.path + "/")
@@ -357,12 +366,13 @@ export function Sidebar() {
         {/* ── Profile button — isolated in its own relative wrapper ── */}
         <div className="relative group">
           {(() => {
-            const isProfileActive = pathname === "/admin/profile" || pathname.startsWith("/admin/profile/");
+            const profilePath = userRole === "DELIVERY" ? "/delivery/profile" : "/admin/profile";
+            const isProfileActive = pathname === profilePath || pathname.startsWith(profilePath + "/");
             return (
               <>
                 <button
                   type="button"
-                  onClick={() => router.push("/admin/profile")}
+                  onClick={() => router.push(profilePath)}
                   className={`flex items-center transition-colors ${
                     collapsed
                       ? "w-10 h-10 justify-center mx-auto rounded-xl p-0"

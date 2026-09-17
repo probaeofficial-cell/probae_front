@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { DeliverySidebar } from "@/components/delivery/DeliverySidebar";
+import { Sidebar } from "@/components/admin/Sidebar";
 import React from "react";
 
 export default function DeliveryLayout({ children }: { children: React.ReactNode }) {
@@ -14,7 +14,7 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
 
   return (
     <div className="flex h-screen w-full bg-[#141414] text-white overflow-hidden">
-      <DeliverySidebar />
+      <Sidebar />
       <main className="flex-1 overflow-hidden">
         {children}
       </main>

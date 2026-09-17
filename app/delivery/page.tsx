@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
-import { MapPin, Phone, CheckCircle, IndianRupee, Loader2, Package, RefreshCw } from "lucide-react";
+import { MapPin, Phone, CheckCircle, IndianRupee, Loader2, Package, RefreshCw, Navigation } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { endpoints } from "@/lib/apiService";
 
@@ -54,6 +54,19 @@ export default function DeliveryPortal() {
     }
   };
 
+  const handleMarkDelivered = async (ulid: string) => {
+    setProcessingUlid(ulid);
+    setErrorMsg("");
+    try {
+      await endpoints.orders.markDelivered(ulid);
+      await fetchDeliveries();
+    } catch (e: any) {
+      setErrorMsg("Failed to mark delivered: " + (e.detail || e.message));
+    } finally {
+      setProcessingUlid(null);
+    }
+  };
+
   if (authLoading || !user) {
     return (
       <div className="flex h-full items-center justify-center bg-[#F5F6F8]">
@@ -62,26 +75,27 @@ export default function DeliveryPortal() {
     );
   }
 
-  const activeOrders = orders.filter(o => o.status === "DISPATCHED");
+  const activeOrders = orders.filter(o => o.status !== "DELIVERED" && o.status !== "CANCELLED");
   const completedOrders = orders.filter(o => o.status === "DELIVERED");
 
   return (
-    <div className="flex flex-col flex-1 h-full bg-[#F5F6F8]">
-      <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-[#F5F6F8] overflow-hidden">
+    <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
+      <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden">
         <Header />
+        
+        <div className="mt-4 flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0 pb-10 px-1 max-w-2xl mx-auto w-full">
 
-        <div className="mt-4 flex-1 overflow-y-auto custom-scrollbar">
-          <div className="max-w-[900px] mx-auto pb-12">
-
-            {/* Page Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
               <div>
-                <h1 className="text-2xl font-bold text-neutral-900">My Deliveries</h1>
-                <p className="text-neutral-500 font-medium mt-1">Your assigned deliveries for today.</p>
+                <h1 className="text-2xl font-black text-neutral-900 tracking-tight">My Deliveries</h1>
+                <p className="text-sm text-neutral-500 font-medium mt-1">Today's assigned route</p>
               </div>
-              <button
+              <button 
                 onClick={fetchDeliveries}
-                className="w-10 h-10 bg-white rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-50 transition-colors shadow-sm"
+                className="w-10 h-10 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-xl flex items-center justify-center transition-colors"
+                title="Refresh"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
@@ -139,12 +153,24 @@ export default function DeliveryPortal() {
                         <div className="space-y-3 mb-6 bg-neutral-50 rounded-2xl p-4">
                           <div className="flex items-start gap-3">
                             <MapPin className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
-                            <div>
+                            <div className="flex-1">
                               <span className="text-sm text-neutral-700 font-medium leading-tight block">
                                 {order.customer?.address || "No address provided"}
                               </span>
                               {order.customer?.location_description && (
                                 <span className="text-xs text-neutral-400 mt-0.5 italic block">{order.customer.location_description}</span>
+                              )}
+                              
+                              {order.customer?.latitude && order.customer?.longitude && (
+                                <a 
+                                  href={`https://www.google.com/maps/search/?api=1&query=${order.customer.latitude},${order.customer.longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#6A0FAD] hover:text-violet-700 bg-white border border-[#eaddf7] shadow-sm px-3 py-1.5 rounded-lg transition-colors"
+                                >
+                                  <Navigation className="w-3.5 h-3.5" />
+                                  Open in Maps
+                                </a>
                               )}
                             </div>
                           </div>
@@ -159,13 +185,13 @@ export default function DeliveryPortal() {
                           <div className="flex flex-wrap gap-2 mb-6">
                             {order.items.map((item: any, i: number) => (
                               <span key={i} className="inline-flex items-center px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-bold rounded-lg">
-                                {item.bowl?.name || "Bowl"}
+                                {item.bowl_name || "Bowl"}
                               </span>
                             ))}
                           </div>
                         )}
 
-                        {/* COD Action */}
+                        {/* Actions */}
                         {order.requires_cod && !order.is_billed ? (
                           <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
                             <div className="flex justify-between items-center mb-3">
@@ -184,14 +210,23 @@ export default function DeliveryPortal() {
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between bg-green-50 rounded-2xl p-4 border border-green-100">
-                            <span className="text-green-700 font-bold text-sm flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4" /> Prepaid
-                            </span>
-                            <span className="font-black text-green-800 text-lg flex items-center">
-                              <IndianRupee className="w-4 h-4" />
-                              {order.billed_price}
-                            </span>
+                          <div className="flex flex-col gap-3 bg-green-50 rounded-2xl p-4 border border-green-100">
+                            <div className="flex items-center justify-between">
+                              <span className="text-green-700 font-bold text-sm flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4" /> Prepaid
+                              </span>
+                              <span className="font-black text-green-800 text-lg flex items-center">
+                                <IndianRupee className="w-4 h-4" />
+                                {order.billed_price}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleMarkDelivered(order.ulid)}
+                              disabled={processingUlid === order.ulid}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center shadow-lg shadow-green-600/20 disabled:opacity-70 mt-2"
+                            >
+                              {processingUlid === order.ulid ? <Loader2 className="w-5 h-5 animate-spin" /> : "Mark as Delivered"}
+                            </button>
                           </div>
                         )}
                       </div>

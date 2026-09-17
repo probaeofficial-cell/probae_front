@@ -6,7 +6,7 @@ import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { KitchenPrepTab } from "../../orders/components/KitchenPrepTab";
 
 export default function PrepPage() {
-  const [targetDate, setTargetDate] = useState(new Date().toISOString().split("T")[0]);
+  const [targetDate, setTargetDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
 
   return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">

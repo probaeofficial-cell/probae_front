@@ -125,12 +125,14 @@ const parseError = async (response: Response): Promise<never> => {
     // If response is not JSON, fallback to the standard HTTP status message
   }
 
-  // Intercept 401/403 status codes and redirect to login page if not already there
-  if (response.status === 401 || response.status === 403) {
+  // Intercept 401 status codes and redirect to login page if not already there
+  if (response.status === 401) {
     clearTokens();
     if (typeof window !== "undefined") {
-      if (!window.location.pathname.startsWith("/admin/login")) {
-        window.location.href = "/admin/login";
+      const isDeliveryPath = window.location.pathname.startsWith("/delivery");
+      const loginUrl = isDeliveryPath ? "/delivery/login" : "/admin/login";
+      if (!window.location.pathname.startsWith(loginUrl)) {
+        window.location.href = loginUrl;
       }
     }
   }
@@ -327,11 +329,13 @@ export const endpoints = {
     updateItem: (orderUlid: string, itemUlid: string, payload: any) =>
       api.patch(`/orders/${orderUlid}/items/${itemUlid}`, payload),
     bulkAssignDriver: (payload: { order_ulids: string[], driver_ulid: string }) =>
-      api.post(`/orders/bulk-assign-driver`, payload),
+      api.patch(`/orders/bulk-assign-driver`, payload),
     myDeliveries: () =>
       api.get(`/orders/my-deliveries`),
     confirmCod: (ulid: string) =>
       api.post(`/orders/${ulid}/confirm-cod`, {}),
+    markDelivered: (ulid: string) =>
+      api.post(`/orders/${ulid}/mark-delivered`, {}),
   },
 
   auth: {

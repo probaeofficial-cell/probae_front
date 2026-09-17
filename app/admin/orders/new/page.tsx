@@ -16,7 +16,7 @@ export default function NewOrderPage() {
   const [bowls, setBowls] = useState<any[]>([]);
   const [mealCategories, setMealCategories] = useState<any[]>([]);
   
-  const [targetDate, setTargetDate] = useState(new Date().toISOString().split("T")[0]);
+  const [targetDate, setTargetDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
   
   // Custom Search States
   const [customerSearch, setCustomerSearch] = useState("");
