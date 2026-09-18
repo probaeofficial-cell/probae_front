@@ -59,6 +59,7 @@ export function Header() {
       router.push(loginRoute);
     } catch (err) {
       console.error("Logout failed", err);
+      console.log("inside error");
     }
   };
 
