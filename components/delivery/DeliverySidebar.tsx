@@ -70,7 +70,7 @@ export function DeliverySidebar() {
         <div className="p-3 border-t border-[#2a2a2a] space-y-2">
           {!collapsed && user && (
             <div className="px-3 py-2.5 bg-[#1e1e1e] rounded-xl mb-2">
-              <p className="text-white text-xs font-bold truncate">{user.full_name || user.username}</p>
+              <p className="text-white text-sm font-bold truncate">{user.full_name || user.email}</p>
               <p className="text-neutral-500 text-[10px] mt-0.5">Delivery Agent</p>
             </div>
           )}

@@ -160,7 +160,7 @@ export function Sidebar() {
 
           <ul className="space-y-1">
             {Object.entries(MAIN_MENU)
-              .filter(([_, item]) => !item.roles || item.roles.includes(userRole))
+              .filter(([_, item]) => !item.roles || (userRole && item.roles.includes(userRole)))
               .map(([menuKey, item]) => {
               const Icon = item.label === "Bowls" ? BowlIcon : item.icon;
               const hasSub = !!item.subItems;
@@ -330,7 +330,7 @@ export function Sidebar() {
 
         {/* Settings and other non-profile bottom items */}
         {Object.entries(BOTTOM_MENU)
-          .filter(([key, item]) => key !== "profile" && (!item.roles || item.roles.includes(userRole)))
+          .filter(([key, item]) => key !== "profile" && (!item.roles || (userRole && item.roles.includes(userRole))))
           .map(([menuKey, item]) => {
             const checkActive = (targetPath: string) => {
               if (targetPath === '/delivery' || targetPath === '/admin') {
