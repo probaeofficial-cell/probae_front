@@ -21,6 +21,7 @@ interface BatchPrepOrder {
   fat: number;
   fiber: number;
   assembly_status: string;
+  order_status: string;
 }
 
 interface BatchPrepGroup {
@@ -79,10 +80,10 @@ export default function PackagingDashboardPage() {
     setExpandedBowls(prev => ({ ...prev, [bowlName]: !prev[bowlName] }));
   };
 
-  const toggleOrderComplete = async (orderItemUlid: string, currentStatus: boolean, assemblyStatus: string) => {
-    // Only allow if assembled
-    if (assemblyStatus !== "ASSEMBLED" && assemblyStatus !== "PACKAGED" && assemblyStatus !== "COMPLETED") {
-      alert("This bowl has not been assembled yet! Please wait for the kitchen to assemble it before packaging.");
+  const toggleOrderComplete = async (orderItemUlid: string, currentStatus: boolean, assemblyStatus: string, orderStatus: string) => {
+    // Only allow if assembled OR if the order is already PREPARED
+    if (assemblyStatus !== "ASSEMBLED" && assemblyStatus !== "PACKAGED" && assemblyStatus !== "COMPLETED" && orderStatus !== "PREPARED") {
+      alert("This bowl has not been assembled or prepared yet! Please wait for it to be ready before packaging.");
       return;
     }
 
@@ -257,12 +258,12 @@ export default function PackagingDashboardPage() {
                                 return (
                                   <tr key={orderIdx} className={`hover:bg-neutral-50 transition-colors ${isCompleted ? 'bg-neutral-50/50' : ''}`}>
                                     <td className="px-6 py-4 text-center">
-                                      {order.assembly_status === "PENDING" ? (
+                                      {order.assembly_status !== "ASSEMBLED" && order.assembly_status !== "PACKAGED" && order.assembly_status !== "COMPLETED" && order.order_status !== "PREPARED" ? (
                                         <div className="tooltip-container relative group inline-block">
                                           <Square className="w-5 h-5 text-neutral-200 inline-block cursor-not-allowed" />
                                         </div>
                                       ) : (
-                                        <div className="cursor-pointer inline-block" onClick={() => toggleOrderComplete(order.order_item_ulid, isCompleted, order.assembly_status)}>
+                                        <div className="cursor-pointer inline-block" onClick={() => toggleOrderComplete(order.order_item_ulid, isCompleted, order.assembly_status, order.order_status)}>
                                           {isCompleted ? (
                                             <CheckSquare className="w-5 h-5 text-[#5B108E] inline-block" />
                                           ) : (
