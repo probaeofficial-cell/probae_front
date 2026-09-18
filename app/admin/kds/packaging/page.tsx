@@ -36,6 +36,7 @@ export default function PackagingDashboardPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [targetDate, setTargetDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]);
   
   // Accordion state (which bowl is expanded)
   const [expandedBowls, setExpandedBowls] = useState<Record<string, boolean>>({});
@@ -47,7 +48,7 @@ export default function PackagingDashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiService.get<BatchPrepGroup[]>('/kds/batch-prep');
+      const response = await apiService.get<BatchPrepGroup[]>(`/kds/batch-prep?target_date=${targetDate}`);
       setData(response);
       setLastUpdated(new Date());
       
@@ -74,7 +75,7 @@ export default function PackagingDashboardPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [targetDate]);
 
   const toggleExpand = (bowlName: string) => {
     setExpandedBowls(prev => ({ ...prev, [bowlName]: !prev[bowlName] }));
