@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/admin/Header";
 import { User, Search, Filter, Loader2, RefreshCw, Briefcase, Map, ClipboardList, MoreVertical, ChevronLeft, ChevronRight, Phone } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
@@ -29,6 +29,22 @@ export default function DeliveryDashboard() {
   const [isAssigning, setIsAssigning] = useState(false);
   const [assignSuccess, setAssignSuccess] = useState("");
   const [assignError, setAssignError] = useState("");
+
+  const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
+  const [agentPage, setAgentPage] = useState(1);
+  const agentDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (agentDropdownRef.current && !agentDropdownRef.current.contains(e.target as Node)) {
+        setIsAgentDropdownOpen(false);
+      }
+    };
+    if (isAgentDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isAgentDropdownOpen]);
 
   useEffect(() => {
     fetchData(selectedDate);
@@ -225,22 +241,72 @@ export default function DeliveryDashboard() {
               <div className="bg-[#FCF9FF] border border-purple-200 p-4 rounded-xl shadow-sm mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <span className="font-bold text-[#6A0FAD] text-sm">{selectedIds.length} order{selectedIds.length > 1 ? "s" : ""} selected</span>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <select 
-                    value={assignDriverUlid}
-                    onChange={(e) => setAssignDriverUlid(e.target.value)}
-                    className="flex-1 sm:flex-none bg-white border border-neutral-200 rounded-lg px-3 py-2 text-xs font-bold outline-none text-neutral-700 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD]"
-                  >
-                    <option value="">Select Agent...</option>
-                    {drivers.length === 0 ? (
-                      <option disabled>No agents available</option>
-                    ) : drivers.map(d => (
-                      <option key={d.ulid} value={d.ulid}>{d.name} ({d.phone})</option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={agentDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsAgentDropdownOpen(!isAgentDropdownOpen)}
+                      className="flex items-center justify-between min-w-[200px] bg-[#3B3B3B] border-2 border-[#6A0FAD] rounded-xl px-4 py-2.5 text-sm font-semibold outline-none text-white shadow-[0_0_15px_rgba(106,15,173,0.3)] transition-all"
+                    >
+                      {assignDriverUlid 
+                        ? (drivers.find(d => d.ulid === assignDriverUlid)?.name || "Select Agent...") 
+                        : "✓ Select Agent..."}
+                    </button>
+                    
+                    {isAgentDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-2 w-full min-w-[250px] bg-[#3B3B3B] border-2 border-[#6A0FAD] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] z-50 overflow-hidden">
+                        {drivers.length === 0 ? (
+                          <div className="px-4 py-3 text-sm text-neutral-400">No agents available</div>
+                        ) : (
+                          <>
+                            <div className="max-h-60 overflow-y-auto">
+                              {drivers.slice((agentPage - 1) * 5, agentPage * 5).map(d => (
+                                <button
+                                  key={d.ulid}
+                                  onClick={() => { setAssignDriverUlid(d.ulid); setIsAgentDropdownOpen(false); }}
+                                  className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${
+                                    assignDriverUlid === d.ulid 
+                                      ? "bg-[#6A0FAD] text-white" 
+                                      : "text-neutral-200 hover:bg-[#4A4A4A]"
+                                  }`}
+                                >
+                                  {d.name} ({d.phone})
+                                </button>
+                              ))}
+                            </div>
+                            
+                            {/* Pagination Controls */}
+                            {drivers.length > 5 && (
+                              <div className="flex items-center justify-between px-3 py-2 border-t border-[#4A4A4A] bg-[#333333]">
+                                <button
+                                  type="button"
+                                  disabled={agentPage === 1}
+                                  onClick={() => setAgentPage(p => p - 1)}
+                                  className="p-1 rounded bg-[#4A4A4A] text-white disabled:opacity-50 hover:bg-[#5A5A5A]"
+                                >
+                                  <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="text-xs text-neutral-300 font-medium">
+                                  Page {agentPage} of {Math.ceil(drivers.length / 5)}
+                                </span>
+                                <button
+                                  type="button"
+                                  disabled={agentPage === Math.ceil(drivers.length / 5)}
+                                  onClick={() => setAgentPage(p => p + 1)}
+                                  className="p-1 rounded bg-[#4A4A4A] text-white disabled:opacity-50 hover:bg-[#5A5A5A]"
+                                >
+                                  <ChevronRight className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <button 
                     onClick={handleBulkAssign} 
                     disabled={!assignDriverUlid || isAssigning}
-                    className="bg-[#6A0FAD] hover:bg-[#5a0d91] disabled:bg-neutral-300 disabled:cursor-not-allowed text-white text-xs font-bold px-5 py-2 rounded-lg transition-colors flex items-center gap-2"
+                    className="bg-[#6A0FAD] hover:bg-[#5a0d91] disabled:bg-neutral-300 disabled:text-neutral-500 disabled:cursor-not-allowed text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2"
                   >
                     {isAssigning ? <><Loader2 className="w-3 h-3 animate-spin" /> Assigning...</> : "Assign Agent"}
                   </button>
@@ -260,10 +326,21 @@ export default function DeliveryDashboard() {
                 <thead>
                   <tr className="bg-[#2A2A2A] text-white">
                     <th className="py-4 px-4 w-12 text-center border-r border-white/10">
-                      <input type="checkbox" onChange={(e) => {
-                        if (e.target.checked) setSelectedIds(orders.map(o => o.ulid));
-                        else setSelectedIds([]);
-                      }} checked={selectedIds.length > 0 && selectedIds.length === orders.length} />
+                      <input 
+                        type="checkbox" 
+                        disabled={orders.filter(o => o.status !== "DELIVERED").length === 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIds(orders.filter(o => o.status !== "DELIVERED").map(o => o.ulid));
+                          } else {
+                            setSelectedIds([]);
+                          }
+                        }} 
+                        checked={
+                          orders.filter(o => o.status !== "DELIVERED").length > 0 && 
+                          selectedIds.length === orders.filter(o => o.status !== "DELIVERED").length
+                        } 
+                      />
                     </th>
                     <th className="py-4 px-4 text-[10px] font-bold uppercase tracking-wider">Order ID</th>
                     <th className="py-4 px-4 text-[10px] font-bold uppercase tracking-wider">Customer</th>
@@ -281,9 +358,15 @@ export default function DeliveryDashboard() {
                   ) : orders.length === 0 ? (
                     <tr><td colSpan={9} className="py-12 text-center text-neutral-500 font-medium">No deliveries found for today.</td></tr>
                   ) : orders.map(order => (
-                    <tr key={order.ulid} className="hover:bg-neutral-50/50">
+                    <tr key={order.ulid} className={`hover:bg-neutral-50/50 ${order.status === "DELIVERED" ? "opacity-70" : ""}`}>
                       <td className="py-4 px-4 text-center border-r border-neutral-100">
-                        <input type="checkbox" checked={selectedIds.includes(order.ulid)} onChange={() => toggleSelect(order.ulid)} className="accent-[#6A0FAD]" />
+                        <input 
+                          type="checkbox" 
+                          checked={selectedIds.includes(order.ulid)} 
+                          onChange={() => toggleSelect(order.ulid)} 
+                          className={`accent-[#6A0FAD] ${order.status === "DELIVERED" ? "cursor-not-allowed opacity-50" : ""}`}
+                          disabled={order.status === "DELIVERED"}
+                        />
                       </td>
                       <td className="py-4 px-4 text-sm font-medium text-neutral-900">#{order.order_number || order.ulid.slice(-6)}</td>
                       <td className="py-4 px-4">

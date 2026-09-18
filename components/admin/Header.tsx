@@ -3,9 +3,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Bell, Search, User, KeyRound, LogOut, Check, Menu } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { UserAvatar } from "./UserAvatar";
 import { endpoints } from "@/lib/apiService";
+import { formatTimeAgo } from "@/lib/timeUtils";
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -61,14 +62,44 @@ export function Header() {
     }
   };
 
-  // Dummy notifications
-  const notifications = [
-    { id: 1, text: "Low stock alert: Tomatoes", time: "10m ago", read: false },
-    { id: 2, text: "New order #1024 received", time: "1h ago", read: false },
-    { id: 3, text: "System maintenance scheduled", time: "2h ago", read: true },
-  ];
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const fetchNotifications = async () => {
+    if (!user || (user.role !== "admin" && user.role !== "delivery")) return;
+    try {
+      const res = await endpoints.notifications.get();
+      setNotifications(res.notifications);
+      setUnreadCount(res.unread_count);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    // Poll every 15 seconds
+    const intervalId = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(intervalId);
+  }, [user?.role]);
+
+  const handleMarkRead = async (ulid: string) => {
+    try {
+      await endpoints.notifications.markRead(ulid);
+      fetchNotifications();
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await endpoints.notifications.markAllRead();
+      fetchNotifications();
+    } catch (err) {
+      console.error("Failed to mark all as read", err);
+    }
+  };
 
   // Derive initials or avatar letter from user email
   const avatarLetter = user?.email?.charAt(0).toUpperCase() ?? "A";
@@ -120,33 +151,38 @@ export function Header() {
             <div className="absolute right-0 mt-3 w-[280px] sm:w-80 bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-neutral-100 overflow-hidden z-50">
               <div className="px-4 py-3 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
                 <span className="font-semibold text-neutral-800 text-sm">Notifications</span>
-                <button className="text-[11px] text-neutral-500 hover:text-neutral-800 font-medium">
+                <button onClick={handleMarkAllRead} className="text-[11px] text-neutral-500 hover:text-neutral-800 font-medium">
                   Mark all as read
                 </button>
               </div>
               <div className="max-h-80 overflow-y-auto">
-                {notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className={`px-4 py-3 border-b border-neutral-50 last:border-0 hover:bg-neutral-50 transition-colors cursor-pointer flex gap-3 ${
-                      !notif.read ? "bg-blue-50/30" : ""
-                    }`}
-                  >
-                    <div className="mt-0.5">
-                      {!notif.read ? (
-                        <div className="w-2 h-2 rounded-full bg-blue-500" />
-                      ) : (
-                        <Check className="w-3 h-3 text-neutral-400" />
-                      )}
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-sm text-neutral-500">No new notifications</div>
+                ) : (
+                  notifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      onClick={() => handleMarkRead(notif.ulid)}
+                      className={`px-4 py-3 border-b border-neutral-50 last:border-0 hover:bg-neutral-50 transition-colors cursor-pointer flex gap-3 ${
+                        !notif.is_read ? "bg-blue-50/30" : ""
+                      }`}
+                    >
+                      <div className="mt-0.5">
+                        {!notif.is_read ? (
+                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        ) : (
+                          <Check className="w-3 h-3 text-neutral-400" />
+                        )}
+                      </div>
+                      <div>
+                        <p className={`text-sm ${!notif.is_read ? "text-neutral-800 font-medium" : "text-neutral-600"}`}>
+                          {notif.message}
+                        </p>
+                        <p className="text-[10px] text-neutral-400 mt-1">{formatTimeAgo(notif.created_at)}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className={`text-sm ${!notif.read ? "text-neutral-800 font-medium" : "text-neutral-600"}`}>
-                        {notif.text}
-                      </p>
-                      <p className="text-[10px] text-neutral-400 mt-1">{notif.time}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
               <div className="px-4 py-2 text-center border-t border-neutral-100 bg-neutral-50/50">
                 <button className="text-xs text-neutral-600 hover:text-black font-medium transition-colors">

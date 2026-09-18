@@ -6,6 +6,7 @@ import { Header } from "@/components/admin/Header";
 import { Camera, Mail, User, Shield, Save, Check, AlertCircle } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import { UserAvatar } from "@/components/admin/UserAvatar";
+import { TwoFactorSetup } from "@/components/admin/TwoFactorSetup";
 
 export default function ProfilePage() {
   const { user, fetchMe } = useAuth();
@@ -239,43 +240,7 @@ export default function ProfilePage() {
             </div>
 
             {/* ── Security Card ──────────────────────────────────────── */}
-            <div className="bg-white border border-neutral-100 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-neutral-800 mb-1">Security</h2>
-              <p className="text-sm text-neutral-400 mb-4">
-                Two-factor authentication is currently{" "}
-                <span
-                  className={`font-semibold ${
-                    user?.two_factor_enabled ? "text-green-600" : "text-red-500"
-                  }`}
-                >
-                  {user?.two_factor_enabled ? "enabled" : "disabled"}
-                </span>.
-              </p>
-
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                {user?.two_factor_enabled ? (
-                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-green-600" />
-                  </div>
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                    <AlertCircle className="w-4 h-4 text-amber-600" />
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm font-medium text-neutral-800">
-                    {user?.two_factor_enabled
-                      ? "Your account is protected with 2FA"
-                      : "Enable 2FA for stronger security"}
-                  </p>
-                  <p className="text-xs text-neutral-400">
-                    {user?.two_factor_enabled
-                      ? "Google Authenticator is active on this account."
-                      : "Protect your account with a time-based one-time password."}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <TwoFactorSetup />
 
             {/* ── Save Button ───────────────────────────────────────── */}
             <div className="flex justify-end pb-8">

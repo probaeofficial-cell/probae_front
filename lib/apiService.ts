@@ -688,6 +688,11 @@ export const endpoints = {
     update: async (ulid: string, data: any) => await api.patch(`/plans/${ulid}`, data),
     delete: async (ulid: string) => await api.del(`/plans/${ulid}`),
   },
+  notifications: {
+    get: () => api.get("/notifications"),
+    markRead: (ulid: string) => api.patch(`/notifications/${ulid}/read`, {}),
+    markAllRead: () => api.post("/notifications/mark-all-read", {}),
+  },
   bowls: {
     getBowls: async (page: number, size: number, search?: string, sort?: string, mealCategoryUlid?: string, bowlCategoryUlid?: string, bowlType?: string, code?: string, createdById?: number, mealCategoryId?: number, bowlCategoryId?: number): Promise<PaginatedBowls> => {
       let query = `?page=${page}&page_size=${size}`;

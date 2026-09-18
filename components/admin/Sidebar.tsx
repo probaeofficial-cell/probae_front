@@ -166,12 +166,19 @@ export function Sidebar() {
               const hasSub = !!item.subItems;
               const isOpen = hasSub && openMenus[menuKey] && !collapsed;
 
+              const checkActive = (targetPath: string) => {
+                if (targetPath === '/delivery' || targetPath === '/admin') {
+                  return pathname === targetPath;
+                }
+                return pathname === targetPath || pathname.startsWith(targetPath + "/");
+              };
+
               // Check if item path matches current path, or if any sub-items match
               const isItemActive = item.path
-                ? pathname === item.path || pathname.startsWith(item.path + "/")
+                ? checkActive(item.path)
                 : hasSub
                 ? Object.values(item.subItems!).some(
-                    (sub) => sub.path && (pathname === sub.path || pathname.startsWith(sub.path + "/"))
+                    (sub) => sub.path && checkActive(sub.path)
                   )
                 : false;
 
@@ -325,9 +332,14 @@ export function Sidebar() {
         {Object.entries(BOTTOM_MENU)
           .filter(([key, item]) => key !== "profile" && (!item.roles || item.roles.includes(userRole)))
           .map(([menuKey, item]) => {
-            const isItemActive = item.path
-              ? pathname === item.path || pathname.startsWith(item.path + "/")
-              : false;
+            const checkActive = (targetPath: string) => {
+              if (targetPath === '/delivery' || targetPath === '/admin') {
+                return pathname === targetPath;
+              }
+              return pathname === targetPath || pathname.startsWith(targetPath + "/");
+            };
+
+            const isItemActive = item.path ? checkActive(item.path) : false;
             return (
               <div key={menuKey} className="relative group">
                 <button
