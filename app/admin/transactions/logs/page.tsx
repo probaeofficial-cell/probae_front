@@ -33,7 +33,7 @@ export default function TransactionLogsPage() {
       setTransactions(data.transactions);
       setTotalPages(Math.ceil(data.total_count / 20) || 1);
     } catch (err) {
-      console.error(err);
+      // console.error(err);
     } finally {
       setIsLoading(false);
     }
