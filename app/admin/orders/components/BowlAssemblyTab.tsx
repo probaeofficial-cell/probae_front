@@ -220,7 +220,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
                 <div className="shrink-0 flex flex-col gap-2">
                   {bowl.assembly_status === "PENDING" ? (
                     <button
-                      onClick={() => setConfirmAction({ ulid: bowl.order_item_ulid, status: "COMPLETED" })}
+                      onClick={() => setConfirmAction({ ulid: bowl.order_item_ulid, status: "ASSEMBLED" })}
                       className="flex flex-col items-center justify-center bg-white border border-neutral-200 text-neutral-400 hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-colors w-16 h-16 rounded-xl"
                     >
                       <Circle className="w-6 h-6 mb-1" />

@@ -266,6 +266,43 @@ export const api = {
 
 // ─── Application API Endpoints ───────────────────────────────────────────────
 export const endpoints = {
+  expenses: {
+    listCategories: (activeOnly: boolean = false, page?: number, limit?: number, search?: string) => {
+      const q = new URLSearchParams();
+      q.append('active_only', activeOnly.toString());
+      if (page) q.append('page', page.toString());
+      if (limit) q.append('limit', limit.toString());
+      if (search) q.append('search', search);
+      return api.get(`/expenses/categories?${q.toString()}`);
+    },
+    createCategory: (payload: any) => api.post('/expenses/categories', payload),
+    updateCategory: (ulid: string, payload: any) => api.put(`/expenses/categories/${ulid}`, payload),
+    list: (params: { page?: number, limit?: number, month?: string }) => {
+      const q = new URLSearchParams();
+      if (params.page) q.append('page', params.page.toString());
+      if (params.limit) q.append('limit', params.limit.toString());
+      if (params.month) q.append('month', params.month);
+      return api.get(`/expenses?${q.toString()}`);
+    },
+    create: (payload: any) => api.post('/expenses', payload),
+    del: (ulid: string) => api.del(`/expenses/${ulid}`)
+  },
+  dashboard: {
+    financials: (params: { start_date: string, end_date: string }) => api.get(`/dashboard/financials?start_date=${params.start_date}&end_date=${params.end_date}`)
+  },
+  globalTransactions: {
+    list: (params: { page?: number, limit?: number, transaction_type?: string, date_from?: string, date_to?: string }) => {
+      const q = new URLSearchParams();
+      if (params.page) q.append('page', params.page.toString());
+      if (params.limit) q.append('limit', params.limit.toString());
+      if (params.transaction_type) q.append('transaction_type', params.transaction_type);
+      if (params.date_from) q.append('date_from', params.date_from);
+      if (params.date_to) q.append('date_to', params.date_to);
+      return api.get(`/transactions?${q.toString()}`);
+    },
+    dailySummary: (date?: string) => api.get('/transactions/daily-summary' + (date ? `?target_date=${date}` : ''))
+  },
+
   logistics: {
     getZones: async (activeOnly: boolean = true) => {
       return api.get(`/logistics/zones?active_only=${activeOnly}`);

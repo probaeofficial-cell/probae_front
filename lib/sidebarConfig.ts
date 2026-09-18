@@ -81,6 +81,25 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       packaging: { label: "Packaging Prep", dotColor: "bg-teal-500", path: "/admin/kds/packaging" },
     },
   },
+  transactions: {
+    label: "Transactions",
+    icon: Banknote,
+    roles: ["ADMIN"],
+    subItems: {
+      dashboard: { label: "Dashboard", dotColor: "bg-blue-500", path: "/admin/transactions/dashboard" },
+      logs: { label: "Transaction Logs", dotColor: "bg-purple-500", path: "/admin/transactions/logs" },
+    },
+  },
+  expenses: {
+    label: "Expenses",
+    icon: Wallet,
+    roles: ["ADMIN"],
+    subItems: {
+      categories: { label: "Categories", dotColor: "bg-orange-500", path: "/admin/expenses/categories" },
+      logs: { label: "Expense Logs", dotColor: "bg-red-500", path: "/admin/expenses/logs" },
+    },
+  },
+
   customers: { label: "Customers", icon: Users, badge: 3, path: "/admin/customers", roles: ["ADMIN"] },
   delivery: {
     label: "Delivery",

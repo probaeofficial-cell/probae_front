@@ -1,5 +1,6 @@
 "use client";
 
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -168,7 +169,7 @@ export default function DeliveryAgents() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {isLoading ? (
-                    <tr><td colSpan={7} className="py-12 text-center text-neutral-500"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></td></tr>
+                    <tr><td colSpan={7} className="py-12 text-center text-neutral-500"><BowlLoader className="w-8 h-8 animate-spin mx-auto text-[#6A0FAD]" /></td></tr>
                   ) : pagedAgents.length === 0 ? (
                     <tr><td colSpan={7} className="py-12 text-center text-neutral-500 font-medium">No agents found matching your search.</td></tr>
                   ) : pagedAgents.map((agent, localIdx) => {

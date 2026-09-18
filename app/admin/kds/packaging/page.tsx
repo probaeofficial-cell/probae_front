@@ -56,7 +56,7 @@ export default function PackagingDashboardPage() {
       response.forEach(g => { 
         expansions[g.bowl_name] = true; 
         g.orders.forEach(o => {
-          if (o.assembly_status === "COMPLETED") {
+          if (o.assembly_status === "PACKAGED") {
             completes[o.order_item_ulid] = true;
           }
         });
@@ -79,13 +79,31 @@ export default function PackagingDashboardPage() {
     setExpandedBowls(prev => ({ ...prev, [bowlName]: !prev[bowlName] }));
   };
 
-  const toggleOrderComplete = async (orderItemUlid: string, currentStatus: boolean) => {
+  const toggleOrderComplete = async (orderItemUlid: string, currentStatus: boolean, assemblyStatus: string) => {
+    // Only allow if assembled
+    if (assemblyStatus !== "ASSEMBLED" && assemblyStatus !== "PACKAGED" && assemblyStatus !== "COMPLETED") {
+      alert("This bowl has not been assembled yet! Please wait for the kitchen to assemble it before packaging.");
+      return;
+    }
+
     // Optimistic update
     setCompletedOrders(prev => ({ ...prev, [orderItemUlid]: !currentStatus }));
     
     try {
-      const newStatus = !currentStatus ? "COMPLETED" : "PENDING";
+      const newStatus = !currentStatus ? "PACKAGED" : "ASSEMBLED";
       await apiService.patch(`/kds/assembly-list/${orderItemUlid}/status`, { status: newStatus });
+      // Update local data to reflect the new assembly_status so future clicks work correctly
+      setData(prevData => {
+         const newData = [...prevData];
+         for (const g of newData) {
+            for (const o of g.orders) {
+               if (o.order_item_ulid === orderItemUlid) {
+                  o.assembly_status = newStatus;
+               }
+            }
+         }
+         return newData;
+      });
     } catch (err) {
       console.error("Failed to update status", err);
       // Revert on failure
@@ -145,47 +163,12 @@ export default function PackagingDashboardPage() {
 
           <div className="flex-1 overflow-auto pr-2 pb-6 scrollbar-thin">
             
-            {/* Top Metrics Cards */}
-            {!loading && !error && data.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* Total Packaging Items */}
-                <div className="border border-neutral-200 rounded-2xl p-6 bg-[#FCFAFF]">
-                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Total Packaging Items</p>
-                  <div className="flex items-end gap-3">
-                    <span className="text-4xl font-extrabold text-neutral-900 leading-none">{totalItems}</span>
-                  </div>
-                </div>
-
-                {/* Completion Status */}
-                <div className="border border-neutral-200 rounded-2xl p-6 bg-[#FCFAFF]">
-                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Completion Status</p>
-                  <div className="flex items-center gap-4">
-                    <span className="text-4xl font-extrabold text-[#5B108E] leading-none">{completionPercentage}%</span>
-                    <div className="flex-1 h-3 bg-neutral-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-green-600 transition-all duration-500" style={{ width: `${completionPercentage}%` }}></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pending Packaging */}
-                <div className="border border-neutral-200 rounded-2xl p-6 bg-[#FCFAFF]">
-                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Pending Packaging</p>
-                  <div className="flex items-end gap-2">
-                    <span className="text-4xl font-extrabold text-[#F97316] leading-none">{pendingCount}</span>
-                    <span className="text-sm font-semibold text-neutral-500 mb-1">bowls remaining</span>
-                  </div>
-                </div>
+            {loading ? (
+              <div className="py-12 flex flex-col items-center justify-center gap-3">
+                <BowlLoader className="w-10 h-10 animate-spin text-[#6b21a8]" />
+                <span className="text-neutral-500 text-sm font-medium">Loading packaging data...</span>
               </div>
-            )}
-
-            {loading && data.length === 0 && (
-              <div className="h-64 flex flex-col items-center justify-center gap-3">
-                <BowlLoader className="w-8 h-8 text-[#6b21a8]" />
-                <span className="text-neutral-500 text-sm font-medium">Loading prep requirements...</span>
-              </div>
-            )}
-
-            {!loading && !error && data.length === 0 && (
+            ) : !loading && !error && data.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center border border-neutral-100 rounded-3xl p-8 text-center max-w-lg mx-auto m-6">
                 <div className="w-16 h-16 rounded-2xl bg-neutral-50 border border-neutral-100 flex items-center justify-center text-neutral-400 mb-4">
                   <ChefHat className="w-8 h-8" />
@@ -193,9 +176,38 @@ export default function PackagingDashboardPage() {
                 <h3 className="text-lg font-bold text-neutral-800">No prep required</h3>
                 <p className="text-neutral-500 text-sm mt-2 max-w-sm">There are no unfulfilled orders for today.</p>
               </div>
-            )}
+            ) : data.length > 0 ? (
+              <>
+                {/* Top Metrics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  {/* Total Packaging Items */}
+                  <div className="border border-neutral-200 rounded-2xl p-6 bg-[#FCFAFF]">
+                    <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Total Packaging Items</p>
+                    <div className="flex items-end gap-3">
+                      <span className="text-4xl font-extrabold text-neutral-900 leading-none">{totalItems}</span>
+                    </div>
+                  </div>
 
-            {data.length > 0 && (
+                  {/* Completion Status */}
+                  <div className="border border-neutral-200 rounded-2xl p-6 bg-[#FCFAFF]">
+                    <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Completion Status</p>
+                    <div className="flex items-center gap-4">
+                      <span className="text-4xl font-extrabold text-[#5B108E] leading-none">{completionPercentage}%</span>
+                      <div className="flex-1 h-3 bg-neutral-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-600 transition-all duration-500" style={{ width: `${completionPercentage}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pending Packaging */}
+                  <div className="border border-neutral-200 rounded-2xl p-6 bg-[#FCFAFF]">
+                    <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Pending Packaging</p>
+                    <div className="flex items-end gap-2">
+                      <span className="text-4xl font-extrabold text-[#F97316] leading-none">{pendingCount}</span>
+                      <span className="text-sm font-semibold text-neutral-500 mb-1">bowls remaining</span>
+                    </div>
+                  </div>
+                </div>
               <div className="space-y-4">
                 {data.map((group, idx) => {
                   const isExpanded = expandedBowls[group.bowl_name];
@@ -244,11 +256,19 @@ export default function PackagingDashboardPage() {
                                 
                                 return (
                                   <tr key={orderIdx} className={`hover:bg-neutral-50 transition-colors ${isCompleted ? 'bg-neutral-50/50' : ''}`}>
-                                    <td className="px-6 py-4 text-center cursor-pointer" onClick={() => toggleOrderComplete(order.order_item_ulid, isCompleted)}>
-                                      {isCompleted ? (
-                                        <CheckSquare className="w-5 h-5 text-[#5B108E] inline-block" />
+                                    <td className="px-6 py-4 text-center">
+                                      {order.assembly_status === "PENDING" ? (
+                                        <div className="tooltip-container relative group inline-block">
+                                          <Square className="w-5 h-5 text-neutral-200 inline-block cursor-not-allowed" />
+                                        </div>
                                       ) : (
-                                        <Square className="w-5 h-5 text-neutral-300 hover:text-neutral-400 inline-block" />
+                                        <div className="cursor-pointer inline-block" onClick={() => toggleOrderComplete(order.order_item_ulid, isCompleted, order.assembly_status)}>
+                                          {isCompleted ? (
+                                            <CheckSquare className="w-5 h-5 text-[#5B108E] inline-block" />
+                                          ) : (
+                                            <Square className="w-5 h-5 text-neutral-300 hover:text-[#5B108E] inline-block" />
+                                          )}
+                                        </div>
                                       )}
                                     </td>
                                     <td className="px-6 py-4 font-mono text-neutral-500">#{order.order_number || order.order_ulid.slice(-6)}</td>
@@ -287,7 +307,8 @@ export default function PackagingDashboardPage() {
                   )
                 })}
               </div>
-            )}
+              </>
+            ) : null}
           </div>
         </div>
       </div>

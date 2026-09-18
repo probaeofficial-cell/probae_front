@@ -1,5 +1,6 @@
 "use client";
 
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/admin/Header";
 import { User, Search, Filter, Loader2, RefreshCw, Briefcase, Map, ClipboardList, MoreVertical, ChevronLeft, ChevronRight, Phone } from "lucide-react";
@@ -354,7 +355,7 @@ export default function DeliveryDashboard() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {isLoading ? (
-                    <tr><td colSpan={9} className="py-12 text-center text-neutral-500"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></td></tr>
+                    <tr><td colSpan={9} className="py-12 text-center text-neutral-500"><BowlLoader className="w-8 h-8 animate-spin mx-auto text-[#6A0FAD]" /></td></tr>
                   ) : orders.length === 0 ? (
                     <tr><td colSpan={9} className="py-12 text-center text-neutral-500 font-medium">No deliveries found for today.</td></tr>
                   ) : orders.map(order => (

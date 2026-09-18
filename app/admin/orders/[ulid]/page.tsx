@@ -279,9 +279,18 @@ export default function OrderDetailPage() {
         <Breadcrumbs segments={["Admin", "Orders & KDS", `Order #${order.ulid.slice(-6)}`]} />
         
         <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Order Details</h1>
-            <p className="text-neutral-500 font-medium mt-1">Manage fulfilment for #{order.ulid}</p>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => router.back()}
+              className="p-2.5 rounded-full bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm shrink-0"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Order Details</h1>
+              <p className="text-neutral-500 font-medium mt-1">Manage fulfilment for #{order.ulid}</p>
+            </div>
           </div>
           <div className="flex gap-3">
             <button 

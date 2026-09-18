@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { MapPin, Phone, CheckCircle, IndianRupee, Loader2, Package, RefreshCw, Navigation } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { endpoints } from "@/lib/apiService";
@@ -70,7 +71,7 @@ export default function DeliveryPortal() {
   if (authLoading || !user) {
     return (
       <div className="flex h-full items-center justify-center bg-[#F5F6F8]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#6A0FAD]" />
+        <BowlLoader className="w-16 h-16" />
       </div>
     );
   }
@@ -123,7 +124,7 @@ export default function DeliveryPortal() {
             {/* Orders List */}
             {isLoading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
+                <BowlLoader className="w-10 h-10 grayscale" />
               </div>
             ) : orders.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-3xl border border-neutral-100 shadow-sm">
@@ -206,7 +207,7 @@ export default function DeliveryPortal() {
                               disabled={processingUlid === order.ulid}
                               className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center shadow-lg shadow-amber-500/20 disabled:opacity-70"
                             >
-                              {processingUlid === order.ulid ? <Loader2 className="w-5 h-5 animate-spin" /> : "✓ Payment Received"}
+                              {processingUlid === order.ulid ? <BowlLoader className="w-6 h-6 animate-spin" /> : "✓ Payment Received"}
                             </button>
                           </div>
                         ) : (
@@ -225,7 +226,7 @@ export default function DeliveryPortal() {
                               disabled={processingUlid === order.ulid}
                               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center shadow-lg shadow-green-600/20 disabled:opacity-70 mt-2"
                             >
-                              {processingUlid === order.ulid ? <Loader2 className="w-5 h-5 animate-spin" /> : "Mark as Delivered"}
+                              {processingUlid === order.ulid ? <BowlLoader className="w-6 h-6 animate-spin" /> : "Mark as Delivered"}
                             </button>
                           </div>
                         )}

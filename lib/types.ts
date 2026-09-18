@@ -534,3 +534,10 @@ export interface PaginatedMealCategories {
   page_size: number;
   total_pages: number;
 }
+
+export interface ExpenseCategory {
+  ulid: string;
+  name: string;
+  description?: string;
+  is_active?: boolean;
+}

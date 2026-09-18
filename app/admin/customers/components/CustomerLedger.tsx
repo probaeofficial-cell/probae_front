@@ -63,6 +63,7 @@ export function CustomerLedger({ customerUlid, initialBalance }: { customerUlid:
   };
 
   const isNegative = balance < 0;
+  const totalPages = Math.ceil(totalCount / 20) || 1;
 
   return (
     <div className="space-y-6 animate-in fade-in zoom-in duration-300">
@@ -137,6 +138,26 @@ export function CustomerLedger({ customerUlid, initialBalance }: { customerUlid:
             </tbody>
           </table>
         </div>
+        
+        {totalPages > 1 && (
+          <div className="py-4 px-6 border-t border-neutral-100 flex items-center justify-between bg-neutral-50">
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-4 py-2 text-sm font-bold text-neutral-600 bg-white border border-neutral-200 rounded-lg disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm font-bold text-neutral-500">Page {page} of {totalPages}</span>
+            <button 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-4 py-2 text-sm font-bold text-neutral-600 bg-white border border-neutral-200 rounded-lg disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Modal */}

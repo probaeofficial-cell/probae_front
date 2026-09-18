@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -108,7 +109,7 @@ export default function DeliveryZonesPage() {
 
           <div className="flex-1 overflow-y-auto min-h-0 pb-10 pr-2 custom-scrollbar">
             {isLoading ? (
-              <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 text-neutral-400 animate-spin" /></div>
+              <div className="p-8 flex justify-center"><BowlLoader className="w-10 h-10 animate-spin text-[#6A0FAD]" /></div>
             ) : zones.length === 0 ? (
               <div className="text-center p-12 border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
                 <MapPin className="w-12 h-12 text-neutral-300 mx-auto mb-3" />

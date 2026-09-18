@@ -1,5 +1,6 @@
 "use client";
 
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
