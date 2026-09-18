@@ -22,6 +22,7 @@ interface BatchPrepOrder {
   fiber: number;
   assembly_status: string;
   order_status: string;
+  meal_slot?: string;
 }
 
 interface BatchPrepGroup {
@@ -37,7 +38,7 @@ export default function PackagingDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [targetDate, setTargetDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]);
-  
+
   // Accordion state (which bowl is expanded)
   const [expandedBowls, setExpandedBowls] = useState<Record<string, boolean>>({});
 
@@ -248,6 +249,7 @@ export default function PackagingDashboardPage() {
                                 <th className="px-6 py-4">Car</th>
                                 <th className="px-6 py-4">Fat</th>
                                 <th className="px-6 py-4">Fib</th>
+                                <th className="px-6 py-4 text-center">Slot</th>
                                 <th className="px-6 py-4">Goal</th>
                                 <th className="px-6 py-4 text-center">Zone</th>
                               </tr>
@@ -280,6 +282,15 @@ export default function PackagingDashboardPage() {
                                     <td className="px-6 py-4">{Math.round(order.carbs)}g</td>
                                     <td className="px-6 py-4">{Math.round(order.fat)}g</td>
                                     <td className="px-6 py-4">{Math.round(order.fiber)}g</td>
+                                    <td className="px-6 py-4 text-center">
+                                      {order.meal_slot ? (
+                                        <span className="bg-[#F97316]/10 text-[#F97316] px-2.5 py-1 rounded-md text-xs font-bold uppercase whitespace-nowrap">
+                                          {order.meal_slot.replace('-', ' ')}
+                                        </span>
+                                      ) : (
+                                        <span className="text-neutral-300">-</span>
+                                      )}
+                                    </td>
                                     <td className="px-6 py-4">
                                       {order.customer_goal ? (
                                         <span className="bg-purple-50 text-purple-600 px-2.5 py-1 rounded-md text-xs font-semibold">
