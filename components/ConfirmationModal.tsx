@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle, Info, Trash2, X, Loader2 } from "lucide-react";
 
-export type ModalType = "success" | "warning" | "delete" | "info";
+export type ModalType = "success" | "warning" | "delete" | "info" | "error";
 
 export interface ConfirmationModalProps {
   isOpen: boolean;
@@ -32,6 +32,13 @@ const typeConfig = {
   },
   delete: {
     icon: Trash2,
+    color: "text-red-500",
+    bgColor: "bg-red-500/10",
+    buttonBg: "bg-red-500 hover:bg-red-600",
+    buttonText: "text-white",
+  },
+  error: {
+    icon: AlertTriangle,
     color: "text-red-500",
     bgColor: "bg-red-500/10",
     buttonBg: "bg-red-500 hover:bg-red-600",

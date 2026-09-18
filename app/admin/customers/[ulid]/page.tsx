@@ -389,7 +389,9 @@ export default function CustomerDetailPage() {
       await fetchCustomer();
       setIsEditMode(false);
     } catch (err: any) {
-      setErrorMsg(err?.detail || err?.message || "Failed to update customer");
+      const errorDetail = err?.detail;
+      const formattedError = Array.isArray(errorDetail) ? errorDetail.map((e: any) => `${e.loc?.join('.')} ${e.msg}`).join(', ') : (errorDetail || err?.message || "Failed to update customer");
+      setErrorMsg(formattedError);
     } finally {
       setIsSubmitting(false);
     }
@@ -485,11 +487,6 @@ export default function CustomerDetailPage() {
               </div>
             </div>
 
-            {errorMsg && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
-                {errorMsg}
-              </div>
-            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
@@ -1001,6 +998,15 @@ export default function CustomerDetailPage() {
         message={`Are you sure you want to delete ${customer?.name}? This action cannot be undone.`}
         confirmText={isDeleting ? "Deleting..." : "Delete Customer"}
         type="delete"
+      />
+      
+      <ConfirmationModal
+        isOpen={!!errorMsg}
+        onClose={() => setErrorMsg("")}
+        title="Action Failed"
+        message={errorMsg}
+        type="error"
+        cancelText="Close"
       />
     </div>
   );

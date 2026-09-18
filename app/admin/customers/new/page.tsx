@@ -9,6 +9,7 @@ import { ArrowRight, ArrowLeft, Check, Plus, Lock, Unlock, Loader2, Camera, Uplo
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { LocationPicker } from "@/components/admin/LocationPicker";
 
 export default function NewCustomerPage() {
@@ -58,12 +59,12 @@ export default function NewCustomerPage() {
     locationDescription: "",
     image_filename: null as string | null,
     address: "",
-    sex: "",
-    age: "",
-    height: "",
-    weight: "",
-    activityLevel: "",
-    goal: "",
+    sex: "Male",
+    age: "25",
+    height: "180",
+    weight: "75",
+    activityLevel: "Lightly Active",
+    goal: "Muscle Gain",
     dietaryPreferences: [] as string[],
     allergies: [] as string[],
     comments: "",
@@ -229,10 +230,6 @@ export default function NewCustomerPage() {
 
   const calculateCalories = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.age || !formData.height || !formData.weight || !formData.sex || !formData.activityLevel || !formData.goal) {
-      setErrorMsg("Please fill out all biological and dietary profile fields to calculate calories, or click 'Save Customer Now' on Step 1 to skip.");
-      return;
-    }
     setIsSubmitting(true);
     setErrorMsg("");
     try {
@@ -367,7 +364,9 @@ export default function NewCustomerPage() {
       router.push("/admin/customers");
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err?.detail || err?.message || "Failed to save customer");
+      const errorDetail = err?.detail;
+      const formattedError = Array.isArray(errorDetail) ? errorDetail.map((e: any) => `${e.loc?.join('.')} ${e.msg}`).join(', ') : (errorDetail || err?.message || "Failed to save customer");
+      setErrorMsg(formattedError);
     } finally {
       setIsSubmitting(false);
     }
@@ -763,11 +762,6 @@ export default function NewCustomerPage() {
                   </div>
                 )}
 
-                {errorMsg && (
-                  <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
-                    {errorMsg}
-                  </div>
-                )}
                 <div className="flex justify-between items-center pt-8 border-t border-neutral-200 mt-8">
                   
                   <button type="button" onClick={() => handleSaveCustomer(true)} disabled={isSubmitting} className="text-neutral-500 font-bold hover:text-neutral-900 transition-colors">
@@ -783,6 +777,15 @@ export default function NewCustomerPage() {
           </div>
         </div>
       </div>
+      
+      <ConfirmationModal
+        isOpen={!!errorMsg}
+        onClose={() => setErrorMsg("")}
+        title="Action Failed"
+        message={errorMsg}
+        type="error"
+        cancelText="Close"
+      />
     </div>
   );
 }
