@@ -364,25 +364,25 @@ export default function CustomerDetailPage() {
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         location_description: formData.locationDescription || null,
         address: formData.address,
-        sex: formData.sex,
-        age: parseInt(formData.age),
-        height: parseFloat(formData.height),
-        weight: parseFloat(formData.weight),
-        activity_level: formData.activityLevel,
-        goal: formData.goal,
+        sex: formData.sex || null,
+        age: formData.age ? parseInt(formData.age) : null,
+        height: formData.height ? parseFloat(formData.height) : null,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
+        activity_level: formData.activityLevel || null,
+        goal: formData.goal || null,
         dietary_preferences: formData.dietaryPreferences,
         allergies: formData.allergies,
         chef_instructions: formData.comments,
         selected_plan_id: formData.selectedPlanId,
         status: finalStatus,
         image_filename: formData.image_filename,
-        calorie_profile: {
-          ...(customer.calorie_profile || {}),
+        calorie_profile: customer.calorie_profile ? {
+          ...customer.calorie_profile,
           probaeTarget: formData.probaeTarget,
           mealCalories: formData.mealCalories,
           mealSlots: formData.mealSlots,
           lockedMeals: formData.lockedMeals
-        }
+        } : null
       };
       
       await endpoints.customers.update(ulid, payload);

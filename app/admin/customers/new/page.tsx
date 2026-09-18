@@ -58,12 +58,12 @@ export default function NewCustomerPage() {
     locationDescription: "",
     image_filename: null as string | null,
     address: "",
-    sex: "Male",
-    age: "25",
-    height: "180",
-    weight: "75",
-    activityLevel: "Lightly Active",
-    goal: "Muscle Gain",
+    sex: "",
+    age: "",
+    height: "",
+    weight: "",
+    activityLevel: "",
+    goal: "",
     dietaryPreferences: [] as string[],
     allergies: [] as string[],
     comments: "",
@@ -229,7 +229,12 @@ export default function NewCustomerPage() {
 
   const calculateCalories = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.age || !formData.height || !formData.weight || !formData.sex || !formData.activityLevel || !formData.goal) {
+      setErrorMsg("Please fill out all biological and dietary profile fields to calculate calories, or click 'Save Customer Now' on Step 1 to skip.");
+      return;
+    }
     setIsSubmitting(true);
+    setErrorMsg("");
     try {
       const res = await endpoints.customers.calculateCalories({
       
@@ -343,17 +348,17 @@ export default function NewCustomerPage() {
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         location_description: formData.locationDescription || null,
         address: formData.address,
-        sex: formData.sex,
-        age: parseInt(formData.age),
-        height: parseFloat(formData.height),
-        weight: parseFloat(formData.weight),
-        activity_level: formData.activityLevel,
-        goal: formData.goal,
+        sex: formData.sex || null,
+        age: formData.age ? parseInt(formData.age) : null,
+        height: formData.height ? parseFloat(formData.height) : null,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
+        activity_level: formData.activityLevel || null,
+        goal: formData.goal || null,
         image_filename: formData.image_filename,
         dietary_preferences: formData.dietaryPreferences,
         allergies: formData.allergies,
         chef_instructions: formData.comments,
-        calorie_profile: { ...calorieProfile, probaeTarget: formData.probaeTarget, mealCalories: formData.mealCalories, mealSlots: formData.mealSlots, lockedMeals: formData.lockedMeals },
+        calorie_profile: calorieProfile ? { ...calorieProfile, probaeTarget: formData.probaeTarget, mealCalories: formData.mealCalories, mealSlots: formData.mealSlots, lockedMeals: formData.lockedMeals } : null,
         selected_plan_id: skipPlan ? null : formData.selectedPlanId,
         status: skipPlan ? "PENDING_PLAN" : "ACTIVE"
       };
@@ -422,7 +427,7 @@ export default function NewCustomerPage() {
                   </div>
                   <div className="col-span-1 md:col-span-2">
                     <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Address</label>
-                    <textarea required value={formData.address} onChange={(e) => updateField("address", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" rows={3} />
+                    <textarea value={formData.address} onChange={(e) => updateField("address", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" rows={3} />
                   </div>
                   <div className="md:col-span-2">
                     <LocationPicker 
@@ -456,15 +461,15 @@ export default function NewCustomerPage() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Age</label>
-                      <input type="number" required value={formData.age} onChange={(e) => updateField("age", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
+                      <input type="number" value={formData.age} onChange={(e) => updateField("age", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Height (cm)</label>
-                      <input type="number" required value={formData.height} onChange={(e) => updateField("height", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
+                      <input type="number" value={formData.height} onChange={(e) => updateField("height", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Weight (kg)</label>
-                      <input type="number" required value={formData.weight} onChange={(e) => updateField("weight", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
+                      <input type="number" value={formData.weight} onChange={(e) => updateField("weight", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
                     </div>
                   </div>
 
@@ -478,7 +483,10 @@ export default function NewCustomerPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-6">
+                <div className="flex justify-between items-center pt-6">
+                  <button type="button" onClick={() => handleSaveCustomer(true)} disabled={isSubmitting || !formData.name || !formData.phone} className="text-neutral-500 font-bold hover:text-neutral-900 transition-colors disabled:opacity-50">
+                    Save Customer Now
+                  </button>
                   <ProbaeButton  type="submit" className="!w-auto flex items-center gap-2">
                     Continue <ArrowRight className="w-4 h-4" />
                   </ProbaeButton>
