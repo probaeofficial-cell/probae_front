@@ -129,6 +129,7 @@ export default function ExpenseLogsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

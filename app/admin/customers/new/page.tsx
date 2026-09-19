@@ -540,7 +540,10 @@ export default function NewCustomerPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-6">
+                <div className="flex justify-between items-center pt-6">
+                  <button type="button" onClick={() => handleSaveCustomer(true)} disabled={isSubmitting || !formData.name || !formData.phone} className="text-neutral-500 font-bold hover:text-neutral-900 transition-colors disabled:opacity-50">
+                    Save Customer Now
+                  </button>
                   <ProbaeButton  type="submit" disabled={isSubmitting} className="!w-auto flex items-center gap-2">
                     {isSubmitting ? <BowlLoader className="w-4 h-4 animate-spin" /> : <>Calculate Profile <ArrowRight className="w-4 h-4" /></>}
                   </ProbaeButton>
