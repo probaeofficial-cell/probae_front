@@ -25,6 +25,9 @@ export default function DeliveryDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [mealSlotFilter, setMealSlotFilter] = useState("ALL");
+  const [mealSlots, setMealSlots] = useState<any[]>([]);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const [assignDriverUlid, setAssignDriverUlid] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
@@ -48,8 +51,44 @@ export default function DeliveryDashboard() {
   }, [isAgentDropdownOpen]);
 
   useEffect(() => {
-    fetchData(selectedDate);
-  }, [selectedDate]);
+    const init = async () => {
+      try {
+        const catData = await endpoints.mealCategories.getMealCategories(1, 100) as any;
+        const categories = catData.items || catData.categories || [];
+        setMealSlots(categories);
+
+        const now = new Date();
+        let foundSlot = "ALL";
+        for (const cat of categories) {
+          if (cat.time_from && cat.time_to) {
+            const [fH, fM] = cat.time_from.split(':').map(Number);
+            const [tH, tM] = cat.time_to.split(':').map(Number);
+            const from = new Date(now);
+            from.setHours(fH, fM, 0, 0);
+            const to = new Date(now);
+            to.setHours(tH, tM, 0, 0);
+            if (to < from) to.setDate(to.getDate() + 1);
+            if (now >= from && now <= to) {
+              foundSlot = cat.slug;
+              break;
+            }
+          }
+        }
+        setMealSlotFilter(foundSlot);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setHasInitialized(true);
+      }
+    };
+    init();
+  }, []);
+
+  useEffect(() => {
+    if (hasInitialized) {
+      fetchData(selectedDate);
+    }
+  }, [selectedDate, hasInitialized]);
 
   const fetchData = async (date: string) => {
     setIsLoading(true);
@@ -100,9 +139,19 @@ export default function DeliveryDashboard() {
     }
   };
 
-  const totalOrders = orders.length;
-  const completedOrders = orders.filter(o => o.status === "DELIVERED").length;
-  const pendingOrders = orders.filter(o => o.status === "PENDING" || o.status === "DISPATCHED").length;
+  const filteredOrders = orders.filter(order => {
+    if (mealSlotFilter === "ALL") return true;
+    const activeSlotObj = mealSlots.find(s => s.slug === mealSlotFilter);
+    const slotName = activeSlotObj ? activeSlotObj.name : mealSlotFilter;
+    return (order.items || []).some((item: any) => {
+      const itemSlot = (item.meal_slot || "").toLowerCase();
+      return itemSlot === mealSlotFilter.toLowerCase() || itemSlot === (slotName || "").toLowerCase();
+    });
+  });
+
+  const totalOrders = filteredOrders.length;
+  const completedOrders = filteredOrders.filter(o => o.status === "DELIVERED").length;
+  const pendingOrders = filteredOrders.filter(o => o.status === "PENDING" || o.status === "DISPATCHED").length;
   const completionPercentage = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
   const isToday = selectedDate === todayStr;
 
@@ -138,6 +187,34 @@ export default function DeliveryDashboard() {
                   <RefreshCw className="w-4 h-4" />
                 </button>
               </div>
+            </div>
+
+            {/* Meal Slot Pills */}
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-thin">
+              <button
+                onClick={() => setMealSlotFilter("ALL")}
+                className={`px-5 h-[48px] rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
+                  mealSlotFilter === "ALL" ? "bg-[#6A0FAD] text-white" : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50"
+                }`}
+              >
+                All Slots
+              </button>
+              {mealSlots.map(slot => (
+                <button
+                  key={slot.id}
+                  onClick={() => setMealSlotFilter(slot.slug)}
+                  className={`px-5 h-[48px] rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
+                    mealSlotFilter === slot.slug ? "bg-[#6A0FAD] text-white" : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50"
+                  }`}
+                >
+                  {slot.name}
+                  {slot.time_from && slot.time_to && (
+                    <span className="ml-2 text-xs opacity-70">
+                      ({slot.time_from.slice(0,5)} - {slot.time_to.slice(0,5)})
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
 
             {/* KPI Cards */}
@@ -205,10 +282,10 @@ export default function DeliveryDashboard() {
                 <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Completed ({completedOrders})
               </button>
               <button className="shrink-0 inline-flex items-center px-4 py-2 bg-[#eaddf7] text-[#6A0FAD] font-bold text-xs rounded-full border border-[#d6bff0]">
-                <span className="w-2 h-2 rounded-full bg-[#6A0FAD] mr-2"></span> Out for Delivery ({orders.filter(o => o.status === "DISPATCHED").length})
+                <span className="w-2 h-2 rounded-full bg-[#6A0FAD] mr-2"></span> Out for Delivery ({filteredOrders.filter(o => o.status === "DISPATCHED").length})
               </button>
               <button className="shrink-0 inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-700 font-bold text-xs rounded-full border border-yellow-200">
-                <span className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></span> Pending ({orders.filter(o => o.status === "PENDING").length})
+                <span className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></span> Pending ({filteredOrders.filter(o => o.status === "PENDING").length})
               </button>
             </div>
 
@@ -329,17 +406,17 @@ export default function DeliveryDashboard() {
                     <th className="py-4 px-4 w-12 text-center border-r border-white/10">
                       <input 
                         type="checkbox" 
-                        disabled={orders.filter(o => o.status !== "DELIVERED").length === 0}
+                        disabled={filteredOrders.filter(o => o.status !== "DELIVERED").length === 0}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelectedIds(orders.filter(o => o.status !== "DELIVERED").map(o => o.ulid));
+                            setSelectedIds(filteredOrders.filter(o => o.status !== "DELIVERED").map(o => o.ulid));
                           } else {
                             setSelectedIds([]);
                           }
                         }} 
                         checked={
-                          orders.filter(o => o.status !== "DELIVERED").length > 0 && 
-                          selectedIds.length === orders.filter(o => o.status !== "DELIVERED").length
+                          filteredOrders.filter(o => o.status !== "DELIVERED").length > 0 && 
+                          selectedIds.length === filteredOrders.filter(o => o.status !== "DELIVERED").length
                         } 
                       />
                     </th>
@@ -356,9 +433,9 @@ export default function DeliveryDashboard() {
                 <tbody className="divide-y divide-neutral-100">
                   {isLoading ? (
                     <tr><td colSpan={9} className="py-12 text-center text-neutral-500"><BowlLoader className="w-8 h-8 animate-spin mx-auto text-[#6A0FAD]" /></td></tr>
-                  ) : orders.length === 0 ? (
-                    <tr><td colSpan={9} className="py-12 text-center text-neutral-500 font-medium">No deliveries found for today.</td></tr>
-                  ) : orders.map(order => (
+                  ) : filteredOrders.length === 0 ? (
+                    <tr><td colSpan={9} className="py-12 text-center text-neutral-500 font-medium">No deliveries found for this slot.</td></tr>
+                  ) : filteredOrders.map(order => (
                     <tr key={order.ulid} className={`hover:bg-neutral-50/50 ${order.status === "DELIVERED" ? "opacity-70" : ""}`}>
                       <td className="py-4 px-4 text-center border-r border-neutral-100">
                         <input 

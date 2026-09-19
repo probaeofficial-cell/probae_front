@@ -18,8 +18,43 @@ export default function DeliveryToday() {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [mealSlotFilter, setMealSlotFilter] = useState("ALL");
-  const [mealSlots, setMealSlots] = useState<string[]>([]);
+  const [mealSlots, setMealSlots] = useState<any[]>([]);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const catData = await endpoints.mealCategories.getMealCategories(1, 100) as any;
+        const categories = catData.items || catData.categories || [];
+        setMealSlots(categories);
+
+        const now = new Date();
+        let foundSlot = "ALL";
+        for (const cat of categories) {
+          if (cat.time_from && cat.time_to) {
+            const [fH, fM] = cat.time_from.split(':').map(Number);
+            const [tH, tM] = cat.time_to.split(':').map(Number);
+            const from = new Date(now);
+            from.setHours(fH, fM, 0, 0);
+            const to = new Date(now);
+            to.setHours(tH, tM, 0, 0);
+            if (to < from) to.setDate(to.getDate() + 1);
+            if (now >= from && now <= to) {
+              foundSlot = cat.slug;
+              break;
+            }
+          }
+        }
+        setMealSlotFilter(foundSlot);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setHasInitialized(true);
+      }
+    };
+    init();
+  }, []);
 
   const fetchDeliveries = async () => {
     setIsLoading(true);
@@ -27,17 +62,7 @@ export default function DeliveryToday() {
     try {
       const data = await endpoints.orders.list({ target_date: targetDate, status: "DISPATCHED", limit: 100 }) as any;
       if (data.success) {
-        const fetchedOrders = data.orders || [];
-        setOrders(fetchedOrders);
-        
-        // Extract unique meal slots for the filter dropdown
-        const slots = new Set<string>();
-        fetchedOrders.forEach((o: any) => {
-          (o.items || []).forEach((item: any) => {
-            if (item.meal_slot) slots.add(item.meal_slot);
-          });
-        });
-        setMealSlots(Array.from(slots));
+        setOrders(data.orders || []);
       } else {
         setErrorMsg("Failed to load deliveries");
       }
@@ -49,8 +74,10 @@ export default function DeliveryToday() {
   };
 
   useEffect(() => {
-    fetchDeliveries();
-  }, [targetDate]);
+    if (hasInitialized) {
+      fetchDeliveries();
+    }
+  }, [targetDate, hasInitialized]);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -101,7 +128,14 @@ export default function DeliveryToday() {
 
     let slotMatch = true;
     if (mealSlotFilter !== "ALL") {
-      slotMatch = (order.items || []).some((item: any) => item.meal_slot === mealSlotFilter);
+      // Find the name of the active slug
+      const activeSlotObj = mealSlots.find(s => s.slug === mealSlotFilter);
+      const slotName = activeSlotObj ? activeSlotObj.name : mealSlotFilter;
+      // Some orders store slug, some store name, we match case-insensitively just in case
+      slotMatch = (order.items || []).some((item: any) => {
+        const itemSlot = (item.meal_slot || "").toLowerCase();
+        return itemSlot === mealSlotFilter.toLowerCase() || itemSlot === (slotName || "").toLowerCase();
+      });
     }
 
     return searchMatch && slotMatch;
@@ -132,31 +166,44 @@ export default function DeliveryToday() {
               </div>
             </div>
 
-            {/* Filters Bar */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-8 bg-neutral-50 p-4 rounded-2xl border border-neutral-200">
-              <div className="flex-1 relative">
-                <Search className="w-5 h-5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search by name, address, or Order ID..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none text-sm text-neutral-900"
-                />
-              </div>
-              <div className="relative shrink-0">
-                <Filter className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <select
-                  value={mealSlotFilter}
-                  onChange={e => setMealSlotFilter(e.target.value)}
-                  className="w-full sm:w-48 pl-9 pr-8 py-2.5 rounded-xl border border-neutral-200 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none text-sm appearance-none bg-white font-medium text-neutral-900"
+            {/* Search */}
+            <div className="mb-6 relative">
+              <Search className="w-5 h-5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by name, address, or Order ID..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 h-[48px] rounded-xl border border-neutral-200 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none text-sm font-medium text-neutral-900"
+              />
+            </div>
+
+            {/* Meal Slot Pills */}
+            <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-thin">
+              <button
+                onClick={() => setMealSlotFilter("ALL")}
+                className={`px-5 h-[48px] rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
+                  mealSlotFilter === "ALL" ? "bg-[#6A0FAD] text-white" : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50"
+                }`}
+              >
+                All Slots
+              </button>
+              {mealSlots.map(slot => (
+                <button
+                  key={slot.id}
+                  onClick={() => setMealSlotFilter(slot.slug)}
+                  className={`px-5 h-[48px] rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
+                    mealSlotFilter === slot.slug ? "bg-[#6A0FAD] text-white" : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50"
+                  }`}
                 >
-                  <option value="ALL">All Meal Slots</option>
-                  {mealSlots.map(slot => (
-                    <option key={slot} value={slot}>{slot}</option>
-                  ))}
-                </select>
-              </div>
+                  {slot.name}
+                  {slot.time_from && slot.time_to && (
+                    <span className="ml-2 text-xs opacity-70">
+                      ({slot.time_from.slice(0,5)} - {slot.time_to.slice(0,5)})
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
 
             {errorMsg && (
