@@ -72,7 +72,7 @@ export default function ExpenseLogsPage() {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
-      <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-y-auto">
+      <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden">
       <Header />
       <div className="mt-4 flex-1 flex flex-col min-h-0">
         <Breadcrumbs segments={["Expenses", "Logs"]} />
@@ -99,7 +99,8 @@ export default function ExpenseLogsPage() {
         {isLoading ? (
           <div className="py-12 flex justify-center"><BowlLoader className="w-10 h-10 animate-spin text-[#6A0FAD]" /></div>
         ) : (
-          <div className="bg-white rounded-3xl shadow-sm border border-neutral-200 overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="overflow-auto flex-1 scrollbar-thin">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-neutral-100 bg-neutral-50/50">

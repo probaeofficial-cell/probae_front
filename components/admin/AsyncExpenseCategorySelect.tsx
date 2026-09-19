@@ -131,7 +131,7 @@ export default function AsyncExpenseCategorySelect({ value, onChange, selectedCa
               />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-1 scrollbar-thin">
             {options.map((opt) => (
               <div 
                 key={opt.ulid}
