@@ -15,6 +15,7 @@ export default function ExpenseCategoriesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [deleteUlid, setDeleteUlid] = useState<string | null>(null);
+  const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function ExpenseCategoriesPage() {
       await endpoints.expenses.deleteCategory(deleteUlid);
       fetchCategories();
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to delete category");
+      setErrorModalMsg(err.detail || err.message || "Failed to delete category");
     } finally {
       setDeleteUlid(null);
     }
@@ -136,7 +137,10 @@ export default function ExpenseCategoriesPage() {
                       {c.is_active ? <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-black bg-green-50 text-green-700"><CheckCircle className="w-3.5 h-3.5" /> Active</span> : <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-black bg-neutral-100 text-neutral-600"><XCircle className="w-3.5 h-3.5" /> Inactive</span>}
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <button onClick={() => handleOpenModal(c)} className="p-2 text-neutral-400 hover:text-[#6A0FAD] hover:bg-[#6A0FAD]/10 rounded-xl transition-colors"><Edit className="w-4 h-4" /></button><button onClick={() => setDeleteUlid(c.ulid)} className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors ml-2"><Trash2 className="w-4 h-4" /></button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => handleOpenModal(c)} className="p-2 text-neutral-400 hover:text-[#6A0FAD] hover:bg-[#6A0FAD]/10 rounded-xl transition-colors"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => setDeleteUlid(c.ulid)} className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -205,6 +209,14 @@ export default function ExpenseCategoriesPage() {
       )}
       </div>
       
+      <ConfirmationModal
+        isOpen={!!errorModalMsg}
+        title="Error"
+        message={errorModalMsg || ""}
+        cancelText="Close"
+        onClose={() => setErrorModalMsg(null)}
+        type="error"
+      />
       <ConfirmationModal
         isOpen={!!deleteUlid}
         title="Delete Category"

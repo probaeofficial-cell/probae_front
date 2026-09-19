@@ -17,6 +17,7 @@ export default function TransactionLogsPage() {
   const [transactionType, setTransactionType] = useState("");
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [deleteUlid, setDeleteUlid] = useState<string | null>(null);
+  const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
 
   const handleDelete = async () => {
     if (!deleteUlid) return;
@@ -24,7 +25,7 @@ export default function TransactionLogsPage() {
       await endpoints.globalTransactions.delete(deleteUlid);
       fetchLogs();
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to delete transaction");
+      setErrorModalMsg(err.detail || err.message || "Failed to delete transaction");
     } finally {
       setDeleteUlid(null);
     }
@@ -157,6 +158,14 @@ export default function TransactionLogsPage() {
       </div>
       </div>
       
+      <ConfirmationModal
+        isOpen={!!errorModalMsg}
+        title="Error"
+        message={errorModalMsg || ""}
+        cancelText="Close"
+        onClose={() => setErrorModalMsg(null)}
+        type="error"
+      />
       <ConfirmationModal
         isOpen={!!deleteUlid}
         title="Delete Transaction"
