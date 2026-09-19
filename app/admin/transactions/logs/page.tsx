@@ -134,7 +134,7 @@ export default function TransactionLogsPage() {
             </div>
             
             {/* Pagination */}
-            {totalPages > 1 && (
+            {true && (
               <div className="py-4 px-6 border-t border-neutral-100 flex items-center justify-between shrink-0">
                 <button 
                   onClick={() => setPage(p => Math.max(1, p - 1))}

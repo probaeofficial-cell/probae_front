@@ -18,6 +18,8 @@ export default function ExpenseLogsPage() {
   const [totalAmount, setTotalAmount] = useState(0);
   
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterCategoryUlid, setFilterCategoryUlid] = useState("");
   
@@ -37,12 +39,15 @@ export default function ExpenseLogsPage() {
     setIsLoading(true);
     try {
       const expRes = await endpoints.expenses.list({ 
+        page,
+        limit: 20,
         month,
         category_ulid: filterCategoryUlid || undefined,
         search: debouncedSearch || undefined
       }) as any;
       setExpenses(expRes.expenses || expRes.items || []);
       setTotalAmount(expRes.totalAmount || 0);
+      setTotalPages(Math.ceil((expRes.totalCount || expRes.total_count || expRes.expenses?.length || 0) / 20) || 1);
     } catch (err) {
       console.error(err);
     } finally {
@@ -169,6 +174,26 @@ export default function ExpenseLogsPage() {
               </tbody>
             </table>
             </div>
+          
+          {true && (
+            <div className="py-4 px-6 border-t border-neutral-100 flex items-center justify-between shrink-0 bg-white rounded-b-2xl">
+              <button 
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 text-sm font-bold text-neutral-600 bg-neutral-100 rounded-lg disabled:opacity-50 hover:bg-neutral-200 transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-sm font-bold text-neutral-500">Page {page} of {totalPages}</span>
+              <button 
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-4 py-2 text-sm font-bold text-neutral-600 bg-neutral-100 rounded-lg disabled:opacity-50 hover:bg-neutral-200 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          )}
           </div>
         )}
       </div>
