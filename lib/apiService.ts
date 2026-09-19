@@ -277,11 +277,13 @@ export const endpoints = {
     },
     createCategory: (payload: any) => api.post('/expenses/categories', payload),
     updateCategory: (ulid: string, payload: any) => api.put(`/expenses/categories/${ulid}`, payload),
-    list: (params: { page?: number, limit?: number, month?: string }) => {
+    list: (params: { page?: number, limit?: number, month?: string, category_ulid?: string, search?: string }) => {
       const q = new URLSearchParams();
       if (params.page) q.append('page', params.page.toString());
       if (params.limit) q.append('limit', params.limit.toString());
       if (params.month) q.append('month', params.month);
+      if (params.category_ulid) q.append('category_ulid', params.category_ulid);
+      if (params.search) q.append('search', params.search);
       return api.get(`/expenses?${q.toString()}`);
     },
     create: (payload: any) => api.post('/expenses', payload),

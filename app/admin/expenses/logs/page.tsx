@@ -2,7 +2,7 @@
 
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Calendar, FileText } from "lucide-react";
+import { Plus, Trash2, Calendar, FileText, Search } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -17,6 +17,10 @@ export default function ExpenseLogsPage() {
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [totalAmount, setTotalAmount] = useState(0);
   
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterCategoryUlid, setFilterCategoryUlid] = useState("");
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ category_ulid: "", amount: "", expense_date: new Date().toISOString().slice(0, 10), notes: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,12 +28,21 @@ export default function ExpenseLogsPage() {
   
   const [deleteUlid, setDeleteUlid] = useState<string | null>(null);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const expRes = await endpoints.expenses.list({ month }) as any;
-      setExpenses(expRes.expenses);
-      setTotalAmount(expRes.totalAmount);
+      const expRes = await endpoints.expenses.list({ 
+        month,
+        category_ulid: filterCategoryUlid || undefined,
+        search: debouncedSearch || undefined
+      }) as any;
+      setExpenses(expRes.expenses || expRes.items || []);
+      setTotalAmount(expRes.totalAmount || 0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -39,7 +52,7 @@ export default function ExpenseLogsPage() {
 
   useEffect(() => {
     fetchData();
-  }, [month]);
+  }, [month, filterCategoryUlid, debouncedSearch]);
 
   const handleSave = async () => {
     if (!formData.category_ulid || !formData.amount || !formData.expense_date) return setErrorMsg("Category, Amount, and Date are required");
@@ -83,14 +96,40 @@ export default function ExpenseLogsPage() {
             <p className="text-neutral-500 mt-1">Total for {month}: <span className="font-bold text-red-600">₹{totalAmount.toFixed(2)}</span></p>
           </div>
           
-          <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+            <div className="relative w-full sm:w-48">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search notes..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-[48px] pl-9 pr-4 bg-white border border-neutral-200 rounded-xl outline-none text-sm font-medium text-neutral-800 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD]"
+              />
+            </div>
+            <div className="w-full sm:w-48 relative">
+              <AsyncExpenseCategorySelect 
+                value={filterCategoryUlid} 
+                onChange={(val) => setFilterCategoryUlid(val)} 
+                selectedCategory={null}
+              />
+              {filterCategoryUlid && (
+                <button 
+                  onClick={() => setFilterCategoryUlid("")} 
+                  className="absolute right-8 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-red-500 z-10 p-1"
+                  title="Clear filter"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
             <input 
               type="month" 
-              value={month} 
+              value={month}
               onChange={e => setMonth(e.target.value)}
-              className="bg-white border border-neutral-200 rounded-xl px-4 py-2 text-sm font-bold text-neutral-700 outline-none focus:ring-2 focus:ring-[#6A0FAD]/20"
+              className="bg-white border border-neutral-200 rounded-xl px-4 py-2 h-[48px] text-sm font-bold text-neutral-700 outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 w-full sm:w-auto"
             />
-            <ProbaeButton onClick={() => setIsModalOpen(true)} className="!w-auto flex items-center gap-2">
+            <ProbaeButton onClick={() => setIsModalOpen(true)} className="!w-auto flex items-center justify-center gap-2 h-[48px]">
               <Plus className="w-5 h-5" /> Add Expense
             </ProbaeButton>
           </div>

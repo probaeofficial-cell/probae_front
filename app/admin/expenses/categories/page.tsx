@@ -2,7 +2,7 @@
 
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Plus, Edit, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Edit, CheckCircle, XCircle, Search } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -13,6 +13,13 @@ export default function ExpenseCategoriesPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
@@ -24,7 +31,7 @@ export default function ExpenseCategoriesPage() {
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      const data = await endpoints.expenses.listCategories(false, page, 10) as any;
+      const data = await endpoints.expenses.listCategories(false, page, 10, debouncedSearch) as any;
       setCategories(data.categories || []);
       setTotalPages(Math.ceil((data.total_count || 0) / 10) || 1);
     } catch (err) {
@@ -36,7 +43,7 @@ export default function ExpenseCategoriesPage() {
 
   useEffect(() => {
     fetchCategories();
-  }, [page]);
+  }, [page, debouncedSearch]);
 
   const handleOpenModal = (cat: any = null) => {
     if (cat) {
@@ -74,11 +81,23 @@ export default function ExpenseCategoriesPage() {
       <Header />
       <div className="mt-4 flex-1 flex flex-col min-h-0">
         <Breadcrumbs segments={["Expenses", "Categories"]} />
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Expense Categories</h1>
-          <ProbaeButton onClick={() => handleOpenModal()} className="!w-auto flex items-center gap-2">
-            <Plus className="w-5 h-5" /> Add Category
-          </ProbaeButton>
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search categories..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-[48px] pl-9 pr-4 bg-white border border-neutral-200 rounded-xl outline-none text-sm font-medium text-neutral-800 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD]"
+              />
+            </div>
+            <ProbaeButton onClick={() => handleOpenModal()} className="!w-auto flex items-center justify-center gap-2 h-[48px]">
+              <Plus className="w-5 h-5" /> Add Category
+            </ProbaeButton>
+          </div>
         </div>
         
         {isLoading ? (
