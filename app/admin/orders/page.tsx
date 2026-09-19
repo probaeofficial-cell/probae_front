@@ -51,7 +51,7 @@ export default function OrdersPage() {
       const order = orders.find(o => o.ulid === ulid);
       if (order) {
         const hasUnassembled = order.items?.some((item: any) => 
-          item.assembly_status !== "COMPLETED" && item.assembly_status !== "ASSEMBLED"
+          item.assembly_status !== "COMPLETED" && item.assembly_status !== "ASSEMBLED" && item.assembly_status !== "PACKAGED"
         );
         if (hasUnassembled) {
           setValidationError("Cannot dispatch: One or more bowls are still unassembled.");

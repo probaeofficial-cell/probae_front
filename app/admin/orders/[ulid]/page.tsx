@@ -98,7 +98,7 @@ export default function OrderDetailPage() {
     let hasUnprepared = false;
     if (newStatus === "DISPATCHED") {
       const hasUnassembled = order?.items?.some((item: any) => 
-        item.assembly_status !== "COMPLETED" && item.assembly_status !== "ASSEMBLED"
+        item.assembly_status !== "COMPLETED" && item.assembly_status !== "ASSEMBLED" && item.assembly_status !== "PACKAGED"
       );
       if (hasUnassembled) {
         setErrorMsg("Cannot dispatch: One or more bowls are still unassembled.");
