@@ -295,8 +295,9 @@ export default function NewCustomerPage() {
         const days = parseInt(formData.planFrequency.split(" ")[0]);
         const matched = listRes.tiers.filter((t: any) => 
           t.duration.toUpperCase() === formData.planDuration && 
-          t.days === days &&
-          t.mealType === getExpectedMealType(formData.mealSlots)
+          t.days === days
+          // Temporarily ignoring category or mealType matching as requested by user
+          // && t.category === formData.goal
         );
         setPlans(matched);
       }
@@ -684,13 +685,16 @@ export default function NewCustomerPage() {
                     </div>
                   ) : (
                     plans.map(p => (
-                      <div key={p.ulid} onClick={() => handlePlanSelect(p.ulid)} className={`cursor-pointer p-6 rounded-2xl border-2 transition-all ${formData.selectedPlanId === p.ulid ? "border-[#6A0FAD] bg-[#6A0FAD]/5" : "border-neutral-200 bg-white"}`}>
+                      <div key={p._id} onClick={() => handlePlanSelect(p._id)} className={`cursor-pointer p-6 rounded-2xl border-2 transition-all ${formData.selectedPlanId === p._id ? "border-[#6A0FAD] bg-[#6A0FAD]/5" : "border-neutral-200 bg-white"}`}>
                         <div className="flex justify-between items-start mb-4">
                           <h3 className="text-xl font-bold text-neutral-900">{p.name}</h3>
-                          {formData.selectedPlanId === p.ulid && <Check className="text-[#6A0FAD] w-5 h-5" />}
+                          {formData.selectedPlanId === p._id && <Check className="text-[#6A0FAD] w-5 h-5" />}
                         </div>
                         <p className="text-sm text-neutral-600 mb-4">{p.category} • {p.duration} • {p.days} Days</p>
-                        <p className="text-2xl font-bold text-neutral-900">₹{p.discountPrice || p.totalPrice}</p>
+                        <p className="text-xs text-[#6A0FAD] font-bold mb-2">Meals: {p.included_meal_slots.join(', ')}</p>
+                        <p className="text-2xl font-bold text-neutral-900">
+                          {p.plan_type === 'CUSTOM' ? 'Dynamic' : 'Standard'}
+                        </p>
                       </div>
                     ))
                   )}

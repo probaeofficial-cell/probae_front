@@ -86,7 +86,7 @@ export default function CustomerDetailPage() {
     const fetchPreview = async (planUlid: string, goal: string, mealCalories: any) => {
     setIsPreviewLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1"}/plans/preview-customization`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1"}/customers/preview-plan-price`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -334,8 +334,7 @@ export default function CustomerDetailPage() {
       const days = parseInt(formData.planFrequency.split(" ")[0]);
       const matched = allPlans.filter(t => 
         t.duration.toUpperCase() === formData.planDuration && 
-        t.days === days &&
-        t.mealType === getExpectedMealType(formData.mealSlots)
+        t.days === days
       );
       setPlans(matched);
       setIsLoadingPlans(false);
@@ -344,7 +343,7 @@ export default function CustomerDetailPage() {
 
   const handleSave = async () => {
     const sum = Object.values(formData.mealCalories).reduce((a,b)=>a+b, 0);
-    if (formData.probaeTarget > 0 && sum !== formData.probaeTarget) {
+    if (formData.mealSlots.length > 0 && formData.probaeTarget > 0 && sum !== formData.probaeTarget) {
       setErrorMsg(`Meal allocation (${sum} kcal) must exactly match the target (${formData.probaeTarget} kcal).`);
       return;
     }
@@ -725,19 +724,22 @@ export default function CustomerDetailPage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {plans.map(p => (
                               <div 
-                                key={p.ulid} 
-                                onClick={() => { updateField("selectedPlanId", p.ulid); fetchPreview(p.ulid, formData.goal, formData.mealCalories); }}
-                                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.selectedPlanId === p.ulid ? "border-[#6A0FAD] bg-[#6A0FAD]/5" : "border-neutral-200 hover:border-[#6A0FAD]/30"}`}
+                                key={p._id} 
+                                onClick={() => { updateField("selectedPlanId", p._id); fetchPreview(p._id, formData.goal, formData.mealCalories); }}
+                                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.selectedPlanId === p._id ? "border-[#6A0FAD] bg-[#6A0FAD]/5" : "border-neutral-200 hover:border-[#6A0FAD]/30"}`}
                               >
                                 <div className="flex justify-between items-start mb-2">
-                                  <h4 className="font-bold text-neutral-900">{p.tier_name}</h4>
-                                  {formData.selectedPlanId === p.ulid && <Check className="w-5 h-5 text-[#6A0FAD]" />}
+                                  <h4 className="font-bold text-neutral-900">{p.name}</h4>
+                                  {formData.selectedPlanId === p._id && <Check className="w-5 h-5 text-[#6A0FAD]" />}
                                 </div>
-                                <div className="text-2xl font-black text-neutral-900 mb-1">
-                                  KWD {p.base_price?.toFixed(2)}
+                                <div className="text-sm font-black text-neutral-900 mb-1">
+                                  {p.plan_type === 'CUSTOM' ? 'Dynamic Custom Plan' : 'Standard 500kcal'}
                                 </div>
-                                <div className="text-xs text-neutral-500 font-bold uppercase">
+                                <div className="text-xs text-neutral-500 font-bold uppercase mb-2">
                                   {p.duration} • {p.days} Days
+                                </div>
+                                <div className="text-xs text-[#6A0FAD] font-bold">
+                                  Meals: {p.included_meal_slots?.join(', ')}
                                 </div>
                               </div>
                             ))}
@@ -748,19 +750,19 @@ export default function CustomerDetailPage() {
                   ) : (
                     <div>
                       {(() => {
-                        const currentPlan = allPlans.find(p => p.ulid === customer.selected_plan_id);
+                        const currentPlan = allPlans.find(p => p._id === customer.selected_plan_id);
                         if (!currentPlan) return <div className="text-sm text-neutral-500 italic">No plan assigned</div>;
                         return (
                           <div className="p-4 rounded-2xl border border-[#6A0FAD]/20 bg-[#6A0FAD]/5 flex justify-between items-center">
                             <div>
-                              <h4 className="font-bold text-lg text-[#6A0FAD] mb-1">{currentPlan.tier_name}</h4>
+                              <h4 className="font-bold text-lg text-[#6A0FAD] mb-1">{currentPlan.name}</h4>
                               <div className="text-xs text-neutral-600 font-bold uppercase">
                                 {currentPlan.duration} • {currentPlan.days} Days
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-sm font-bold text-neutral-500 uppercase">Base Price</div>
-                              <div className="text-xl font-black text-neutral-900">KWD {currentPlan.base_price?.toFixed(2)}</div>
+                              <div className="text-xs font-bold text-neutral-500 uppercase mb-1">Included Meals</div>
+                              <div className="text-sm font-black text-neutral-900">{currentPlan.included_meal_slots?.join(', ')}</div>
                             </div>
                           </div>
                         );

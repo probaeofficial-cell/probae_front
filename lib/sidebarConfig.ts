@@ -68,7 +68,15 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       bundles: { label: "Packaging Sets", dotColor: "bg-teal-500", path: "/admin/packaging/bundles" },
     },
   },
-  planTiers: { label: "Plan Tiers", icon: Calendar, path: "/admin/plans", roles: ["ADMIN"] },
+  plans: {
+    label: "Plans",
+    icon: Calendar,
+    roles: ["ADMIN"],
+    subItems: {
+      rotations: { label: "Menu Rotations", dotColor: "bg-blue-500", path: "/admin/plans/menu-blueprint" },
+      tiers: { label: "Plan Tiers", dotColor: "bg-purple-500", path: "/admin/plans/builder" },
+    },
+  },
   orders: {
     label: "Orders & KDS",
     icon: Package,

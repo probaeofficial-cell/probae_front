@@ -722,12 +722,16 @@ export const endpoints = {
       if (params?.page) p.append("page", params.page.toString());
       if (params?.limit) p.append("limit", params.limit.toString());
       if (params?.search) p.append("search", params.search);
-      return await api.get(`/plans?${p.toString()}`);
+      return await api.get(`/plans/tiers?${p.toString()}`);
     },
-    get: async (ulid: string) => await api.get(`/plans/${ulid}`),
-    create: async (data: any) => await api.post("/plans/", data),
-    update: async (ulid: string, data: any) => await api.patch(`/plans/${ulid}`, data),
-    delete: async (ulid: string) => await api.del(`/plans/${ulid}`),
+    get: async (ulid: string) => await api.get(`/plans/tiers/${ulid}`),
+    create: async (data: any) => await api.post("/plans/tiers", data),
+    update: async (ulid: string, data: any) => await api.patch(`/plans/tiers/${ulid}`, data),
+    delete: async (ulid: string) => await api.del(`/plans/tiers/${ulid}`),
+  },
+  menuBlueprints: {
+    get: async (durationType: string, mealSlot: string) => await api.get(`/plans/blueprints?duration_type=${durationType}&meal_slot=${mealSlot}`),
+    sync: async (data: {duration_type: string, meal_slot: string, bowl_ulids: string[]}) => await api.post("/plans/blueprints/sync", data)
   },
   notifications: {
     get: () => api.get<{ notifications: any[]; unread_count: number }>("/notifications"),
