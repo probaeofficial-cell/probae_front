@@ -97,7 +97,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
         (bowl.order_number && bowl.order_number.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (bowl.order_ulid && bowl.order_ulid.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      const isBowlCompleted = bowl.assembly_status === "COMPLETED" || bowl.assembly_status === "ASSEMBLED";
+      const isBowlCompleted = bowl.assembly_status === "COMPLETED" || bowl.assembly_status === "ASSEMBLED" || bowl.assembly_status === "PACKAGED";
       const matchesStatus = statusFilter === "ALL" || (statusFilter === "COMPLETED" && isBowlCompleted) || (statusFilter === "PENDING" && !isBowlCompleted);
 
       return matchesSearch && matchesStatus;
