@@ -60,7 +60,7 @@ export default function DeliveryToday() {
     setIsLoading(true);
     setErrorMsg("");
     try {
-      const data = await endpoints.orders.list({ target_date: targetDate, status: "DISPATCHED", limit: 100 }) as any;
+      const data = await endpoints.orders.list({ target_date: targetDate, status: "DISPATCHED", limit: 500 }) as any;
       if (data.success) {
         setOrders(data.orders || []);
       } else {

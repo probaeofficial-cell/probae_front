@@ -2,18 +2,19 @@
 
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Plus, Edit, CheckCircle, XCircle, Search } from "lucide-react";
+import { Plus, Edit, CheckCircle, XCircle, Search, Trash2 } from "lucide-react";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
-import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function ExpenseCategoriesPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
+  const [deleteUlid, setDeleteUlid] = useState<string | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   
   useEffect(() => {
@@ -27,6 +28,18 @@ export default function ExpenseCategoriesPage() {
   const [formData, setFormData] = useState({ name: "", description: "", is_active: true });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const handleDelete = async () => {
+    if (!deleteUlid) return;
+    try {
+      await endpoints.expenses.deleteCategory(deleteUlid);
+      fetchCategories();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Failed to delete category");
+    } finally {
+      setDeleteUlid(null);
+    }
+  };
 
   const fetchCategories = async () => {
     setIsLoading(true);
@@ -191,6 +204,16 @@ export default function ExpenseCategoriesPage() {
         </div>
       )}
       </div>
+      
+      <ConfirmationModal
+        isOpen={!!deleteUlid}
+        title="Delete Category"
+        message="Are you sure you want to delete this expense category? This cannot be undone."
+        confirmText="Delete"
+        onConfirm={handleDelete}
+        onClose={() => setDeleteUlid(null)}
+        type="delete"
+      />
     </div>
   );
 }

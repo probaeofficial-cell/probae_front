@@ -79,6 +79,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       prep: { label: "Kitchen Prep", dotColor: "bg-orange-500", path: "/admin/kds/prep" },
       assembly: { label: "Bowl Assembly", dotColor: "bg-green-500", path: "/admin/kds/assembly" },
       packaging: { label: "Packaging Prep", dotColor: "bg-teal-500", path: "/admin/kds/packaging" },
+      dispatch: { label: "Dispatch Prep", dotColor: "bg-purple-500", path: "/admin/kds/dispatch" },
     },
   },
   transactions: {

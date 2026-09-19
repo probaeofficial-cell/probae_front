@@ -94,7 +94,7 @@ export default function DeliveryDashboard() {
     setIsLoading(true);
     try {
       const [ordersRes, driversRes] = await Promise.all([
-        endpoints.orders.list({ target_date: date, limit: 100 }),
+        endpoints.orders.list({ target_date: date, limit: 500 }),
         endpoints.logistics.getDrivers()
       ]);
       setOrders((ordersRes as any).orders || []);

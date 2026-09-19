@@ -277,6 +277,7 @@ export const endpoints = {
     },
     createCategory: (payload: any) => api.post('/expenses/categories', payload),
     updateCategory: (ulid: string, payload: any) => api.put(`/expenses/categories/${ulid}`, payload),
+    deleteCategory: (ulid: string) => api.del(`/expenses/categories/${ulid}`),
     list: (params: { page?: number, limit?: number, month?: string, category_ulid?: string, search?: string }) => {
       const q = new URLSearchParams();
       if (params.page) q.append('page', params.page.toString());
@@ -293,6 +294,7 @@ export const endpoints = {
     financials: (params: { start_date: string, end_date: string }) => api.get(`/dashboard/financials?start_date=${params.start_date}&end_date=${params.end_date}`)
   },
   globalTransactions: {
+    delete: (ulid: string) => api.del(`/transactions/${ulid}`),
     list: (params: { page?: number, limit?: number, transaction_type?: string, date_from?: string, date_to?: string }) => {
       const q = new URLSearchParams();
       if (params.page) q.append('page', params.page.toString());

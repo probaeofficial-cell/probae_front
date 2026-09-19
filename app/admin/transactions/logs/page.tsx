@@ -5,7 +5,8 @@ import { useState, useEffect } from "react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { endpoints } from "@/lib/apiService";
-import { ArrowUpRight, ArrowDownRight, Search } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Search, Trash2 } from "lucide-react";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function TransactionLogsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -15,6 +16,19 @@ export default function TransactionLogsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [transactionType, setTransactionType] = useState("");
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [deleteUlid, setDeleteUlid] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteUlid) return;
+    try {
+      await endpoints.globalTransactions.delete(deleteUlid);
+      fetchLogs();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Failed to delete transaction");
+    } finally {
+      setDeleteUlid(null);
+    }
+  };
 
   const fetchLogs = async () => {
     setIsLoading(true);
@@ -45,7 +59,7 @@ export default function TransactionLogsPage() {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
-      <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-y-auto">
+      <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden">
       <Header />
       <div className="mt-4 flex-1 flex flex-col min-h-0">
         <Breadcrumbs segments={["Transactions", "Logs"]} />
@@ -77,7 +91,8 @@ export default function TransactionLogsPage() {
         {isLoading ? (
           <div className="py-12 flex justify-center"><BowlLoader className="w-10 h-10 animate-spin text-[#6A0FAD]" /></div>
         ) : (
-          <div className="bg-white rounded-3xl shadow-sm border border-neutral-200 overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="overflow-auto flex-1 scrollbar-thin">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-neutral-100 bg-neutral-50/50">
@@ -87,6 +102,7 @@ export default function TransactionLogsPage() {
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Amount</th>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Method</th>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Reference</th>
+                  <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
@@ -106,14 +122,19 @@ export default function TransactionLogsPage() {
                     <td className="py-4 px-6 font-black text-neutral-900">₹{t.amount.toFixed(2)}</td>
                     <td className="py-4 px-6 text-sm text-neutral-500">{t.payment_method || "-"}</td>
                     <td className="py-4 px-6 text-sm text-neutral-500 font-mono">{t.reference_id || "-"}</td>
+                    <td className="py-4 px-6 text-right">
+                      <button onClick={() => setDeleteUlid(t.ulid)} className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
             
+            </div>
+            
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="py-4 px-6 border-t border-neutral-100 flex items-center justify-between">
+              <div className="py-4 px-6 border-t border-neutral-100 flex items-center justify-between shrink-0">
                 <button 
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
@@ -135,6 +156,16 @@ export default function TransactionLogsPage() {
         )}
       </div>
       </div>
+      
+      <ConfirmationModal
+        isOpen={!!deleteUlid}
+        title="Delete Transaction"
+        message="Are you sure you want to delete this transaction? If this is a deposit or debit, the customer's wallet balance will be automatically reversed. This cannot be undone."
+        confirmText="Delete"
+        onConfirm={handleDelete}
+        onClose={() => setDeleteUlid(null)}
+        type="delete"
+      />
     </div>
   );
 }
