@@ -8,9 +8,9 @@ import { LocationPicker } from "@/components/admin/LocationPicker";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
-import { endpoints } from "@/lib/apiService";
+import { endpoints, api } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
-import { Loader2, Edit2, Check, ArrowLeft, Trash2, Camera, Upload, Lock, Unlock } from "lucide-react";
+import { Loader2, Edit2, Check, ArrowLeft, Trash2, Camera, Upload, Lock, Unlock, Hourglass } from "lucide-react";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { CustomerLedger } from "../components/CustomerLedger";
 import { CustomerCalories } from "@/components/admin/CustomerCalories";
@@ -51,7 +51,8 @@ export default function CustomerDetailPage() {
   const [mealCategories, setMealCategories] = useState<any[]>([]);
   const [allPlans, setAllPlans] = useState<any[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
-  const [activeTab, setActiveTab] = useState<"PROFILE" | "LEDGER" | "CALORIES">("PROFILE");
+  const [activeTab, setActiveTab] = useState<"PROFILE" | "LEDGER" | "CALORIES" | "HISTORY">("PROFILE");
+  const [showRenewalModal, setShowRenewalModal] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -88,18 +89,12 @@ export default function CustomerDetailPage() {
     const fetchPreview = async (planUlid: string, goal: string, mealCalories: any) => {
     setIsPreviewLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1"}/customers/preview-plan-price`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          plan_ulid: planUlid,
-          goal: goal,
-          meal_calories: mealCalories,
-          customer_ulid: ulid
-        })
+      const resData: any = await endpoints.customers.previewPlanPrice({
+        plan_tier_ulid: planUlid,
+        goal: goal,
+        calorie_profile: { mealCalories: mealCalories || {} }
       });
-      const resData = await res.json();
-      if (resData.success) {
+      if (resData && resData.success) {
         setPreviewData(resData);
       }
     } catch (e) {
@@ -511,7 +506,46 @@ export default function CustomerDetailPage() {
               {/* Left Column (Forms) */}
               <div className="lg:col-span-2 space-y-6">
                 
+
+                {customer.subscription_status === 'EXPIRED' && (
+                  <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-red-700">Plan Expired - Renewal Needed</h3>
+                      <p className="text-sm text-red-600 mt-1">The customer has 0 bowls remaining in their quota.</p>
+                    </div>
+                    <button onClick={() => setShowRenewalModal(true)} className="px-4 py-2 bg-red-600 text-white font-bold rounded-xl text-sm hover:bg-red-700 transition-colors">Renew Plan</button>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div className="bg-white p-6 rounded-3xl shadow-[0_0_15px_rgba(0,0,0,0.03)] border border-neutral-100 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1">Consumption Quota</div>
+                      <div className="text-3xl font-black text-[#6A0FAD]">{customer.remaining_bowl_count || 0}</div>
+                      <div className="text-xs font-bold text-neutral-400 mt-1">Remaining Bowls</div>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-[#6A0FAD]/10 flex items-center justify-center text-[#6A0FAD]">
+                      <Hourglass className="w-6 h-6" />
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-6 rounded-3xl shadow-[0_0_15px_rgba(0,0,0,0.03)] border border-neutral-100 flex flex-col justify-center">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1">Delivery Status</div>
+                        <div className={`text-lg font-black ${customer.delivery_status === 'ACTIVE' ? 'text-green-600' : 'text-orange-500'}`}>{customer.delivery_status || 'ACTIVE'}</div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" checked={customer.delivery_status === 'ACTIVE'} onChange={() => {}} disabled={!isEditMode} />
+                        <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                      </label>
+                    </div>
+                    {isEditMode && <div className="text-[10px] text-neutral-400 mt-2">Toggle to pause/resume daily automated deliveries.</div>}
+                  </div>
+                </div>
+
                 {/* Profile Card */}
+
                 <div className="bg-white rounded-2xl border border-neutral-200 p-6 sm:p-8">
                   <h2 className="text-xl font-bold text-neutral-900 mb-6">Profile Information</h2>
                   <div className="flex justify-center mb-8">
@@ -731,7 +765,29 @@ export default function CustomerDetailPage() {
                         </div>
                       </div>
                       
-                      <div className="flex justify-end pt-2">
+                      
+                      {formData.selectedPlanId && allPlans.find(p => p._id === formData.selectedPlanId) && (
+                        <div className="mt-4 p-4 rounded-2xl border border-[#6A0FAD]/30 bg-[#6A0FAD]/5">
+                          <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-2">Currently Assigned Plan</div>
+                          {(() => {
+                            const p = allPlans.find(p => p._id === formData.selectedPlanId);
+                            return (
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <h4 className="font-bold text-neutral-900">{p.name}</h4>
+                                  <div className="text-xs text-neutral-500 font-bold uppercase mt-1">{p.duration} • {p.days} Days</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-xs font-bold text-neutral-500 uppercase">Meals</div>
+                                  <div className="text-sm font-black text-[#6A0FAD]">{p.included_meal_slots?.join(', ')}</div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      <div className="flex justify-end pt-4">
                         <ProbaeButton onClick={loadPlans} type="button" disabled={isLoadingPlans} className="!w-auto flex items-center gap-2">
                           {isLoadingPlans ? <BowlLoader className="w-4 h-4 animate-spin" /> : "Find Plans"}
                         </ProbaeButton>
@@ -744,7 +800,7 @@ export default function CustomerDetailPage() {
                             {plans.map(p => (
                               <div 
                                 key={p._id} 
-                                onClick={() => { updateField("selectedPlanId", p._id); fetchPreview(p._id, formData.goal, formData.mealCalories); }}
+                                onClick={() => { updateField("selectedPlanId", p._id); fetchPreview(p._id, formData.goal, customer?.calorie_profile?.mealCalories || {}); }}
                                 className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.selectedPlanId === p._id ? "border-[#6A0FAD] bg-[#6A0FAD]/5" : "border-neutral-200 hover:border-[#6A0FAD]/30"}`}
                               >
                                 <div className="flex justify-between items-start mb-2">
@@ -821,7 +877,7 @@ export default function CustomerDetailPage() {
                       <div className="px-6 py-4 bg-neutral-50 border-b border-neutral-200 flex justify-between items-center">
                         <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">Customized Meal Schedule</h3>
                         {isEditMode && (
-                          <button type="button" onClick={() => fetchPreview(formData.selectedPlanId || "", formData.goal, formData.mealCalories)} className="text-xs font-bold text-[#6A0FAD] hover:underline">
+                          <button type="button" onClick={() => fetchPreview(formData.selectedPlanId || "", formData.goal, customer?.calorie_profile?.mealCalories || {})} className="text-xs font-bold text-[#6A0FAD] hover:underline">
                             Refresh Preview
                           </button>
                         )}
@@ -932,14 +988,20 @@ export default function CustomerDetailPage() {
                       <div>
                         <label className="block text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-2">Probae Calorie Target</label>
                         {isEditMode ? (
-                          <div className="flex items-center gap-3">
-                            <input 
-                              type="number" 
-                              value={formData.probaeTarget}
-                              onChange={(e) => handleProbaeTargetChange(Number(e.target.value))}
-                              className="w-32 bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-bold focus:ring-2 focus:ring-[#6A0FAD]/20 outline-none"
-                            />
-                            <span className="text-neutral-500 font-medium text-sm">kcal / day</span>
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <input 
+                                type="number" 
+                                value={formData.probaeTarget}
+                                onChange={(e) => handleProbaeTargetChange(Number(e.target.value))}
+                                disabled={customer.status === "ACTIVE"}
+                                className={`w-32 border border-neutral-200 rounded-xl px-4 py-3 font-bold outline-none ${customer.status === "ACTIVE" ? "bg-neutral-100 text-neutral-400 cursor-not-allowed" : "bg-[#f8f5fb] text-neutral-900 focus:ring-2 focus:ring-[#6A0FAD]/20"}`}
+                              />
+                              <span className="text-neutral-500 font-medium text-sm">kcal / day</span>
+                            </div>
+                            {customer.status === "ACTIVE" && (
+                              <div className="text-[10px] text-red-500 font-bold mt-2">Matrix locked while subscription is active.</div>
+                            )}
                           </div>
                         ) : (
                           <div className="text-2xl font-black text-neutral-900">{customer.calorie_profile.probaeTarget || formData.probaeTarget} <span className="text-sm text-neutral-500 font-medium">kcal / day</span></div>
@@ -962,7 +1024,7 @@ export default function CustomerDetailPage() {
                                   <div className="w-16 shrink-0 text-[10px] sm:text-xs font-bold text-neutral-700 uppercase tracking-wider whitespace-nowrap">{slot}</div>
                                   {isEditMode ? (
                                     <>
-                                      <button type="button" onClick={() => toggleLock(slot)} className={`p-1 sm:p-1.5 shrink-0 rounded-lg transition-colors ${isLocked ? "bg-red-100 text-red-600" : "bg-neutral-100 text-neutral-400 hover:bg-neutral-200"}`}>
+                                      <button type="button" onClick={() => toggleLock(slot)} disabled={customer.status === "ACTIVE"} className={`p-1 sm:p-1.5 shrink-0 rounded-lg transition-colors ${isLocked ? "bg-red-100 text-red-600" : "bg-neutral-100 text-neutral-400 hover:bg-neutral-200"} ${customer.status === "ACTIVE" ? "opacity-50 cursor-not-allowed" : ""}`}>
                                         {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                                       </button>
                                       <input 
@@ -971,16 +1033,16 @@ export default function CustomerDetailPage() {
                                         max={formData.probaeTarget} 
                                         value={formData.mealCalories[slot] || 0}
                                         onChange={(e) => handleMealCalorieChange(slot, Number(e.target.value))}
-                                        disabled={isLocked}
-                                        className={`flex-1 min-w-[40px] ${isLocked ? "opacity-50 cursor-not-allowed" : "accent-[#6A0FAD]"}`}
+                                        disabled={isLocked || customer.status === "ACTIVE"}
+                                        className={`flex-1 min-w-[40px] ${isLocked || customer.status === "ACTIVE" ? "opacity-50 cursor-not-allowed grayscale" : "accent-[#6A0FAD]"}`}
                                       />
                                       <div className="w-16 sm:w-20 shrink-0 relative">
                                         <input
                                           type="number"
                                           value={formData.mealCalories[slot] || 0}
                                           onChange={(e) => handleMealCalorieChange(slot, Number(e.target.value))}
-                                          disabled={isLocked}
-                                          className={`w-full border-none rounded-lg px-1 sm:px-2 py-1.5 text-xs sm:text-sm font-bold text-center focus:ring-2 focus:ring-[#6A0FAD]/20 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isLocked ? "bg-neutral-100 text-neutral-400" : "bg-[#f8f5fb] text-neutral-900"}`}
+                                          disabled={isLocked || customer.status === "ACTIVE"}
+                                          className={`w-full border-none rounded-lg px-1 sm:px-2 py-1.5 text-xs sm:text-sm font-bold text-center focus:ring-2 focus:ring-[#6A0FAD]/20 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isLocked || customer.status === "ACTIVE" ? "bg-neutral-100 text-neutral-400" : "bg-[#f8f5fb] text-neutral-900"}`}
                                         />
                                       </div>
                                     </>

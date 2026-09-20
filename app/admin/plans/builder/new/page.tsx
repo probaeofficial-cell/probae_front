@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { Header } from "@/components/admin/Header";
 import { Save, Tag, Percent, ArrowLeft } from "lucide-react";

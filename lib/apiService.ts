@@ -709,6 +709,9 @@ export const endpoints = {
       if (params?.limit) p.append("limit", params.limit.toString());
       if (params?.search) p.append("search", params.search);
       if (params?.plan_id) p.append("plan_id", params.plan_id.toString());
+      if (params?.category) p.append("category", params.category);
+      if (params?.duration) p.append("duration", params.duration);
+      if (params?.days) p.append("days", params.days.toString());
 
       return await api.get(`/customers?${p.toString()}`);
     },
@@ -721,6 +724,7 @@ export const endpoints = {
       return await api.get(`/customers/${ulid}/calories?${p.toString()}`);
     },
     calculateCalories: async (data: any) => await api.post("/customers/calculate-calories", data),
+    previewPlanPrice: async (data: any) => await api.post("/customers/preview-plan-price", data),
     del: async (ulid: string) => await api.del(`/customers/${ulid}`),
   },
   planTiers: {
@@ -730,6 +734,9 @@ export const endpoints = {
       if (params?.limit) p.append("limit", params.limit.toString());
       if (params?.search) p.append("search", params.search);
       if (params?.plan_id) p.append("plan_id", params.plan_id.toString());
+      if (params?.category) p.append("category", params.category);
+      if (params?.duration) p.append("duration", params.duration);
+      if (params?.days) p.append("days", params.days.toString());
 
       return await api.get(`/plans/tiers?${p.toString()}`);
     },
@@ -737,6 +744,7 @@ export const endpoints = {
     create: async (data: any) => await api.post("/plans/tiers", data),
     update: async (ulid: string, data: any) => await api.patch(`/plans/tiers/${ulid}`, data),
     delete: async (ulid: string) => await api.del(`/plans/tiers/${ulid}`),
+    triggerDailyOrders: async () => await api.post('/plans/trigger-daily-orders', {}),
   },
   menuBlueprints: {
     get: async (durationType: string, mealSlot: string) => await api.get(`/plans/blueprints?duration_type=${durationType}&meal_slot=${mealSlot}`),

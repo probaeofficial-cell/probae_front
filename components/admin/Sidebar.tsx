@@ -38,7 +38,25 @@ export function Sidebar() {
     setMobileOpen(false);
   }, [pathname]);
 
+
+  // Auto-open menus that contain the current path
+  useEffect(() => {
+    const menusToOpen: Record<string, boolean> = {};
+    Object.entries(MAIN_MENU).forEach(([key, item]) => {
+      if (item.subItems) {
+        const hasActiveSub = Object.values(item.subItems).some(sub => sub.path && pathname.startsWith(sub.path));
+        if (hasActiveSub) {
+          menusToOpen[key] = true;
+        }
+      }
+    });
+    if (Object.keys(menusToOpen).length > 0) {
+      setOpenMenus(prev => ({ ...prev, ...menusToOpen }));
+    }
+  }, [pathname]);
+
   // Ensure sidebar is never in collapsed state on mobile screens
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {

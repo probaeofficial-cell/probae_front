@@ -6,7 +6,7 @@ import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { ArrowRight, ArrowLeft, Check, Plus, Lock, Unlock, Loader2, Camera, Upload } from "lucide-react";
-import { endpoints } from "@/lib/apiService";
+import { endpoints, api } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
@@ -320,18 +320,12 @@ export default function NewCustomerPage() {
     setIsPreviewLoading(true);
     setPreviewData(null);
     try {
-      // In a real app we should use endpoints from apiService, but fetch is fine for this new endpoint
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1"}/plans/preview-customization`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          plan_ulid: planUlid,
-          goal: formData.goal,
-          meal_calories: formData.mealCalories
-        })
+      const data: any = await endpoints.customers.previewPlanPrice({
+        plan_tier_ulid: planUlid,
+        goal: formData.goal,
+        calorie_profile: { mealCalories: formData.mealCalories || {} }
       });
-      const data = await res.json();
-      if (data.success) {
+      if (data && data.success) {
         setPreviewData(data);
       }
     } catch (e) {
