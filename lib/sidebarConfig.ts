@@ -135,5 +135,6 @@ export const MAIN_MENU: Record<string, MenuItem> = {
 
 export const BOTTOM_MENU: Record<string, MenuItem> = {
   profile: { label: "Profile", icon: CircleUser, path: "/admin/profile", roles: ["ADMIN", "DELIVERY"] },
+  users: { label: "System Users", icon: Users, path: "/admin/users", roles: ["ADMIN"] },
   settings: { label: "Settings", icon: Settings, path: "/admin/settings", roles: ["ADMIN"] },
 };
