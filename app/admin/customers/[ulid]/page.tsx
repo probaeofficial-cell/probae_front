@@ -459,7 +459,11 @@ export default function CustomerDetailPage() {
             </div>
 
             {activeTab === "LEDGER" ? (
-              <CustomerLedger customerUlid={customer.ulid} initialBalance={customer.wallet_balance || 0} />
+              <CustomerLedger
+                customerUlid={customer.ulid}
+                initialBalance={customer.wallet_balance || 0}
+                onBalanceChange={(newBal) => setCustomer((prev: any) => ({ ...prev, wallet_balance: newBal }))}
+              />
             ) : activeTab === "CALORIES" ? (
               <CustomerCalories customerUlid={customer.ulid} />
             ) : (

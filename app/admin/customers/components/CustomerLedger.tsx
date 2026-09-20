@@ -4,7 +4,7 @@ import { endpoints } from "@/lib/apiService";
 import { Plus, ArrowDown, ArrowUp, RotateCcw } from "lucide-react";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 
-export function CustomerLedger({ customerUlid, initialBalance }: { customerUlid: string; initialBalance: number }) {
+export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }: { customerUlid: string; initialBalance: number; onBalanceChange?: (newBalance: number) => void }) {
   const [balance, setBalance] = useState(initialBalance);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +51,9 @@ export function CustomerLedger({ customerUlid, initialBalance }: { customerUlid:
       setShowModal(false);
       setAmount("");
       setDescription("");
-      setBalance(prev => prev + val);
+      const newBalance = balance + val;
+      setBalance(newBalance);
+      onBalanceChange?.(newBalance);
       setPage(1);
       fetchTransactions();
     } catch (err) {
@@ -176,7 +178,7 @@ export function CustomerLedger({ customerUlid, initialBalance }: { customerUlid:
                   required
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none font-medium"
+                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-neutral-900 bg-white focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none font-medium"
                 />
               </div>
               <div>
@@ -184,7 +186,7 @@ export function CustomerLedger({ customerUlid, initialBalance }: { customerUlid:
                 <select 
                   value={method}
                   onChange={e => setMethod(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none font-medium"
+                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-neutral-900 bg-white focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none font-medium"
                 >
                   <option value="UPI">UPI / Scan</option>
                   <option value="CASH">Cash</option>
@@ -195,11 +197,10 @@ export function CustomerLedger({ customerUlid, initialBalance }: { customerUlid:
                 <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Description / Notes</label>
                 <input 
                   type="text"
-                  required
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  placeholder="e.g. UPI Ref #123456"
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none font-medium"
+                  placeholder="e.g. UPI Ref #123456 (optional)"
+                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-neutral-900 bg-white focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none font-medium"
                 />
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">

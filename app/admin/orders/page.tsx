@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Loader2, Calendar, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, Filter, X, Clock } from "lucide-react";
+import { Loader2, Calendar, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, Filter, X, Clock, Zap } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -35,6 +35,29 @@ export default function OrdersPage() {
   const [confirmAction, setConfirmAction] = useState<{ulid: string, status: string} | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isCronRunning, setIsCronRunning] = useState(false);
+  const [cronToast, setCronToast] = useState<{type: "success"|"error", msg: string} | null>(null);
+
+  const handleRunCron = async () => {
+    setIsCronRunning(true);
+    setCronToast(null);
+    try {
+      const res = await endpoints.planTiers.triggerDailyOrders() as any;
+      const count = res?.orders_created ?? 0;
+      const day = res?.day_of_week ?? "";
+      const msg = count > 0
+        ? `✓ Generated ${count} plan order${count !== 1 ? "s" : ""} for today (${day})`
+        : `No orders generated — today is ${day}. Customers on 5-day plans don't have schedules for this day.`;
+      setCronToast({ type: count > 0 ? "success" : "error", msg });
+      fetchOrders(activeTab, page, targetDate, search, customerId, status);
+    } catch {
+      setCronToast({ type: "error", msg: "Failed to run daily generation. Check backend logs." });
+    } finally {
+      setIsCronRunning(false);
+      setTimeout(() => setCronToast(null), 5000);
+    }
+  };
+
 
   const getAvailableStatuses = (currentStatus: string) => {
     if (currentStatus === "DELIVERED") return ["DELIVERED"];
@@ -157,6 +180,16 @@ export default function OrdersPage() {
                 <Filter className="w-5 h-5" />
               </button>
 
+              <button
+                onClick={handleRunCron}
+                disabled={isCronRunning}
+                title="Manually run the plan order queue for tomorrow. Safe to click multiple times."
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-sm hover:bg-amber-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCronRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                {isCronRunning ? "Running..." : "Run Daily Generation"}
+              </button>
+
               <Link href="/admin/orders/new">
                 <ProbaeButton className="!w-auto flex items-center gap-2">
                   <Plus className="w-4 h-4" /> Custom Order
@@ -164,6 +197,16 @@ export default function OrdersPage() {
               </Link>
             </div>
           </div>
+
+          {/* Cron Toast */}
+          {cronToast && (
+            <div className={`mx-0 mb-4 px-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-between ${
+              cronToast.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
+            }`}>
+              <span>{cronToast.msg}</span>
+              <button onClick={() => setCronToast(null)} className="ml-4 opacity-60 hover:opacity-100"><X className="w-4 h-4" /></button>
+            </div>
+          )}
 
           <div className="flex-1 flex flex-col min-h-0 pb-10">
             <div className="relative flex mb-6 shrink-0 bg-neutral-100 p-1.5 rounded-2xl w-full max-w-[400px]">
