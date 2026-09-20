@@ -9,7 +9,7 @@ import { ProbaeButton } from "@/components/ProbaeButton";
 import { useRouter, useParams } from "next/navigation";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 
-const MEAL_SLOTS = ["B-FAST", "LUNCH", "SNACK", "DINNER"];
+const MEAL_SLOTS = ["breakfast", "lunch", "snack", "dinner"];
 
 export default function EditPlanTierPage() {
   const router = useRouter();
@@ -19,11 +19,11 @@ export default function EditPlanTierPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: "",
-    category: "Weight Loss",
+    category: "Core",
     duration: "WEEKLY",
     days: 5,
     plan_type: "STANDARD",
-    included_meal_slots: ["LUNCH"],
+    included_meal_slots: ["lunch"],
     discount_percentage: 0
   });
 
@@ -168,11 +168,9 @@ export default function EditPlanTierPage() {
                       onChange={e => setFormData(p => ({...p, category: e.target.value}))}
                       className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 h-[48px] text-neutral-900 font-bold focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]"
                     >
-                      <option value="Weight Loss">Weight Loss</option>
-                      <option value="Muscle Gain">Muscle Gain</option>
-                      <option value="Maintenance">Maintenance</option>
-                      <option value="Keto">Keto</option>
-                      <option value="Vegan">Vegan</option>
+                      <option value="Core">Core</option>
+                      <option value="Pro">Pro</option>
+                      <option value="Performance">Performance</option>
                     </select>
                   </div>
                 </div>

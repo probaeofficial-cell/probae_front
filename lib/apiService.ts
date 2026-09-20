@@ -708,11 +708,18 @@ export const endpoints = {
       if (params?.page) p.append("page", params.page.toString());
       if (params?.limit) p.append("limit", params.limit.toString());
       if (params?.search) p.append("search", params.search);
+      if (params?.plan_id) p.append("plan_id", params.plan_id.toString());
+
       return await api.get(`/customers?${p.toString()}`);
     },
     get: async (ulid: string) => await api.get(`/customers/${ulid}`),
     create: async (data: any) => await api.post("/customers", data),
     update: async (ulid: string, data: any) => await api.patch(`/customers/${ulid}`, data),
+    getCalories: async (ulid: string, filterDate?: string) => {
+      const p = new URLSearchParams();
+      if (filterDate) p.append("filter_date", filterDate);
+      return await api.get(`/customers/${ulid}/calories?${p.toString()}`);
+    },
     calculateCalories: async (data: any) => await api.post("/customers/calculate-calories", data),
     del: async (ulid: string) => await api.del(`/customers/${ulid}`),
   },
@@ -722,6 +729,8 @@ export const endpoints = {
       if (params?.page) p.append("page", params.page.toString());
       if (params?.limit) p.append("limit", params.limit.toString());
       if (params?.search) p.append("search", params.search);
+      if (params?.plan_id) p.append("plan_id", params.plan_id.toString());
+
       return await api.get(`/plans/tiers?${p.toString()}`);
     },
     get: async (ulid: string) => await api.get(`/plans/tiers/${ulid}`),

@@ -293,12 +293,19 @@ export default function NewCustomerPage() {
       const listRes = await endpoints.planTiers.list({ limit: 100 }) as any;
       if (listRes.success) {
         const days = parseInt(formData.planFrequency.split(" ")[0]);
-        const matched = listRes.tiers.filter((t: any) => 
-          t.duration.toUpperCase() === formData.planDuration && 
-          t.days === days
-          // Temporarily ignoring category or mealType matching as requested by user
-          // && t.category === formData.goal
-        );
+        const matched = listRes.tiers.filter((t: any) => {
+          const durationMatch = t.duration.toUpperCase() === formData.planDuration && t.days === days;
+          if (!durationMatch) return false;
+          
+          const planSlots = t.included_meal_slots || [];
+          const formSlots = formData.mealSlots || [];
+          if (planSlots.length !== formSlots.length) return false;
+          
+          const normalizeSlot = (s: string) => (s || "").toLowerCase();
+          const sortedPlan = [...planSlots].map(normalizeSlot).sort();
+          const sortedForm = [...formSlots].map(normalizeSlot).sort();
+          return sortedPlan.every((val, index) => val === sortedForm[index]);
+        });
         setPlans(matched);
       }
     } catch (err) {
@@ -691,7 +698,7 @@ export default function NewCustomerPage() {
                           {formData.selectedPlanId === p._id && <Check className="text-[#6A0FAD] w-5 h-5" />}
                         </div>
                         <p className="text-sm text-neutral-600 mb-4">{p.category} • {p.duration} • {p.days} Days</p>
-                        <p className="text-xs text-[#6A0FAD] font-bold mb-2">Meals: {p.included_meal_slots.join(', ')}</p>
+                        <p className="text-xs text-[#6A0FAD] font-bold mb-2">Meals: {p.included_meal_slots.map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}</p>
                         <p className="text-2xl font-bold text-neutral-900">
                           {p.plan_type === 'CUSTOM' ? 'Dynamic' : 'Standard'}
                         </p>

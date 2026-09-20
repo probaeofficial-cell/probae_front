@@ -13,6 +13,8 @@ import { getMediaUrl } from "@/lib/utils";
 import { Loader2, Edit2, Check, ArrowLeft, Trash2, Camera, Upload, Lock, Unlock } from "lucide-react";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { CustomerLedger } from "../components/CustomerLedger";
+import { CustomerCalories } from "@/components/admin/CustomerCalories";
+
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -49,7 +51,7 @@ export default function CustomerDetailPage() {
   const [mealCategories, setMealCategories] = useState<any[]>([]);
   const [allPlans, setAllPlans] = useState<any[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
-  const [activeTab, setActiveTab] = useState<"PROFILE" | "LEDGER">("PROFILE");
+  const [activeTab, setActiveTab] = useState<"PROFILE" | "LEDGER" | "CALORIES">("PROFILE");
   const [previewData, setPreviewData] = useState<any>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -332,10 +334,19 @@ export default function CustomerDetailPage() {
     setIsLoadingPlans(true);
     setTimeout(() => {
       const days = parseInt(formData.planFrequency.split(" ")[0]);
-      const matched = allPlans.filter(t => 
-        t.duration.toUpperCase() === formData.planDuration && 
-        t.days === days
-      );
+      const matched = allPlans.filter(t => {
+        const durationMatch = t.duration.toUpperCase() === formData.planDuration && t.days === days;
+        if (!durationMatch) return false;
+        
+        const planSlots = t.included_meal_slots || [];
+        const formSlots = formData.mealSlots || [];
+        if (planSlots.length !== formSlots.length) return false;
+        
+        const normalizeSlot = (s: string) => (s || "").toLowerCase();
+        const sortedPlan = [...planSlots].map(normalizeSlot).sort();
+        const sortedForm = [...formSlots].map(normalizeSlot).sort();
+        return sortedPlan.every((val, index) => val === sortedForm[index]);
+      });
       setPlans(matched);
       setIsLoadingPlans(false);
     }, 400);
@@ -444,10 +455,18 @@ export default function CustomerDetailPage() {
                 Wallet & Ledger
                 {customer.wallet_balance < 0 && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>}
               </button>
+              <button 
+                onClick={() => setActiveTab("CALORIES")}
+                className={`px-6 py-3 font-bold text-sm whitespace-nowrap transition-colors border-b-2 flex items-center gap-2 ${activeTab === "CALORIES" ? "border-[#6A0FAD] text-[#6A0FAD]" : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300"}`}
+              >
+                Calorie Intake
+              </button>
             </div>
 
             {activeTab === "LEDGER" ? (
               <CustomerLedger customerUlid={customer.ulid} initialBalance={customer.wallet_balance || 0} />
+            ) : activeTab === "CALORIES" ? (
+              <CustomerCalories customerUlid={customer.ulid} />
             ) : (
             <div className="animate-in fade-in zoom-in duration-300">
             

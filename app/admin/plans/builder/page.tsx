@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { Header } from "@/components/admin/Header";
-import { Plus, Search, Edit2, Trash2 } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Copy, Eye, X } from "lucide-react";
+import { BowlLoader } from "@/components/admin/BowlLoader";
+import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { endpoints } from "@/lib/apiService";
 import { ProbaeButton } from "@/components/ProbaeButton";
 import { useRouter } from "next/navigation";
@@ -13,7 +15,31 @@ export default function PlanTierList() {
   const router = useRouter();
   const [tiers, setTiers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalTiers, setTotalTiers] = useState(0);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterDuration, setFilterDuration] = useState("");
+
+  const [previewTier, setPreviewTier] = useState<any>(null);
+  const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [isLoadingSubscribers, setIsLoadingSubscribers] = useState(false);
+
+  useEffect(() => {
+    setIsTyping(true);
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+      setIsTyping(false);
+    }, 1000);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   // Modal states
   const [modalState, setModalState] = useState<{
@@ -24,26 +50,77 @@ export default function PlanTierList() {
     onConfirm?: () => void;
   }>({ isOpen: false, type: "info", title: "", message: "" });
 
-  useEffect(() => {
-    fetchTiers();
-  }, []);
-
-  const fetchTiers = async () => {
-    setIsLoading(true);
+  const fetchTiers = useCallback(async () => {
+    if (page === 1) {
+      setIsLoading(true);
+    } else {
+      setIsFetchingNextPage(true);
+    }
+    
     try {
-      const res: any = await endpoints.planTiers.list({ limit: 100 });
+      const res: any = await endpoints.planTiers.list({
+        page,
+        limit: pageSize,
+        search: debouncedSearch,
+        category: filterCategory,
+        duration: filterDuration
+      });
       if (res.success) {
-        setTiers(res.tiers);
+        setTiers(prev => {
+          const newItems = res.tiers || [];
+          if (page === 1) return newItems;
+          const existingIds = new Set(prev.map(item => item._id));
+          const uniqueNewItems = newItems.filter((item: any) => !existingIds.has(item._id));
+          return [...prev, ...uniqueNewItems];
+        });
+        setTotalTiers(res.total || 0);
       }
     } catch (err) {
       console.error(err);
     } finally {
       setIsLoading(false);
+      setIsFetchingNextPage(false);
+    }
+  }, [page, pageSize, debouncedSearch, filterCategory, filterDuration]);
+
+  useEffect(() => {
+    fetchTiers();
+  }, [fetchTiers]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterCategory, filterDuration]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const bottom = Math.abs(e.currentTarget.scrollHeight - e.currentTarget.scrollTop - e.currentTarget.clientHeight) < 2;
+    if (bottom && !isLoading && !isFetchingNextPage && (page * pageSize < totalTiers)) {
+      setPage(prev => prev + 1);
     }
   };
 
   const handleEdit = (tier: any) => {
     router.push(`/admin/plans/builder/${tier._id}`);
+  };
+
+  const handleDuplicate = (tier: any) => {
+    sessionStorage.setItem('duplicate_tier', JSON.stringify(tier));
+    router.push("/admin/plans/builder/new");
+  };
+
+  const handlePreview = async (tier: any) => {
+    setPreviewTier(tier);
+    setIsLoadingSubscribers(true);
+    setSubscribers([]);
+    try {
+      const res: any = await endpoints.customers.list({ plan_id: tier._id, limit: 50 });
+      if (res && res.items) {
+        setSubscribers(res.items);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoadingSubscribers(false);
+    }
   };
 
   const handleDelete = (ulid: string) => {
@@ -71,7 +148,6 @@ export default function PlanTierList() {
     });
   };
 
-  const filteredTiers = tiers.filter(t => t.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
@@ -94,21 +170,48 @@ export default function PlanTierList() {
             </ProbaeButton>
           </div>
 
-          <div className="flex flex-col flex-1 min-h-0 bg-white border border-neutral-200 rounded-3xl overflow-hidden">
-            <div className="p-4 border-b border-neutral-200 bg-neutral-50/50 flex justify-between items-center shrink-0">
-              <div className="relative w-72">
-                <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input 
-                  type="text" 
-                  placeholder="Search tiers..." 
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]"
-                />
-              </div>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center shrink-0 bg-white p-4 rounded-3xl border border-neutral-200">
+            <ProbaeSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search plan tiers..."
+              isLoading={isTyping || isLoading}
+              hideSort={true}
+              hideFilter={true}
+            />
             
-            <div className="flex-1 overflow-auto">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm font-bold rounded-xl px-4 py-2.5 h-[44px] focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] flex-1 sm:w-40"
+              >
+                <option value="">All Categories</option>
+                <option value="Core">Core</option>
+                <option value="Pro">Pro</option>
+                <option value="Performance">Performance</option>
+              </select>
+
+              <select
+                value={filterDuration}
+                onChange={(e) => setFilterDuration(e.target.value)}
+                className="bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm font-bold rounded-xl px-4 py-2.5 h-[44px] focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] flex-1 sm:w-40"
+              >
+                <option value="">All Durations</option>
+                <option value="WEEKLY">Weekly</option>
+                <option value="MONTHLY">Monthly</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-col flex-1 min-h-0 bg-white border border-neutral-200 rounded-3xl overflow-hidden">
+            {!isLoading && totalTiers > 0 && (
+              <div className="px-6 py-3 border-b border-neutral-100 bg-neutral-50/50 text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                Showing {tiers.length} of {totalTiers} Tiers
+              </div>
+            )}
+            
+            <div className="flex-1 overflow-auto scrollbar-thin" onScroll={handleScroll}>
               <table className="w-full text-left border-collapse">
                 <thead className="bg-white sticky top-0 z-10 shadow-sm">
                   <tr>
@@ -121,11 +224,18 @@ export default function PlanTierList() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {isLoading ? (
-                    <tr><td colSpan={5} className="p-8 text-center text-neutral-400 font-medium">Loading tiers...</td></tr>
-                  ) : filteredTiers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-16">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <BowlLoader className="w-8 h-8 text-[#6A0FAD]" />
+                          <span className="text-neutral-500 text-sm font-medium">Loading plan tiers...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : tiers.length === 0 ? (
                     <tr><td colSpan={5} className="p-8 text-center text-neutral-400 font-medium">No tiers found.</td></tr>
                   ) : (
-                    filteredTiers.map(t => (
+                    tiers.map(t => (
                       <tr key={t._id} className="hover:bg-neutral-50 transition-colors group">
                         <td className="px-6 py-4 font-bold text-neutral-900">{t.name}</td>
                         <td className="px-6 py-4">
@@ -140,11 +250,17 @@ export default function PlanTierList() {
                           {t.duration} • {t.days} Days
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex justify-end gap-2">
-                            <button onClick={() => handleEdit(t)} className="p-2 text-neutral-400 hover:text-[#6A0FAD] hover:bg-[#6A0FAD]/10 rounded-xl transition-colors">
+                          <div className="flex justify-end gap-1">
+                            <button onClick={() => handlePreview(t)} title="Preview & Subscribers" className="p-2 text-neutral-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDuplicate(t)} title="Duplicate" className="p-2 text-neutral-400 hover:text-green-500 hover:bg-green-50 rounded-xl transition-colors">
+                              <Copy className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleEdit(t)} title="Edit" className="p-2 text-neutral-400 hover:text-[#6A0FAD] hover:bg-[#6A0FAD]/10 rounded-xl transition-colors">
                               <Edit2 className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleDelete(t._id)} className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                            <button onClick={() => handleDelete(t._id)} title="Delete" className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -152,6 +268,17 @@ export default function PlanTierList() {
                       </tr>
                     ))
                   )}
+                  {isFetchingNextPage && (
+                    <tr>
+                      <td colSpan={5} className="p-6">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <BowlLoader className="w-6 h-6 text-[#6A0FAD]" />
+                          <span className="text-neutral-500 text-xs font-medium">Loading more tiers...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+
                 </tbody>
               </table>
             </div>
@@ -167,6 +294,69 @@ export default function PlanTierList() {
         message={modalState.message}
         type={modalState.type}
       />
+
+      {previewTier && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
+              <div>
+                <h2 className="text-xl font-black text-neutral-900">{previewTier.name}</h2>
+                <p className="text-sm font-medium text-neutral-500">{previewTier.category} • {previewTier.duration} ({previewTier.days} Days)</p>
+              </div>
+              <button onClick={() => setPreviewTier(null)} className="p-2 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-900 rounded-xl transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-100">
+                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Plan Type</p>
+                  <p className="font-bold text-neutral-900">{previewTier.plan_type}</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-100">
+                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Discount</p>
+                  <p className="font-bold text-neutral-900">{previewTier.discount_percentage}%</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-100 col-span-2">
+                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Included Meals</p>
+                  <div className="flex gap-2 mt-2">
+                    {previewTier.included_meal_slots?.map((slot: string) => (
+                      <span key={slot} className="px-3 py-1 bg-[#6A0FAD]/10 text-[#6A0FAD] text-xs font-bold rounded-full">{slot.toUpperCase()}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider mb-4 border-b pb-2">Subscribers ({subscribers.length})</h3>
+                {isLoadingSubscribers ? (
+                  <div className="flex flex-col items-center justify-center gap-3 py-8">
+                    <BowlLoader className="w-6 h-6 text-[#6A0FAD]" />
+                    <span className="text-neutral-500 text-sm font-medium">Loading subscribers...</span>
+                  </div>
+                ) : subscribers.length === 0 ? (
+                  <p className="text-sm font-medium text-neutral-400">No active subscribers for this plan.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {subscribers.map(sub => (
+                      <div key={sub._id} className="flex justify-between items-center p-3 rounded-xl border border-neutral-100 hover:bg-neutral-50">
+                        <div>
+                          <p className="font-bold text-neutral-900">{sub.name}</p>
+                          <p className="text-xs font-medium text-neutral-500">{sub.phone}</p>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${sub.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}`}>
+                          {sub.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

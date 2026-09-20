@@ -9,19 +9,38 @@ import { ProbaeButton } from "@/components/ProbaeButton";
 import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 
-const MEAL_SLOTS = ["B-FAST", "LUNCH", "SNACK", "DINNER"];
+const MEAL_SLOTS = ["breakfast", "lunch", "snack", "dinner"];
 
 export default function CreatePlanTierPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
-    category: "Weight Loss",
+    category: "Core",
     duration: "WEEKLY",
     days: 5,
     plan_type: "STANDARD",
-    included_meal_slots: ["LUNCH"],
+    included_meal_slots: ["lunch"],
     discount_percentage: 0
   });
+
+  useEffect(() => {
+    const dup = sessionStorage.getItem('duplicate_tier');
+    if (dup) {
+      try {
+        const tier = JSON.parse(dup);
+        setFormData({
+          name: tier.name + " (Copy)",
+          category: tier.category || "Core",
+          duration: tier.duration || "WEEKLY",
+          days: tier.days || 5,
+          plan_type: tier.plan_type || "STANDARD",
+          included_meal_slots: tier.included_meal_slots || ["lunch"],
+          discount_percentage: tier.discount_percentage || 0
+        });
+      } catch(e) {}
+      sessionStorage.removeItem('duplicate_tier');
+    }
+  }, []);
 
   const [isSaving, setIsSaving] = useState(false);
   
@@ -127,11 +146,9 @@ export default function CreatePlanTierPage() {
                     onChange={e => setFormData(p => ({...p, category: e.target.value}))}
                     className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 h-[48px] text-neutral-900 font-bold focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]"
                   >
-                    <option value="Weight Loss">Weight Loss</option>
-                    <option value="Muscle Gain">Muscle Gain</option>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Keto">Keto</option>
-                    <option value="Vegan">Vegan</option>
+                    <option value="Core">Core</option>
+                    <option value="Pro">Pro</option>
+                    <option value="Performance">Performance</option>
                   </select>
                 </div>
               </div>

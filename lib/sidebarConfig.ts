@@ -109,7 +109,15 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     },
   },
 
-  customers: { label: "Customers", icon: Users, badge: 3, path: "/admin/customers", roles: ["ADMIN"] },
+  customers: {
+    label: "Customers",
+    icon: Users,
+    roles: ["ADMIN"],
+    subItems: {
+      directory: { label: "Directory", dotColor: "bg-blue-500", path: "/admin/customers" },
+      subscriptions: { label: "Subscriptions", dotColor: "bg-purple-500", path: "/admin/subscriptions" },
+    },
+  },
   delivery: {
     label: "Delivery",
     icon: Truck,
