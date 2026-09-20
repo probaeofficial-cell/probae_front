@@ -125,7 +125,13 @@ export function LegacyOrderModal({
     target_date: "",
     meal_slot: "breakfast",
     bowl_ulid: "",
-    is_custom: false
+    is_custom: false,
+    custom_calories: "",
+    custom_price: "",
+    custom_protein: "",
+    custom_carbs: "",
+    custom_fat: "",
+    custom_fiber: ""
   });
   const [mealCategoryId, setMealCategoryId] = useState<number>(0);
 
@@ -134,8 +140,28 @@ export function LegacyOrderModal({
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
+    
+    const payload: any = { ...formData };
+    if (payload.custom_calories) payload.custom_calories = parseFloat(payload.custom_calories);
+    else delete payload.custom_calories;
+    
+    if (payload.custom_price) payload.custom_price = parseFloat(payload.custom_price);
+    else delete payload.custom_price;
+    
+    if (payload.custom_protein) payload.custom_protein = parseFloat(payload.custom_protein);
+    else delete payload.custom_protein;
+    
+    if (payload.custom_carbs) payload.custom_carbs = parseFloat(payload.custom_carbs);
+    else delete payload.custom_carbs;
+    
+    if (payload.custom_fat) payload.custom_fat = parseFloat(payload.custom_fat);
+    else delete payload.custom_fat;
+    
+    if (payload.custom_fiber) payload.custom_fiber = parseFloat(payload.custom_fiber);
+    else delete payload.custom_fiber;
+    
     try {
-      await endpoints.customers.legacyOrder(customerUlid, formData);
+      await endpoints.customers.legacyOrder(customerUlid, payload);
       setSuccess(true);
       setTimeout(() => {
         onSuccess();
@@ -217,6 +243,68 @@ export function LegacyOrderModal({
                 onChange={(val) => setFormData({...formData, bowl_ulid: val})}
                 mealCategoryId={mealCategoryId !== 0 ? mealCategoryId : undefined}
               />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-neutral-700 mb-1">Override Calories</label>
+                <input 
+                  type="number" step="0.1" min="0"
+                  className="w-full px-4 py-2 bg-neutral-50 text-neutral-900 border border-neutral-200 rounded-xl focus:outline-none focus:border-[#6A0FAD]"
+                  value={formData.custom_calories}
+                  onChange={(e) => setFormData({...formData, custom_calories: e.target.value})}
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-neutral-700 mb-1">Override Price</label>
+                <input 
+                  type="number" step="0.01" min="0"
+                  className="w-full px-4 py-2 bg-neutral-50 text-neutral-900 border border-neutral-200 rounded-xl focus:outline-none focus:border-[#6A0FAD]"
+                  value={formData.custom_price}
+                  onChange={(e) => setFormData({...formData, custom_price: e.target.value})}
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-neutral-700 mb-1">Override Protein (g)</label>
+                <input 
+                  type="number" step="0.1" min="0"
+                  className="w-full px-4 py-2 bg-neutral-50 text-neutral-900 border border-neutral-200 rounded-xl focus:outline-none focus:border-[#6A0FAD]"
+                  value={formData.custom_protein}
+                  onChange={(e) => setFormData({...formData, custom_protein: e.target.value})}
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-neutral-700 mb-1">Override Carbs (g)</label>
+                <input 
+                  type="number" step="0.1" min="0"
+                  className="w-full px-4 py-2 bg-neutral-50 text-neutral-900 border border-neutral-200 rounded-xl focus:outline-none focus:border-[#6A0FAD]"
+                  value={formData.custom_carbs}
+                  onChange={(e) => setFormData({...formData, custom_carbs: e.target.value})}
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-neutral-700 mb-1">Override Fat (g)</label>
+                <input 
+                  type="number" step="0.1" min="0"
+                  className="w-full px-4 py-2 bg-neutral-50 text-neutral-900 border border-neutral-200 rounded-xl focus:outline-none focus:border-[#6A0FAD]"
+                  value={formData.custom_fat}
+                  onChange={(e) => setFormData({...formData, custom_fat: e.target.value})}
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-neutral-700 mb-1">Override Fiber (g)</label>
+                <input 
+                  type="number" step="0.1" min="0"
+                  className="w-full px-4 py-2 bg-neutral-50 text-neutral-900 border border-neutral-200 rounded-xl focus:outline-none focus:border-[#6A0FAD]"
+                  value={formData.custom_fiber}
+                  onChange={(e) => setFormData({...formData, custom_fiber: e.target.value})}
+                  placeholder="Optional"
+                />
+              </div>
             </div>
             
             <div className="pt-4 flex gap-3">
