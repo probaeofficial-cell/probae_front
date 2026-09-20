@@ -157,7 +157,7 @@ export default function BowlBuilderPage() {
   }, [user, isEdit, bowlUlid]);
 
   const handleAddIngredient = (section: BowlSection) => {
-    setBowlIngredients([...bowlIngredients, { ingredient_id: 0, section_name: section, weight_g_or_ml: 10 }]);
+    setBowlIngredients([...bowlIngredients, { ingredient_id: 0, section_name: section, weight_g_or_ml: 10, max_quantity_g: null }]);
   };
 
   const handleRemoveIngredient = (index: number) => {
@@ -449,6 +449,7 @@ export default function BowlBuilderPage() {
                     <div className="w-10 sm:w-12 text-center border-r border-white/30 h-full flex items-center justify-center">#</div>
                     <div className="flex-1 px-3 sm:px-4 border-r border-white/30 h-full flex items-center">COMPONENT</div>
                     <div className="w-20 sm:w-24 text-center border-r border-white/30 h-full flex items-center justify-center">WEIGHT (g)</div>
+                    <div className="w-20 sm:w-24 text-center border-r border-white/30 h-full flex items-center justify-center">MAX (g)</div>
                     <div className="w-16 sm:w-20 text-center border-r border-white/30 h-full flex items-center justify-center">Cal</div>
                     <div className="w-16 sm:w-20 text-center border-r border-white/30 h-full flex items-center justify-center">Price</div>
                     <div className="w-8 sm:w-10 text-center border-r border-white/30 h-full flex items-center justify-center">P</div>
@@ -494,6 +495,15 @@ export default function BowlBuilderPage() {
                               className="w-full bg-transparent text-center outline-none" 
                             />
                             <span>g</span>
+                         </div>
+                         <div className="w-20 sm:w-24 border-r border-white h-full flex items-center justify-center px-1 text-neutral-800">
+                            <input 
+                              type="number" 
+                              value={item.max_quantity_g || ''} 
+                              onChange={(e) => handleChangeIngredient(item.originalIndex, "max_quantity_g", e.target.value ? parseFloat(e.target.value) : null)} 
+                              className="w-full bg-transparent text-center outline-none placeholder-neutral-400" 
+                              placeholder="-"
+                            />
                          </div>
                          <div className="w-16 sm:w-20 text-center border-r border-white h-full flex items-center justify-center text-neutral-800">
                            {ing ? (ing.total_calories * ratio).toFixed(0) : "0"}kcal

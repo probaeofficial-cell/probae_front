@@ -412,6 +412,7 @@ export interface BowlIngredient {
   ingredient_id: number;
   section_name: BowlSection;
   weight_g_or_ml: number;
+  max_quantity_g?: number | null;
   ingredient?: Ingredient;
 }
 
@@ -419,6 +420,7 @@ export interface BowlIngredientInput {
   ingredient_id: number;
   section_name: BowlSection;
   weight_g_or_ml: number;
+  max_quantity_g?: number | null;
   _ingredient_name?: string;
   _ingredient_ulid?: string;
 }
