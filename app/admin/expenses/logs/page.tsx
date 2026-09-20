@@ -2,7 +2,7 @@
 
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Calendar, FileText, Search } from "lucide-react";
+import { Plus, Trash2, Pencil, Calendar, FileText, Search } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -29,6 +29,7 @@ export default function ExpenseLogsPage() {
   const [errorMsg, setErrorMsg] = useState("");
   
   const [deleteUlid, setDeleteUlid] = useState<string | null>(null);
+  const [editUlid, setEditUlid] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 500);
@@ -63,12 +64,20 @@ export default function ExpenseLogsPage() {
     if (!formData.category_ulid || !formData.amount || !formData.expense_date) return setErrorMsg("Category, Amount, and Date are required");
     setIsSubmitting(true);
     try {
-      await endpoints.expenses.create({
+      const payload = {
         ...formData,
         amount: parseFloat(formData.amount)
-      });
+      };
+      
+      if (editUlid) {
+        await endpoints.expenses.update(editUlid, payload);
+      } else {
+        await endpoints.expenses.create(payload);
+      }
+      
       setIsModalOpen(false);
       setFormData({ category_ulid: "", amount: "", expense_date: new Date().toISOString().slice(0, 10), notes: "" });
+      setEditUlid(null);
       fetchData();
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to save expense");
@@ -134,7 +143,16 @@ export default function ExpenseLogsPage() {
               onChange={e => setMonth(e.target.value)}
               className="bg-white border border-neutral-200 rounded-xl px-4 py-2 h-[48px] text-sm font-bold text-neutral-700 outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 w-full sm:w-auto"
             />
-            <ProbaeButton onClick={() => setIsModalOpen(true)} className="!w-auto flex items-center justify-center gap-2 h-[48px]">
+            <ProbaeButton onClick={() => {
+              setEditUlid(null);
+              setFormData({
+                expense_date: new Date().toISOString().slice(0, 10),
+                category_ulid: "",
+                amount: "",
+                notes: ""
+              });
+              setIsModalOpen(true);
+            }} className="!w-auto flex items-center justify-center gap-2 h-[48px]">
               <Plus className="w-5 h-5" /> Add Expense
             </ProbaeButton>
           </div>
@@ -167,7 +185,19 @@ export default function ExpenseLogsPage() {
                     <td className="py-4 px-6 text-sm text-neutral-500 max-w-xs truncate">{e.notes || "-"}</td>
                     <td className="py-4 px-6 text-sm text-neutral-500">{e.recorded_by_name || "System"}</td>
                     <td className="py-4 px-6 text-right">
-                      <button onClick={() => setDeleteUlid(e.ulid)} className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => {
+                          setEditUlid(e.ulid);
+                          setFormData({
+                            expense_date: e.expense_date,
+                            category_ulid: e.category?.ulid || "",
+                            amount: e.amount.toString(),
+                            notes: e.notes || ""
+                          });
+                          setIsModalOpen(true);
+                        }} className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => setDeleteUlid(e.ulid)} className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -202,7 +232,7 @@ export default function ExpenseLogsPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl">
-            <h2 className="text-xl font-black text-neutral-900 mb-4">Record Expense</h2>
+            <h2 className="text-xl font-black text-neutral-900 mb-4">{editUlid ? "Edit Expense" : "Record Expense"}</h2>
             {errorMsg && <div className="mb-4 text-red-500 text-sm">{errorMsg}</div>}
             
             <div className="space-y-4">
@@ -215,6 +245,7 @@ export default function ExpenseLogsPage() {
                 <AsyncExpenseCategorySelect 
                   value={formData.category_ulid}
                   onChange={(ulid) => setFormData(p => ({...p, category_ulid: ulid}))}
+                  selectedCategory={editUlid ? expenses.find(e => e.ulid === editUlid)?.category : null}
                 />
               </div>
               <div>
@@ -229,7 +260,7 @@ export default function ExpenseLogsPage() {
             
             <div className="mt-8 flex justify-end gap-3">
               <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-bold text-neutral-500 hover:text-neutral-900 transition-colors">Cancel</button>
-              <ProbaeButton onClick={handleSave} disabled={isSubmitting || !formData.category_ulid || !formData.amount} className="!w-auto">{isSubmitting ? "Saving..." : "Record Expense"}</ProbaeButton>
+              <ProbaeButton onClick={handleSave} disabled={isSubmitting || !formData.category_ulid || !formData.amount} className="!w-auto">{isSubmitting ? "Saving..." : (editUlid ? "Save Changes" : "Record Expense")}</ProbaeButton>
             </div>
           </div>
         </div>

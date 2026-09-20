@@ -8,7 +8,8 @@ import {
   Coffee, // using Coffee or Salad for bowl as fallback if bowl doesn't exist
   Package,
   Box,
-  Users,
+  Users, Network,
+  
   CircleUser,
   Settings,
   Truck,
@@ -109,6 +110,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     },
   },
 
+  affiliates: { label: "Affiliates", icon: Network, path: "/admin/affiliates", roles: ["ADMIN"] },
   customers: {
     label: "Customers",
     icon: Users,

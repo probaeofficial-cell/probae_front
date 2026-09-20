@@ -8,10 +8,11 @@ import { endpoints } from "@/lib/apiService";
 interface AsyncCustomerSelectProps {
   value: number | 0;
   onChange: (id: number) => void;
+  onSelectFull?: (customer: any) => void;
   selectedCustomer?: any;
 }
 
-export default function AsyncCustomerSelect({ value, onChange, selectedCustomer }: AsyncCustomerSelectProps) {
+export default function AsyncCustomerSelect({ value, onChange, onSelectFull, selectedCustomer }: AsyncCustomerSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<any[]>([]);
@@ -141,6 +142,7 @@ export default function AsyncCustomerSelect({ value, onChange, selectedCustomer 
                 key={opt.id}
                 onClick={() => {
                   onChange(opt.id);
+                  if (onSelectFull) onSelectFull(opt);
                   setIsOpen(false);
                   setSearch("");
                 }}

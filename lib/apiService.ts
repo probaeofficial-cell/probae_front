@@ -288,6 +288,7 @@ export const endpoints = {
       return api.get(`/expenses?${q.toString()}`);
     },
     create: (payload: any) => api.post('/expenses', payload),
+    update: (ulid: string, payload: any) => api.put(`/expenses/${ulid}`, payload),
     del: (ulid: string) => api.del(`/expenses/${ulid}`)
   },
   dashboard: {
@@ -708,6 +709,7 @@ export const endpoints = {
       if (params?.page) p.append("page", params.page.toString());
       if (params?.limit) p.append("limit", params.limit.toString());
       if (params?.search) p.append("search", params.search);
+      if (params?.is_affiliate !== undefined) p.append("is_affiliate", params.is_affiliate.toString());
       if (params?.plan_id) p.append("plan_id", params.plan_id.toString());
       if (params?.category) p.append("category", params.category);
       if (params?.duration) p.append("duration", params.duration);
@@ -737,6 +739,7 @@ export const endpoints = {
       if (params?.page) p.append("page", params.page.toString());
       if (params?.limit) p.append("limit", params.limit.toString());
       if (params?.search) p.append("search", params.search);
+      if (params?.is_affiliate !== undefined) p.append("is_affiliate", params.is_affiliate.toString());
       if (params?.plan_id) p.append("plan_id", params.plan_id.toString());
       if (params?.category) p.append("category", params.category);
       if (params?.duration) p.append("duration", params.duration);
