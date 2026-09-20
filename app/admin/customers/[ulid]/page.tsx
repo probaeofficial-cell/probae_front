@@ -14,6 +14,7 @@ import { Loader2, Edit2, Check, ArrowLeft, Trash2, Camera, Upload, Lock, Unlock,
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { CustomerLedger } from "../components/CustomerLedger";
 import { CustomerCalories } from "@/components/admin/CustomerCalories";
+import { CustomerHistory } from "@/components/admin/CustomerHistory";
 
 
 export default function CustomerDetailPage() {
@@ -169,6 +170,17 @@ export default function CustomerDetailPage() {
     }
   }, [formData.mealCalories, formData.selectedPlanId, formData.goal]);
 
+
+  
+  const handleToggleDeliveryStatus = async () => {
+    try {
+      const newStatus = customer.delivery_status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+      await endpoints.customers.updateDeliveryStatus(ulid, { status: newStatus });
+      fetchCustomer(); // re-fetch to get updated state
+    } catch (err: any) {
+      alert("Failed to update delivery status: " + (err?.detail || err?.message || "Unknown error"));
+    }
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -456,6 +468,12 @@ export default function CustomerDetailPage() {
               >
                 Calorie Intake
               </button>
+              <button 
+                onClick={() => setActiveTab("HISTORY")}
+                className={`px-6 py-3 font-bold text-sm whitespace-nowrap transition-colors border-b-2 flex items-center gap-2 ${activeTab === "HISTORY" ? "border-[#6A0FAD] text-[#6A0FAD]" : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300"}`}
+              >
+                Subscription History
+              </button>
             </div>
 
             {activeTab === "LEDGER" ? (
@@ -466,6 +484,8 @@ export default function CustomerDetailPage() {
               />
             ) : activeTab === "CALORIES" ? (
               <CustomerCalories customerUlid={customer.ulid} />
+            ) : activeTab === "HISTORY" ? (
+              <CustomerHistory customerUlid={customer.ulid} subscriptions={customer.subscriptions || []} onRefresh={fetchCustomer} />
             ) : (
             <div className="animate-in fade-in zoom-in duration-300">
             
@@ -540,7 +560,7 @@ export default function CustomerDetailPage() {
                         <div className={`text-lg font-black ${customer.delivery_status === 'ACTIVE' ? 'text-green-600' : 'text-orange-500'}`}>{customer.delivery_status || 'ACTIVE'}</div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" checked={customer.delivery_status === 'ACTIVE'} onChange={() => {}} disabled={!isEditMode} />
+                        <input type="checkbox" className="sr-only peer" checked={customer.delivery_status === 'ACTIVE'} onChange={handleToggleDeliveryStatus} disabled={customer.subscription_status === 'EXPIRED'} />
                         <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                       </label>
                     </div>

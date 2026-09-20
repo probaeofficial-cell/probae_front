@@ -726,6 +726,10 @@ export const endpoints = {
     calculateCalories: async (data: any) => await api.post("/customers/calculate-calories", data),
     previewPlanPrice: async (data: any) => await api.post("/customers/preview-plan-price", data),
     del: async (ulid: string) => await api.del(`/customers/${ulid}`),
+    migrateActivePlan: async (ulid: string, data: any) => await api.post(`/customers/${ulid}/migrate-active-plan`, data),
+    legacySubscription: async (ulid: string, data: any) => await api.post(`/customers/${ulid}/legacy-subscription`, data),
+    updateDeliveryStatus: async (ulid: string, data: any) => await api.patch(`/customers/${ulid}/delivery-status`, data),
+    legacyOrder: async (ulid: string, data: any) => await api.post(`/customers/${ulid}/legacy-order`, data),
   },
   planTiers: {
     list: async (params?: any) => {
