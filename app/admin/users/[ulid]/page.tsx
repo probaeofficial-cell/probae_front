@@ -1,14 +1,17 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { ArrowLeft, Save, Loader2, Activity } from "lucide-react";
 import { api } from "@/lib/apiService";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 
-export default function UserPreviewPage({ params }: { params: { ulid: string } }) {
+export default function UserPreviewPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
+
+  const ulid = params.ulid as string;
   const isEditing = searchParams.get("edit") === "true";
   
   const [loading, setLoading] = useState(true);
@@ -25,17 +28,28 @@ export default function UserPreviewPage({ params }: { params: { ulid: string } }
   });
 
   useEffect(() => {
-    fetchData();
-  }, [params.ulid]);
+    if (ulid) {
+      fetchData();
+    }
+  }, [ulid]);
 
   const fetchData = async () => {
+    if (!ulid) {
+      console.error("ULID is missing from route");
+      return;
+    }
+
     try {
+      console.log("ULID:", ulid, "fetching user data");
+
       const [uRes, logRes] = await Promise.all([
-        api.get<any>(`/auth/admin/${params.ulid}`),
-        api.get<any>(`/auth/admin/${params.ulid}/audit-logs`)
+        api.get<any>(`/auth/admin/${ulid}`),
+        api.get<any>(`/auth/admin/${ulid}/audit-logs`)
       ]);
+
       setUser(uRes);
       setLogs(logRes);
+
       setForm({
         username: uRes.username,
         email: uRes.email,
