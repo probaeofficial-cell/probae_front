@@ -290,7 +290,7 @@ export default function OrderDetailPage() {
             </button>
             <div>
               <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Order Details</h1>
-              <p className="text-neutral-500 font-medium mt-1">Manage fulfilment for #{order.ulid}</p>
+              <p className="text-neutral-500 font-medium mt-1">Manage fulfilment for #{order.order_number|| order.ulid.substring(order.ulid.length - 6)}</p>
             </div>
           </div>
           <div className="flex gap-3">
