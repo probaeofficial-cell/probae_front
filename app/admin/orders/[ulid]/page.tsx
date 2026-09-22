@@ -42,7 +42,7 @@ export default function OrderDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [statusLoading, setStatusLoading] = useState(false);
-  const [deleteModal, setDeleteModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [statusConfirm, setStatusConfirm] = useState<string | null>(null); // holds the pending new status
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -144,11 +144,12 @@ export default function OrderDetailPage() {
   // ─── delete ───────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     setDeleteLoading(true);
+
     try {
       await endpoints.orders.delete(ulid);
       router.push("/admin/orders");
     } catch (e: any) {
-      setDeleteModal(false);
+      setShowDeleteModal(false);
       setErrorMsg(e?.message || "Failed to delete order. Please try again.");
     } finally {
       setDeleteLoading(false);
@@ -296,7 +297,7 @@ export default function OrderDetailPage() {
           <div className="flex gap-3">
             {order.status === "CREATED" && (
               <button 
-                onClick={() => setDeleteModal(true)} 
+                onClick={() => setShowDeleteModal(true)} 
                 className="px-6 py-2.5 rounded-full border border-red-200 text-red-600 bg-white hover:bg-red-50 flex items-center gap-2 shadow-sm transition-colors font-bold"
               >
                 Delete Order
@@ -594,6 +595,16 @@ export default function OrderDetailPage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDelete}
+        title="Delete Order"
+        message={`Are you sure you want to delete order #${order?.order_number || order?.ulid}? This action cannot be undone.`}
+        confirmText={deleteLoading ? "Deleting..." : "Delete Order"}
+        type="delete"
+      />
       
       {/* ── Error Modal ── */}
       {errorMsg && (
@@ -611,5 +622,7 @@ export default function OrderDetailPage() {
         </div>
       )}
     </div>
+
+    
   </>);
 }
