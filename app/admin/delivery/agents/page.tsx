@@ -161,6 +161,7 @@ export default function DeliveryAgents() {
                     <th className="py-4 px-6 text-xs font-bold uppercase tracking-wider">Agent Code</th>
                     <th className="py-4 px-6 text-xs font-bold uppercase tracking-wider">Agent</th>
                     <th className="py-4 px-6 text-xs font-bold uppercase tracking-wider">Phone Number</th>
+                    <th className="py-4 px-6 text-xs font-bold uppercase tracking-wider">Username</th>
                     <th className="py-4 px-6 text-xs font-bold uppercase tracking-wider text-center">Assigned Zones</th>
                     <th className="py-4 px-6 text-xs font-bold uppercase tracking-wider text-center">Active Orders</th>
                     <th className="py-4 px-6 text-xs font-bold uppercase tracking-wider text-center">Status</th>
@@ -169,9 +170,9 @@ export default function DeliveryAgents() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {isLoading ? (
-                    <tr><td colSpan={7} className="py-12 text-center text-neutral-500"><BowlLoader className="w-8 h-8 animate-spin mx-auto text-[#6A0FAD]" /></td></tr>
+                    <tr><td colSpan={8} className="py-12 text-center text-neutral-500"><BowlLoader className="w-8 h-8 animate-spin mx-auto text-[#6A0FAD]" /></td></tr>
                   ) : pagedAgents.length === 0 ? (
-                    <tr><td colSpan={7} className="py-12 text-center text-neutral-500 font-medium">No agents found matching your search.</td></tr>
+                    <tr><td colSpan={8} className="py-12 text-center text-neutral-500 font-medium">No agents found matching your search.</td></tr>
                   ) : pagedAgents.map((agent, localIdx) => {
                     const globalIdx = (currentPage - 1) * PAGE_SIZE + localIdx;
                     return (
@@ -189,6 +190,9 @@ export default function DeliveryAgents() {
                         </td>
                         <td className="py-5 px-6">
                           <span className="text-neutral-500 font-mono text-sm">{agent.phone}</span>
+                        </td>
+                        <td className="py-5 px-6">
+                          <span className="text-neutral-700 font-medium text-sm">{agent.username || "—"}</span>
                         </td>
                         <td className="py-5 px-6 text-center">
                           <span className="inline-flex px-3 py-1 bg-neutral-100 text-neutral-600 rounded-lg text-xs font-bold">All Zones</span>
