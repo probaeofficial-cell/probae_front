@@ -1,5 +1,6 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -195,7 +196,7 @@ export default function OrderDetailPage() {
   };
 
   const canEdit   = order?.status === "CREATED";
-  const canDelete = order?.status === "CREATED" || order?.status === "PREPARED";
+  const canDelete = order?.status === "CREATED";
 
   if (isLoading) return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
@@ -293,6 +294,14 @@ export default function OrderDetailPage() {
             </div>
           </div>
           <div className="flex gap-3">
+            {order.status === "CREATED" && (
+              <button 
+                onClick={() => setDeleteModal(true)} 
+                className="px-6 py-2.5 rounded-full border border-red-200 text-red-600 bg-white hover:bg-red-50 flex items-center gap-2 shadow-sm transition-colors font-bold"
+              >
+                Delete Order
+              </button>
+            )}
             <button 
               onClick={handleDownloadInvoice} 
               className="px-6 py-2.5 rounded-full border border-neutral-300 font-bold text-neutral-700 bg-white hover:bg-neutral-50 flex items-center gap-2 shadow-sm transition-colors"
