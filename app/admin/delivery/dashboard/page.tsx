@@ -35,11 +35,15 @@ export default function DeliveryDashboard() {
   const [assignError, setAssignError] = useState("");
 
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
+  const [actionMenuUlid, setActionMenuUlid] = useState("");
   const [agentPage, setAgentPage] = useState(1);
   const agentDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      if (!(e.target as Element).closest(".action-menu-container")) {
+        setActionMenuUlid("");
+      }
       if (agentDropdownRef.current && !agentDropdownRef.current.contains(e.target as Node)) {
         setIsAgentDropdownOpen(false);
       }
@@ -89,6 +93,24 @@ export default function DeliveryDashboard() {
       fetchData(selectedDate);
     }
   }, [selectedDate, hasInitialized]);
+
+
+  const handleRemoveDriver = async (orderUlid: string) => {
+    try {
+      await endpoints.orders.bulkAssignDriver({ order_ulids: [orderUlid], driver_ulid: null });
+      setActionMenuUlid("");
+      fetchData(selectedDate); // Refetch to show unassigned
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSelectForReassign = (orderUlid: string) => {
+    setSelectedIds([orderUlid]);
+    setActionMenuUlid("");
+    // Scroll to top or highlight the assign menu
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const fetchData = async (date: string) => {
     setIsLoading(true);
@@ -493,8 +515,20 @@ export default function DeliveryDashboard() {
                           {order.status}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-center text-neutral-400">
-                        <button className="hover:text-neutral-900"><MoreVertical className="w-4 h-4 mx-auto" /></button>
+                      <td className="py-4 px-4 text-center text-neutral-400 relative action-menu-container">
+                        <button onClick={() => setActionMenuUlid(actionMenuUlid === order.ulid ? "" : order.ulid)} className="hover:text-neutral-900 p-2 rounded-lg hover:bg-neutral-100 transition-colors">
+                          <MoreVertical className="w-4 h-4 mx-auto" />
+                        </button>
+                        {actionMenuUlid === order.ulid && (
+                          <div className="absolute right-8 top-1/2 -translate-y-1/2 mt-0 w-40 bg-white border border-neutral-200 rounded-xl shadow-lg z-[60] overflow-hidden">
+                            <button onClick={() => handleSelectForReassign(order.ulid)} className="w-full text-left px-4 py-2.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-[#6A0FAD] transition-colors border-b border-neutral-100">
+                              Reassign Driver
+                            </button>
+                            <button onClick={() => handleRemoveDriver(order.ulid)} className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors">
+                              Remove Driver
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}

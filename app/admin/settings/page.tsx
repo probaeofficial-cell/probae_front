@@ -19,7 +19,7 @@ export default function SettingsPage() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
   // System Configurations state
-  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "", AUTO_ASSIGN_DRIVERS: "false" });
   const [sysSaveStatus, setSysSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function SettingsPage() {
       try {
         const data = await endpoints.settings.getSystemSettings();
         if (data && data.R2_BASE_URL !== undefined) {
-          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
+          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL, AUTO_ASSIGN_DRIVERS: (data as any).AUTO_ASSIGN_DRIVERS || "false" });
         }
       } catch (error) {
         console.error("Error fetching system settings:", error);
@@ -57,6 +57,7 @@ export default function SettingsPage() {
     try {
       await endpoints.settings.updateSystemSettings({
         R2_BASE_URL: systemSettings.R2_BASE_URL,
+        AUTO_ASSIGN_DRIVERS: systemSettings.AUTO_ASSIGN_DRIVERS,
       });
       setSysSaveStatus("saved");
     } catch (error) {
@@ -158,6 +159,22 @@ export default function SettingsPage() {
                       placeholder="e.g. https://pub-xxxxxx.r2.dev"
                     />
                   </div>
+                </div>
+
+                <div className="pt-4 mt-2 border-t border-neutral-100">
+                  <label className="block text-sm font-semibold text-neutral-800 mb-1">
+                    Auto-Assign Drivers on Dispatch
+                  </label>
+                  <p className="text-xs text-neutral-500 mb-3">
+                    Automatically find and assign an available driver based on the customer's zone when an order is dispatched.
+                  </p>
+                  <button 
+                    onClick={() => setSystemSettings({ ...systemSettings, AUTO_ASSIGN_DRIVERS: systemSettings.AUTO_ASSIGN_DRIVERS === "true" ? "false" : "true" })}
+                    className="flex items-center gap-3 bg-neutral-50 px-4 py-3 rounded-xl border border-neutral-200 hover:bg-neutral-100 transition-colors w-full max-w-sm"
+                  >
+                    {systemSettings.AUTO_ASSIGN_DRIVERS === "true" ? <ToggleRight className="w-6 h-6 text-violet-600" /> : <ToggleLeft className="w-6 h-6 text-neutral-400" />}
+                    <span className="text-sm font-bold text-neutral-700">{systemSettings.AUTO_ASSIGN_DRIVERS === "true" ? "Enabled (Auto-Assigns Driver)" : "Disabled (Manual Assignment Only)"}</span>
+                  </button>
                 </div>
               </div>
 

@@ -70,18 +70,18 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
     }
   };
 
-  const [confirmAction, setConfirmAction] = useState<{id: number, status: string} | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{id: number, status: string, currentWeight?: number} | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const requestUpdateStatus = (ingredientId: number, newStatus: string) => {
-    setConfirmAction({ id: ingredientId, status: newStatus });
+  const requestUpdateStatus = (ingredientId: number, newStatus: string, currentWeight: number = 0) => {
+    setConfirmAction({ id: ingredientId, status: newStatus, currentWeight });
   };
 
   const handleConfirmUpdate = async () => {
     if (!confirmAction) return;
     setIsUpdating(true);
     try {
-      await endpoints.kds.updatePrepStatus(confirmAction.id, confirmAction.status, targetDate);
+      await endpoints.kds.updatePrepStatus(confirmAction.id, confirmAction.status, targetDate, confirmAction.currentWeight);
       fetchData();
     } catch (e) {
       console.error("Failed to update status", e);
@@ -190,7 +190,7 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
                     {(comp.status === "UNCOOKED" || comp.status === "PREPARING") && (
                       <button
                         disabled={comp.status === "PREPARING"}
-                        onClick={() => requestUpdateStatus(comp.ingredient_id, "PREPARING")}
+                        onClick={() => requestUpdateStatus(comp.ingredient_id, "PREPARING", comp.total_weight_needed)}
                         className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                           comp.status === "PREPARING" 
                             ? "bg-white text-yellow-600 shadow-sm border border-neutral-200/60 cursor-default" 
@@ -203,7 +203,7 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
                     
                     <button
                       disabled={comp.status === "PREPARED"}
-                      onClick={() => requestUpdateStatus(comp.ingredient_id, "PREPARED")}
+                      onClick={() => requestUpdateStatus(comp.ingredient_id, "PREPARED", comp.total_weight_needed)}
                       className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                         comp.status === "PREPARED" 
                           ? "bg-white text-green-600 shadow-sm border border-neutral-200/60 cursor-default" 

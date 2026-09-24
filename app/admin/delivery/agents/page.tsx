@@ -20,10 +20,19 @@ export default function DeliveryAgents() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newAgent, setNewAgent] = useState({ name: "", phone: "", username: "", password: "", is_active: true });
   const [isSaving, setIsSaving] = useState(false);
+  const [zones, setZones] = useState<any[]>([]);
 
   useEffect(() => {
     fetchAgents();
+    fetchZones();
   }, []);
+
+  const fetchZones = async () => {
+    try {
+      const data = await endpoints.logistics.getZones() as any;
+      setZones(data.zones || data);
+    } catch(e) {}
+  };
 
   const fetchAgents = async () => {
     setIsLoading(true);
@@ -195,7 +204,7 @@ export default function DeliveryAgents() {
                           <span className="text-neutral-700 font-medium text-sm">{agent.username || "—"}</span>
                         </td>
                         <td className="py-5 px-6 text-center">
-                          <span className="inline-flex px-3 py-1 bg-neutral-100 text-neutral-600 rounded-lg text-xs font-bold">All Zones</span>
+                          <span className="inline-flex px-3 py-1 bg-neutral-100 text-neutral-600 rounded-lg text-xs font-bold">{agent.zone_name || "All Zones"}</span>
                         </td>
                         <td className="py-5 px-6 text-center">
                           <span className="font-black text-[#6A0FAD] text-lg">0</span>
@@ -280,6 +289,17 @@ export default function DeliveryAgents() {
               <div>
                 <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Login Password</label>
                 <input type="password" value={newAgent.password} onChange={e => setNewAgent({...newAgent, password: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6A0FAD] text-neutral-900" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Assigned Zone</label>
+                <select 
+                  value={(newAgent as any).zone_id || ""} 
+                  onChange={e => setNewAgent({...newAgent, zone_id: e.target.value ? parseInt(e.target.value) : undefined} as any)}
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6A0FAD] text-neutral-900"
+                >
+                  <option value="">All Zones (No specific zone)</option>
+                  {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+                </select>
               </div>
             </div>
 

@@ -334,8 +334,8 @@ export const endpoints = {
       if (mealSlot && mealSlot !== 'ALL') url += `&meal_slot=${encodeURIComponent(mealSlot)}`;
       return api.get(url);
     },
-    updatePrepStatus: async (ingredientId: number, status: string, date: string) => {
-      return api.patch(`/kds/prep-list/${ingredientId}/status?target_date=${date}`, { status });
+    updatePrepStatus: async (ingredientId: number, status: string, date: string, current_weight?: number) => {
+      return api.patch(`/kds/prep-list/${ingredientId}/status?target_date=${date}`, { status, current_weight });
     },
     getAssemblyList: async (date: string, mealSlot?: string) => {
       let url = `/kds/assembly-list?target_date=${date}`;
@@ -372,7 +372,7 @@ export const endpoints = {
       api.del(`/orders/${ulid}`),
     updateItem: (orderUlid: string, itemUlid: string, payload: any) =>
       api.patch(`/orders/${orderUlid}/items/${itemUlid}`, payload),
-    bulkAssignDriver: (payload: { order_ulids: string[], driver_ulid: string }) =>
+    bulkAssignDriver: (payload: { order_ulids: string[], driver_ulid: string | null }) =>
       api.patch(`/orders/bulk-assign-driver`, payload),
     myDeliveries: () =>
       api.get(`/orders/my-deliveries`),

@@ -36,6 +36,7 @@ export default function NewCustomerPage() {
     }
     fetchSystemSettings();
     fetchMealCats();
+    endpoints.logistics.getZones().then((d:any) => setZones(d.zones || d)).catch(()=>{});
   }, []);
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +49,7 @@ export default function NewCustomerPage() {
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+  const [zones, setZones] = useState<any[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
   
   const [formData, setFormData] = useState({
@@ -59,6 +61,7 @@ export default function NewCustomerPage() {
     locationDescription: "",
     image_filename: null as string | null,
     address: "",
+    zone_id: "",
     sex: "Male",
     age: "25",
     height: "180",
@@ -347,6 +350,7 @@ export default function NewCustomerPage() {
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         location_description: formData.locationDescription || null,
         address: formData.address,
+        zone_id: formData.zone_id ? parseInt(formData.zone_id) : null,
         sex: formData.sex || null,
         age: formData.age ? parseInt(formData.age) : null,
         height: formData.height ? parseFloat(formData.height) : null,
@@ -429,6 +433,17 @@ export default function NewCustomerPage() {
                   <div className="col-span-1 md:col-span-2">
                     <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Address</label>
                     <textarea value={formData.address} onChange={(e) => updateField("address", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" rows={3} />
+                  </div>
+                  <div className="col-span-1 md:col-span-2">
+                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Delivery Zone</label>
+                    <select 
+                      value={formData.zone_id}
+                      onChange={(e) => updateField("zone_id", e.target.value)}
+                      className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]"
+                    >
+                      <option value="">Select a Zone (or None)</option>
+                      {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+                    </select>
                   </div>
                   <div className="md:col-span-2">
                     <LocationPicker 
