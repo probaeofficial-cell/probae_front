@@ -260,6 +260,9 @@ export const api = {
   patch: <T>(endpoint: string, data?: any, options?: Omit<FetchOptions, "method" | "body">) =>
     fetchClient<T>(endpoint, { ...options, method: "PATCH", body: data }),
 
+  delete: <T>(endpoint: string, options?: Omit<FetchOptions, "method" | "body">) =>
+    fetchClient<T>(endpoint, { ...options, method: "DELETE" }),
+
   del: <T>(endpoint: string, options?: Omit<FetchOptions, "method" | "body">) =>
     fetchClient<T>(endpoint, { ...options, method: "DELETE" }),
 };
@@ -374,6 +377,9 @@ export const endpoints = {
       api.patch(`/orders/${orderUlid}/items/${itemUlid}`, payload),
     bulkAssignDriver: (payload: { order_ulids: string[], driver_ulid: string | null }) =>
       api.patch(`/orders/bulk-assign-driver`, payload),
+    
+    generateMessage: async (ulid: string, channel: string, type: string) => api.get(`/orders/${ulid}/generate-message?channel=${channel}&type=${type}`),
+    markMessageSent: async (ulid: string, channel: string) => api.patch(`/orders/${ulid}/mark-message-sent`, { channel }),
     myDeliveries: () =>
       api.get(`/orders/my-deliveries`),
     confirmCod: (ulid: string) =>
@@ -540,6 +546,15 @@ export const endpoints = {
     },
   },
 
+
+  messageTemplates: {
+    variables: async () => api.get('/message-templates/variables'),
+    list: async () => api.get('/message-templates/'),
+    get: async (ulid: string) => api.get(`/message-templates/${ulid}`),
+    create: async (data: any) => api.post('/message-templates/', data),
+    update: async (ulid: string, data: any) => api.patch(`/message-templates/${ulid}`, data),
+    delete: async (ulid: string) => api.delete(`/message-templates/${ulid}`)
+  },
   settings: {
     getSystemSettings: async (): Promise<{ R2_BASE_URL: string }> => {
       return await api.get<{ R2_BASE_URL: string }>("/settings/");

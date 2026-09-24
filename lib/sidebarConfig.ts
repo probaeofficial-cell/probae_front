@@ -13,6 +13,7 @@ import {
   CircleUser,
   Settings,
   Truck,
+  MessageSquare,
 } from "lucide-react";
 
 export type SubMenuItem = {
@@ -89,6 +90,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       assembly: { label: "Bowl Assembly", dotColor: "bg-green-500", path: "/admin/kds/assembly" },
       packaging: { label: "Packaging Prep", dotColor: "bg-teal-500", path: "/admin/kds/packaging" },
       dispatch: { label: "Dispatch Prep", dotColor: "bg-purple-500", path: "/admin/kds/dispatch" },
+      delivered: { label: "Dispatch Orders", dotColor: "bg-pink-500", path: "/admin/dispatch" },
     },
   },
   transactions: {
@@ -110,6 +112,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     },
   },
 
+  messaging: { label: "Templates", icon: MessageSquare, path: "/admin/message-templates", roles: ["ADMIN"] },
   affiliates: { label: "Affiliates", icon: Network, path: "/admin/affiliates", roles: ["ADMIN"] },
   customers: {
     label: "Customers",
