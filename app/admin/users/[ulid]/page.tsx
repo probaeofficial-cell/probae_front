@@ -89,7 +89,7 @@ export default function UserPreviewPage() {
   return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]"><div className="p-4 sm:p-8 h-full flex flex-col bg-[#E6E6E6] overflow-hidden"><Header />
 <Breadcrumbs segments={["ADMIN", "SYSTEM USERS", "PROFILE"]} />
-<div className="flex-1 overflow-y-auto pb-10 max-w-5xl mx-auto w-full grid grid-cols-3 gap-8">
+<div className="flex-1 overflow-y-auto pb-10 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
       
 
       <div className="col-span-2 space-y-6">
@@ -115,7 +115,7 @@ export default function UserPreviewPage() {
               </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-bold text-neutral-700 mb-2">Username</label>
                 <input disabled={!isEditing} type="text" value={form.username} onChange={(e) => setForm({...form, username: e.target.value})} className="w-full h-[52px] bg-neutral-100 rounded-[16px] px-4 outline-none text-neutral-800 font-medium placeholder:text-neutral-400 focus:ring-2 focus:ring-[#6A0FAD]/20 disabled:opacity-50 border border-transparent" />

@@ -71,8 +71,8 @@ export default function DispatchOrdersPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-white border border-neutral-200 rounded-2xl shadow-sm">
-            <table className="w-full text-left border-collapse">
+          <div className="flex-1 overflow-y-auto bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[500px]">
               <thead>
                 <tr className="bg-neutral-50 border-b border-neutral-200">
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Order ID</th>

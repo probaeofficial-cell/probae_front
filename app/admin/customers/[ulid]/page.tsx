@@ -736,7 +736,7 @@ export default function CustomerDetailPage() {
                     <div>
                       <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Primary Goal</label>
                       {isEditMode ? (
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           {["Weight Loss", "Muscle Gain", "Maintenance"].map(g => (
                             <button type="button" key={g} onClick={() => updateField("goal", g)} className={`py-4 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 ${formData.goal === g ? "bg-[#6A0FAD] text-white border-[#6A0FAD]" : "bg-white text-neutral-600 border-neutral-300"}`}>
                               {formData.goal === g && <Check className="w-4 h-4" />} {g}
@@ -1004,7 +1004,7 @@ export default function CustomerDetailPage() {
                         <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mt-1">Kcal / Day</div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                       <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 text-center">
                         <div className="text-lg font-bold text-neutral-900">{customer.calorie_profile.protein}g</div>
                         <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Protein</div>

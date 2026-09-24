@@ -476,7 +476,7 @@ export default function NewOrderPage() {
                   </div>
                   
                   <div className="overflow-x-auto border-t border-neutral-100">
-                    <table className="w-full text-left text-sm border-collapse">
+                    <table className="w-full text-left text-sm border-collapse min-w-[600px]">
                       <tbody className="divide-y divide-neutral-100">
                         {item.workingIngredients.map((ing: any, i: number) => (
                           <tr key={i} className="hover:bg-neutral-50/50 transition-colors">

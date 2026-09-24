@@ -708,7 +708,7 @@ export default function DashboardPage() {
                 <div className="flex justify-center my-1">
                   <SalesGauge value={65.2} />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 border border-neutral-200/20 shadow-sm">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Number of Sales</span>
@@ -864,7 +864,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-2 w-full mt-4 border-t border-neutral-200/50 pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full mt-4 border-t border-neutral-200/50 pt-4">
                 <div className="flex flex-col items-center">
                   <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-semibold">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#5b21b6]" />

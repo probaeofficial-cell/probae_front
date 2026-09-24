@@ -45,14 +45,25 @@ export default function AsyncBowlSelect({ value, onChange, mealCategoryId, selec
   const fetchOptions = async (pageNum: number, searchTerm: string, isNewSearch: boolean) => {
     setIsLoading(true);
     try {
-      const res = await endpoints.bowls.getBowls(pageNum, 10, searchTerm, undefined, undefined, undefined, undefined, undefined, undefined, mealCategoryId === 0 ? undefined : mealCategoryId) as any;
-      const newItems = res.items || [];
+      // Search by name — always
+      // Also pass as code search if the term looks like a bowl code (short, no spaces)
+      const looksLikeCode = searchTerm.length > 0 && !searchTerm.includes(' ');
+      const nameRes = await endpoints.bowls.getBowls(pageNum, 10, searchTerm, undefined, undefined, undefined, undefined, undefined, undefined, mealCategoryId === 0 ? undefined : mealCategoryId) as any;
+      let codeItems: any[] = [];
+      if (looksLikeCode) {
+        const codeRes = await endpoints.bowls.getBowls(1, 10, undefined, undefined, undefined, undefined, undefined, searchTerm, undefined, mealCategoryId === 0 ? undefined : mealCategoryId) as any;
+        // Merge, dedup by ulid
+        const seen = new Set((nameRes.items || []).map((i: any) => i.ulid));
+        codeItems = (codeRes.items || []).filter((i: any) => !seen.has(i.ulid));
+      }
+      const combined = [...(nameRes.items || []), ...codeItems];
+      const newItems = combined;
       if (isNewSearch) {
         setOptions(newItems);
       } else {
         setOptions(prev => [...prev, ...newItems]);
       }
-      setHasMore(newItems.length === 10);
+      setHasMore((nameRes.items || []).length === 10);
     } catch (err) {
       console.error("Failed to load bowls", err);
     } finally {
@@ -116,7 +127,7 @@ export default function AsyncBowlSelect({ value, onChange, mealCategoryId, selec
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input 
                 type="text"
-                placeholder="Search bowls..."
+                placeholder="Search by name or bowl code..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full h-9 pl-9 pr-3 bg-neutral-50 rounded-xl text-sm outline-none placeholder:text-neutral-400 text-neutral-900"
@@ -137,7 +148,10 @@ export default function AsyncBowlSelect({ value, onChange, mealCategoryId, selec
               >
                 <div className="flex flex-col">
                   <span className="truncate font-medium">{opt.name}</span>
-                  <span className="text-[10px] text-neutral-500">{opt.bowl_type || 'Standard'}</span>
+                  <span className="text-[10px] text-neutral-500">
+                    {opt.code && <span className="font-mono bg-neutral-100 px-1 rounded mr-1">{opt.code}</span>}
+                    {opt.bowl_type || 'Standard'}
+                  </span>
                 </div>
                 {value === opt.ulid && (
                   <div className="w-2 h-2 rounded-full bg-[#7c3aed]" />

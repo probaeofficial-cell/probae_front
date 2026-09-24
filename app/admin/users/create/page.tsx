@@ -56,7 +56,7 @@ export default function CreateUserPage() {
               </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-bold text-neutral-700 mb-2">Username</label>
               <input required type="text" value={form.username} onChange={(e) => setForm({...form, username: e.target.value})} className="w-full h-[52px] bg-neutral-100 rounded-[16px] px-4 outline-none text-neutral-800 font-medium placeholder:text-neutral-400 focus:ring-2 focus:ring-[#6A0FAD]/20 disabled:opacity-50 border border-transparent" />

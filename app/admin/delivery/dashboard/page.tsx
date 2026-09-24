@@ -421,8 +421,8 @@ export default function DeliveryDashboard() {
             )}
 
             {/* List */}
-            <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-neutral-100 overflow-hidden mb-8">
-              <table className="w-full text-left border-collapse">
+            <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-neutral-100 overflow-hidden mb-8 overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
                   <tr className="bg-[#2A2A2A] text-white">
                     <th className="py-4 px-4 w-12 text-center border-r border-white/10">

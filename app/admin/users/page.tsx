@@ -66,7 +66,7 @@ export default function UsersListPage() {
         </ProbaeButton>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100 flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
             <UsersIcon className="w-6 h-6" />
@@ -96,9 +96,8 @@ export default function UsersListPage() {
         </div>
       </div>
       <div className="bg-white rounded-3xl shadow-sm border border-neutral-100 overflow-hidden">
-
-
-        <table className="w-full text-left">
+        <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[600px]">
           <thead>
             <tr className="border-b border-neutral-100 text-neutral-500 text-sm font-bold uppercase tracking-wider bg-neutral-50/50">
               <th className="py-4 px-6">User</th>
@@ -147,6 +146,7 @@ export default function UsersListPage() {
             ))}
           </tbody>
         </table>
+        </div>
         
         {/* Pagination */}
         <div className="p-4 border-t border-neutral-100 bg-white flex justify-between items-center">

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { Copy, Plus, MessageCircle, Save, ArrowLeft } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 
-export default function CreateTemplatePage() {
+function CreateTemplatePageInner() {
   const router = useRouter();
   // We need useSearchParams to optionally pre-fill the form
   // However, in Next.js 13+ useSearchParams needs to be imported from next/navigation
@@ -161,7 +161,7 @@ export default function CreateTemplatePage() {
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-bold text-neutral-700 mb-1">Template Type</label>
                     <select
@@ -233,5 +233,13 @@ export default function CreateTemplatePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CreateTemplatePage() {
+  return (
+    <Suspense fallback={<div className="flex-1 flex items-center justify-center text-neutral-400">Loading...</div>}>
+      <CreateTemplatePageInner />
+    </Suspense>
   );
 }

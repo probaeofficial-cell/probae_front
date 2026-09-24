@@ -238,7 +238,7 @@ export default function PackagingDashboardPage() {
                       {/* Accordion Content */}
                       {isExpanded && (
                         <div className="overflow-x-auto bg-white border-t border-neutral-100">
-                          <table className="w-full text-left text-sm whitespace-nowrap">
+                          <table className="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
                             <thead className="text-xs uppercase bg-white text-neutral-400 font-bold tracking-wider">
                               <tr className="border-b border-neutral-100">
                                 <th className="px-6 py-4 w-12 text-center">Status</th>

@@ -185,7 +185,7 @@ export default function DispatchPrepPage() {
           />
         </div>
 
-        <div className="flex-1 overflow-auto scrollbar-thin border border-neutral-200 rounded-2xl bg-neutral-50">
+        <div className="flex-1 overflow-auto scrollbar-thin border border-neutral-200 rounded-2xl bg-neutral-50 overflow-x-auto">
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <BowlLoader className="w-10 h-10 animate-spin text-[#6A0FAD]" />
@@ -197,7 +197,7 @@ export default function DispatchPrepPage() {
               <p className="text-neutral-500 font-medium">Try adjusting your filters or date.</p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse bg-white">
+            <table className="w-full text-left border-collapse bg-white min-w-[600px]">
               <thead className="sticky top-0 bg-neutral-100/90 backdrop-blur border-b border-neutral-200 z-10 shadow-sm">
                 <tr>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase tracking-wider">Order No</th>
