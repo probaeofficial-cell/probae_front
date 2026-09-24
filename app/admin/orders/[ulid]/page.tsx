@@ -50,6 +50,9 @@ export default function OrderDetailPage() {
   const [isPrepWarning, setIsPrepWarning] = useState<boolean>(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
+  // Edit Item State
+
+
   // ─── fetch ───────────────────────────────────────────────────────────────
 
   // ─── settings ─────────────────────────────────────────────────────────────
@@ -144,7 +147,6 @@ export default function OrderDetailPage() {
   // ─── delete ───────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     setDeleteLoading(true);
-
     try {
       await endpoints.orders.delete(ulid);
       router.push("/admin/orders");
@@ -155,6 +157,7 @@ export default function OrderDetailPage() {
       setDeleteLoading(false);
     }
   };
+
 
   // ─── invoice (print-to-PDF) ───────────────────────────────────────────────
   const handleDownloadInvoice = () => {
@@ -457,6 +460,7 @@ export default function OrderDetailPage() {
                           }`}>
                             {item.assembly_status === "ASSEMBLED" ? "ASSEMBLED" : "UNASSEMBLED"}
                           </span>
+
                         </div>
                         <Icon className="w-4 h-4" />
                      </div>
@@ -520,7 +524,7 @@ export default function OrderDetailPage() {
                            {item.adjusted_ingredients?.map((ing: any, i: number) => (
                              <div key={i} className="flex justify-between items-center border-b border-neutral-200/50 pb-2 last:border-0 last:pb-0">
                                <span className="font-medium text-neutral-800 flex-1">{ing.name}</span>
-                               <span className="text-neutral-400 font-medium ml-2">{Math.round(ing.original_weight)}g</span>
+                               <span className="text-neutral-400 font-medium ml-2">{Math.round(ing.new_weight || ing.quantity || ing.original_weight || 0)}g</span>
                              </div>
                            ))}
                            {(!item.adjusted_ingredients || item.adjusted_ingredients.length === 0) && (

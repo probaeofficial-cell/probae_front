@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Loader2, Calendar, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, Filter, X, Clock, Zap } from "lucide-react";
+import { Loader2, Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -18,7 +18,7 @@ export default function OrdersPage() {
   const [customerId, setCustomerId] = useState<number | 0>(0);
   const [status, setStatus] = useState("");
   
-  const [activeTab, setActiveTab] = useState<"PLAN" | "CUSTOM">("PLAN");
+  const [activeTab, setActiveTab] = useState<"ALL" | "PLAN" | "CUSTOM">("ALL");
   const [prepList, setPrepList] = useState<any>(null);
   const [isPrepWarning, setIsPrepWarning] = useState<boolean>(false);
   const [orders, setOrders] = useState<any[]>([]);
@@ -119,7 +119,7 @@ export default function OrdersPage() {
   const fetchOrders = async (source: string, pageNum: number, dateFilter: string, searchQuery: string, customerIdFilter: number, statusFilter: string) => {
     setIsLoading(true);
     try {
-      const data = await endpoints.orders.list({ source, page: pageNum, limit: 10, target_date: dateFilter, search: searchQuery || undefined, customer_id: customerIdFilter || 0, status: statusFilter || undefined }) as any;
+      const data = await endpoints.orders.list({ source: source === "ALL" ? undefined : source, page: pageNum, limit: 10, target_date: dateFilter, search: searchQuery || undefined, customer_id: customerIdFilter || 0, status: statusFilter || undefined }) as any;
       if (data.success) {
         setOrders(data.orders);
         setTotalPages(Math.ceil(data.total_count / data.limit) || 1);
@@ -209,14 +209,20 @@ export default function OrdersPage() {
           )}
 
           <div className="flex-1 flex flex-col min-h-0 pb-10">
-            <div className="relative flex mb-6 shrink-0 bg-neutral-100 p-1.5 rounded-2xl w-full max-w-[400px]">
+            <div className="relative flex mb-6 shrink-0 bg-neutral-100 p-1.5 rounded-2xl w-full max-w-[600px]">
               {/* Sliding background */}
               <div 
-                className={`absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-0.375rem)] bg-white rounded-xl shadow-sm transition-transform duration-300 ease-out ${
-                  activeTab === "PLAN" ? "translate-x-0" : "translate-x-full"
+                className={`absolute top-1.5 bottom-1.5 left-1.5 w-[calc(33.333%-0.25rem)] bg-white rounded-xl shadow-sm transition-transform duration-300 ease-out ${
+                  activeTab === "ALL" ? "translate-x-0" : activeTab === "PLAN" ? "translate-x-[100%]" : "translate-x-[200%]"
                 }`}
               />
 
+              <button
+                onClick={() => { setActiveTab("ALL"); setPage(1); }}
+                className={`relative z-10 flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-bold text-sm transition-colors duration-300 ${activeTab === "ALL" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-700 hover:text-neutral-900"}`}
+              >
+                <List className="w-4 h-4" /> All Orders
+              </button>
               <button
                 onClick={() => { setActiveTab("PLAN"); setPage(1); }}
                 className={`relative z-10 flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-bold text-sm transition-colors duration-300 ${activeTab === "PLAN" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-700 hover:text-neutral-900"}`}
@@ -289,9 +295,19 @@ export default function OrdersPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2">
+                              {order.status === "CREATED" && (
+                                <Link 
+                                  href={`/admin/orders/${order.ulid}/edit`}
+                                  className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-[#6A0FAD] hover:bg-[#F9F5FD] transition-colors"
+                                  title="Edit Order"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </Link>
+                              )}
                               <Link 
                                 href={`/admin/orders/${order.ulid}`}
                                 className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                                title="View Details"
                               >
                                 <Eye className="w-4 h-4" />
                               </Link>

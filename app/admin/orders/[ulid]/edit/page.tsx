@@ -3,13 +3,16 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect, useMemo } from "react";
 import { Loader2, ArrowLeft, CheckCircle2, Search, Plus, Trash2, User, Activity } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
+import { use } from "react";
 import { endpoints } from "@/lib/apiService";
 import { Header } from "@/components/admin/Header";
 import { ProbaeButton } from "@/components/ProbaeButton";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 
-export default function NewOrderPage() {
+export default function EditOrderPage({ params }: { params: Promise<{ ulid: string }> }) {
+  const { ulid } = use(params);
+  const [originalOrder, setOriginalOrder] = useState<any>(null);
   const router = useRouter();
   
   const [customers, setCustomers] = useState<any[]>([]);
@@ -42,6 +45,49 @@ export default function NewOrderPage() {
   const [paymentMethod, setPaymentMethod] = useState("UPI");
   const [paymentIntent, setPaymentIntent] = useState<string>("");
   const [showWarningModal, setShowWarningModal] = useState(false);
+
+  useEffect(() => {
+    endpoints.orders.get(ulid).then((res: any) => {
+      const data = res.order || res;
+      if (data.status !== "CREATED") {
+        router.push("/admin/orders");
+        return;
+      }
+      setOriginalOrder(data);
+      setTargetDate(data.target_date.split('T')[0]);
+      
+      // Make sure the customer object has an id, because Checkout uses customer_id!
+      // But get_order returns customer without 'id', so we inject customer_id.
+      const cust = data.customer || {};
+      cust.id = data.customer_id;
+      setSelectedCustomer(cust);
+      if (data.is_billed) {
+          setPaymentIntent("UPFRONT_PAYMENT");
+          // If we had a way to know the exact method, we'd set it. Default to UPI.
+      } else if (data.requires_cod) {
+          setPaymentIntent("PAY_ON_DELIVERY");
+      }
+      
+      const mappedItems = data.items.map((item: any) => {
+         return {
+            id: item.ulid,
+            bowlUlid: item.bowl_ulid,
+            bowlName: item.bowl_name,
+            mealSlot: item.meal_slot,
+            quantity: item.quantity,
+            previewData: {
+              new_raw_material_cost: item.raw_material_cost,
+              packaging_cost: item.packaging_cost,
+              fixed_cost: item.fixed_cost,
+              ingredients: JSON.parse(JSON.stringify(item.adjusted_ingredients)) // reference original
+            },
+            workingIngredients: JSON.parse(JSON.stringify(item.adjusted_ingredients))
+         };
+      });
+      setOrderItems(mappedItems);
+    }).catch(console.error);
+  }, [ulid, router]);
+
 
   // All meal categories are shown — no time-based filtering
   const availableMealCategories = useMemo(() => mealCategories, [mealCategories]);
@@ -242,9 +288,9 @@ export default function NewOrderPage() {
         adjusted_protein: totals.pro,
         adjusted_carbs: totals.carb,
         adjusted_fat: totals.fat,
-        adjusted_fiber: item.workingIngredients.reduce((sum: number, ing: any) => sum + ing.fiber, 0),
+        adjusted_fiber: item.workingIngredients.reduce((sum: number, ing: any) => sum + (ing.fiber || 0), 0),
         adjusted_price: totals.finalPrice,
-        raw_material_cost: item.previewData?.new_raw_material_cost || 0,
+        raw_material_cost: totals.cost > 0 ? totals.cost : (item.previewData?.new_raw_material_cost || 0),
         packaging_cost: item.previewData?.packaging_cost || 0,
         fixed_cost: item.previewData?.fixed_cost || 0,
         adjusted_ingredients: item.workingIngredients
@@ -252,11 +298,9 @@ export default function NewOrderPage() {
     });
 
     try {
-      const data = await endpoints.orders.checkout({
-        customer_ulid: selectedCustomer.ulid,
-        target_date: targetDate,
+      const data = await endpoints.orders.bulkUpdateItems(ulid, {
         items: payloadItems,
-        payment_intent: paymentIntent,
+        is_paid_now: paymentIntent === 'UPFRONT_PAYMENT',
         payment_method: paymentIntent === 'UPFRONT_PAYMENT' ? paymentMethod : null
       }) as any;
       
@@ -273,7 +317,7 @@ export default function NewOrderPage() {
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
       <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden relative">
         <Header />
-        <Breadcrumbs segments={["Admin", "Orders", "Create Custom Order"]} />
+        <Breadcrumbs segments={["Admin", "Orders", "Edit Custom Order"]} />
         
         <div className="mt-4 flex-1 flex flex-col min-h-0 overflow-y-auto">
           <div className="max-w-5xl mx-auto w-full space-y-8 pb-32 pt-2">
@@ -281,7 +325,7 @@ export default function NewOrderPage() {
             <Link href="/admin/orders" className="p-2 hover:bg-neutral-200 rounded-full transition-colors">
               <ArrowLeft className="w-5 h-5 text-neutral-600" />
             </Link>
-            <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Create Custom Order</h1>
+            <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Edit Custom Order</h1>
           </div>
 
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-neutral-200 shadow-sm space-y-8">
@@ -572,7 +616,7 @@ export default function NewOrderPage() {
               className="w-full md:w-auto md:!px-10 disabled:opacity-50"
             >
               {isSubmitting ? <BowlLoader className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-              Approve & Create Order
+              Approve & Save Order
             </ProbaeButton>
           </div>
         )}

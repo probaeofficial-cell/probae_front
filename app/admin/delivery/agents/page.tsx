@@ -18,7 +18,7 @@ export default function DeliveryAgents() {
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newAgent, setNewAgent] = useState({ name: "", phone: "", password: "", is_active: true });
+  const [newAgent, setNewAgent] = useState({ name: "", phone: "", username: "", password: "", is_active: true });
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function DeliveryAgents() {
     try {
       await endpoints.logistics.createDriver(newAgent);
       setIsModalOpen(false);
-      setNewAgent({ name: "", phone: "", password: "", is_active: true });
+      setNewAgent({ name: "", phone: "", username: "", password: "", is_active: true });
       fetchAgents();
     } catch (e: any) {
       alert("Failed to create agent: " + (e.detail || e.message));
@@ -270,8 +270,12 @@ export default function DeliveryAgents() {
                 <input type="text" value={newAgent.name} onChange={e => setNewAgent({...newAgent, name: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6A0FAD] text-neutral-900" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Phone Number (Login Username)</label>
+                <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Phone Number</label>
                 <input type="text" value={newAgent.phone} onChange={e => setNewAgent({...newAgent, phone: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6A0FAD] text-neutral-900" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Login Username</label>
+                <input type="text" value={newAgent.username} onChange={e => setNewAgent({...newAgent, username: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6A0FAD] text-neutral-900" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Login Password</label>

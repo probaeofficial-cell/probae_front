@@ -362,6 +362,8 @@ export const endpoints = {
       api.post("/orders/preview", payload),
     checkout: (payload: any) =>
       api.post("/orders/checkout", payload),
+    bulkUpdateItems: (ulid: string, payload: any) =>
+      api.put(`/orders/${ulid}/items`, payload),
     updateStatus: (ulid: string, status: string) =>
       api.patch(`/orders/${ulid}/status`, { status }),
     get: (ulid: string) =>
