@@ -12,6 +12,8 @@ import { endpoints } from "@/lib/apiService";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { OrderWindowModal } from "@/components/admin/OrderWindowModal";
 
+const STANDARD_MEAL_SLOTS = ["Breakfast", "Lunch", "Dinner", "Snacks", "Drinks"];
+
 export default function OrdersPage() {
   const [targetDate, setTargetDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
   const [search, setSearch] = useState("");
@@ -154,7 +156,10 @@ export default function OrdersPage() {
         setOrders(data.orders);
         setTotalPages(Math.ceil(data.total_count / data.limit) || 1);
         setOrderSummary(data.summary || { total_orders: 0, delivered: 0, pending: 0 });
-        const slots: string[] = data.available_meal_slots || [];
+        const slots: string[] = Array.from(new Set([
+          ...STANDARD_MEAL_SLOTS,
+          ...(data.available_meal_slots || []),
+        ]));
         setAvailableMealSlots(slots);
         setSelectedMealSlot((current) => current !== "ALL" && !slots.includes(current) ? "ALL" : current);
       }
@@ -181,7 +186,7 @@ export default function OrdersPage() {
       <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden">
         <Header />
         <Breadcrumbs segments={["Admin", "Orders & KDS", "Daily Orders"]} />
-        <div className="mt-4 flex-1 flex flex-col min-h-0">
+        <div className="mt-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 shrink-0">
             <div>
@@ -242,7 +247,7 @@ export default function OrdersPage() {
             </div>
           )}
 
-          <div className="flex-1 flex flex-col min-h-0 pb-10">
+          <div className="flex flex-col pb-10">
             <div className="relative flex mb-6 shrink-0 bg-neutral-100 p-1.5 rounded-2xl w-full max-w-[600px]">
               {/* Sliding background */}
               <div 
@@ -318,9 +323,9 @@ export default function OrdersPage() {
               })}
             </div>
 
-            <div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-white rounded-2xl border border-neutral-200">
+            <div className="flex flex-col overflow-hidden bg-white rounded-2xl border border-neutral-200">
 
-              <div className="flex-1 min-h-0 overflow-auto">
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[1250px]">
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-[#F3F4F6] border-b border-neutral-200">
