@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Loader2, Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap } from "lucide-react";
+import { Loader2, Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -22,6 +22,9 @@ export default function OrdersPage() {
   const [prepList, setPrepList] = useState<any>(null);
   const [isPrepWarning, setIsPrepWarning] = useState<boolean>(false);
   const [orders, setOrders] = useState<any[]>([]);
+  const [selectedMealSlot, setSelectedMealSlot] = useState("ALL");
+  const [availableMealSlots, setAvailableMealSlots] = useState<string[]>([]);
+  const [orderSummary, setOrderSummary] = useState({ total_orders: 0, delivered: 0, pending: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -50,7 +53,7 @@ export default function OrdersPage() {
         ? `✓ Generated ${count} plan order${count !== 1 ? "s" : ""} for today (${day})`
         : `No orders generated — today is ${day}. Customers on 5-day plans don't have schedules for this day.`;
       setCronToast({ type: count > 0 ? "success" : "error", msg });
-      fetchOrders(activeTab, page, targetDate, search, customerId, status);
+      fetchOrders(activeTab, page, targetDate, search, customerId, status, selectedMealSlot);
     } catch {
       setCronToast({ type: "error", msg: "Failed to run daily generation. Check backend logs." });
     } finally {
@@ -67,6 +70,32 @@ export default function OrdersPage() {
     if (currentStatus === "PREPARED") return ["PREPARED", "DISPATCHED", "DELIVERED", "CANCELLED"];
     return ["CREATED", "PREPARED", "DISPATCHED", "DELIVERED", "CANCELLED"];
   };
+
+  const getCustomerTypeLabel = (order: any) => {
+    // Older subscription orders may have received the migration default
+    // CUSTOM; their existing order_source still identifies them as plans.
+    const type = order.order_type === "CUSTOM" && order.order_source === "PLAN"
+      ? "PLAN"
+      : order.order_type || (order.order_source === "PLAN" ? "PLAN" : "CUSTOM");
+    const labels: Record<string, string> = {
+      PLAN: "Subscription",
+      CUSTOM: "No subscription",
+      AFFILIATE: "Affiliate",
+      TRIAL: "Trial",
+    };
+    return labels[type] || labels.CUSTOM;
+  };
+
+  const getScalingLabel = (order: any) => {
+    const strategy = order.scaling_strategy || "STANDARD";
+    return strategy === "PROFILE_SCALED" ? "Custom" : "Standard";
+  };
+
+  const getMealSlots = (order: any): string[] => Array.from(new Set(
+    (order.items || [])
+      .map((item: any) => String(item.meal_slot || "").trim())
+      .filter(Boolean)
+  ));
 
   const requestStatusChange = (ulid: string, newStatus: string) => {
     let hasUnprepared = false;
@@ -107,7 +136,7 @@ export default function OrdersPage() {
     setIsUpdatingStatus(true);
     try {
       await endpoints.orders.updateStatus(confirmAction.ulid, confirmAction.status);
-      setOrders(orders.map(o => o.ulid === confirmAction.ulid ? { ...o, status: confirmAction.status } : o));
+      await fetchOrders(activeTab, page, targetDate, search, customerId, status, selectedMealSlot);
     } catch (e) {
       console.error("Failed to update status", e);
       setValidationError("Failed to update status");
@@ -117,13 +146,17 @@ export default function OrdersPage() {
     }
   };
 
-  const fetchOrders = async (source: string, pageNum: number, dateFilter: string, searchQuery: string, customerIdFilter: number, statusFilter: string) => {
+  const fetchOrders = async (source: string, pageNum: number, dateFilter: string, searchQuery: string, customerIdFilter: number, statusFilter: string, mealSlotFilter: string) => {
     setIsLoading(true);
     try {
-      const data = await endpoints.orders.list({ source: source === "ALL" ? undefined : source, page: pageNum, limit: 10, target_date: dateFilter, search: searchQuery || undefined, customer_id: customerIdFilter || 0, status: statusFilter || undefined }) as any;
+      const data = await endpoints.orders.list({ source: source === "ALL" ? undefined : source, page: pageNum, limit: 10, target_date: dateFilter, search: searchQuery || undefined, customer_id: customerIdFilter || 0, status: statusFilter || undefined, meal_slot: mealSlotFilter === "ALL" ? undefined : mealSlotFilter }) as any;
       if (data.success) {
         setOrders(data.orders);
         setTotalPages(Math.ceil(data.total_count / data.limit) || 1);
+        setOrderSummary(data.summary || { total_orders: 0, delivered: 0, pending: 0 });
+        const slots: string[] = data.available_meal_slots || [];
+        setAvailableMealSlots(slots);
+        setSelectedMealSlot((current) => current !== "ALL" && !slots.includes(current) ? "ALL" : current);
       }
     } catch (error) {
       console.error(error);
@@ -133,7 +166,7 @@ export default function OrdersPage() {
   };
 
   useEffect(() => {
-    fetchOrders(activeTab, page, targetDate, search, customerId, status);
+    fetchOrders(activeTab, page, targetDate, search, customerId, status, selectedMealSlot);
     
     // Also fetch prep list for the same date to validate DISPATCH status changes
     if (targetDate) {
@@ -141,7 +174,7 @@ export default function OrdersPage() {
         .then((res: any) => setPrepList(res))
         .catch(console.error);
     }
-  }, [activeTab, page, targetDate, search, customerId, status]);
+  }, [activeTab, page, targetDate, search, customerId, status, selectedMealSlot]);
 
   return (<>
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
@@ -238,14 +271,64 @@ export default function OrdersPage() {
               </button>
             </div>
 
-            <div className="flex flex-col flex-1 min-h-0 bg-white rounded-2xl border border-neutral-200">
+            <div className="flex justify-end mb-4 -mt-3">
+              <label className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-2 shadow-sm">
+                <span className="text-xs font-bold uppercase tracking-wide text-neutral-500">Meal Slot</span>
+                <select
+                  value={selectedMealSlot}
+                  onChange={(event) => {
+                    setSelectedMealSlot(event.target.value);
+                    setPage(1);
+                  }}
+                  className="min-w-36 bg-transparent py-1 text-sm font-semibold text-neutral-800 outline-none"
+                >
+                  <option value="ALL">All</option>
+                  {availableMealSlots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
+                </select>
+              </label>
+            </div>
 
-              <div className="flex-1 overflow-auto">
-                <table className="w-full text-left border-collapse min-w-[800px]">
+            <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-3">
+              {[
+                { label: targetDate === new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0] ? "Total Orders Today" : "Total Orders", value: orderSummary.total_orders, icon: ListChecks, tone: "bg-violet-50 text-violet-700", delay: "0ms" },
+                { label: "Delivered", value: orderSummary.delivered, icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-700", delay: "100ms" },
+                { label: "Pending", value: orderSummary.pending, icon: Clock, tone: "bg-amber-50 text-amber-700", delay: "200ms" },
+              ].map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div
+                    key={card.label}
+                    style={{ animationDelay: card.delay }}
+                    className="group animate-slide-up-fade motion-reduce:animate-none rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#6A0FAD]/20 hover:shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-neutral-500">{card.label}</p>
+                        <p className="mt-2 text-3xl font-black tracking-tight text-neutral-900">{card.value}</p>
+                        <p className="mt-1 text-xs font-medium text-neutral-400">
+                          <>{selectedMealSlot === "ALL" ? "All meal slots" : selectedMealSlot} · {targetDate}</>
+                        </p>
+                      </div>
+                      <span className={`flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${card.tone}`}>
+                        <Icon className="h-5 w-5" />
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-white rounded-2xl border border-neutral-200">
+
+              <div className="flex-1 min-h-0 overflow-auto">
+                <table className="w-full text-left border-collapse min-w-[1250px]">
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-[#F3F4F6] border-b border-neutral-200">
                       <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">ID</th>
                       <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">Customer</th>
+                      <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">Customer Type</th>
+                      <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">Scaling</th>
+                      <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">Meal Slot</th>
                       <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">Target Date</th>
                       <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                       <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap text-right">Price</th>
@@ -255,13 +338,13 @@ export default function OrdersPage() {
                   <tbody className="divide-y divide-neutral-100">
                     {isLoading ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center">
+                        <td colSpan={9} className="px-6 py-8 text-center">
                           <div className="flex justify-center"><BowlLoader className="w-6 h-6 animate-spin text-[#6A0FAD]" /></div>
                         </td>
                       </tr>
                     ) : orders.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-neutral-500 font-medium">No orders found.</td>
+                        <td colSpan={9} className="px-6 py-8 text-center text-neutral-500 font-medium">No orders found.</td>
                       </tr>
                     ) : (
                       orders.map((order) => (
@@ -270,6 +353,29 @@ export default function OrdersPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="font-bold text-neutral-900">{order.customer?.name || "Unknown"}</div>
                             <div className="text-xs text-neutral-500 font-medium">#{order.customer?.ulid.substring(order.customer.ulid.length - 6) || ""}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
+                              {getCustomerTypeLabel(order)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
+                              getScalingLabel(order) === "Standard"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-amber-50 text-amber-700"
+                            }`}>
+                              {getScalingLabel(order)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-wrap gap-1.5">
+                              {getMealSlots(order).length > 0 ? getMealSlots(order).map((slot) => (
+                                <span key={slot} className="rounded-md bg-neutral-100 px-2 py-1 text-xs font-semibold capitalize text-neutral-700">
+                                  {slot.toLowerCase()}
+                                </span>
+                              )) : <span className="text-xs text-neutral-400">—</span>}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">

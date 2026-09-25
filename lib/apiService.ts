@@ -350,7 +350,7 @@ export const endpoints = {
     }
   },
   orders: {
-    list: (params: { page?: number; limit?: number; source?: string; target_date?: string; search?: string; customer_id?: number | 0; status?: string }) => {
+    list: (params: { page?: number; limit?: number; source?: string; target_date?: string; search?: string; customer_id?: number | 0; status?: string; meal_slot?: string }) => {
       const searchParams = new URLSearchParams();
       if (params.page) searchParams.append("page", params.page.toString());
       if (params.limit) searchParams.append("limit", params.limit.toString());
@@ -359,9 +359,10 @@ export const endpoints = {
       if (params.search) searchParams.append("search", params.search);
       if (params.customer_id) searchParams.append("customer_id", params.customer_id.toString());
       if (params.status) searchParams.append("status", params.status);
+      if (params.meal_slot) searchParams.append("meal_slot", params.meal_slot);
       return api.get(`/orders?${searchParams.toString()}`);
     },
-    preview: (payload: { customer_ulid: string; bowl_ulid: string; meal_slot: string }) =>
+    preview: (payload: { customer_ulid: string; bowl_ulid: string; meal_slot: string; scaling_strategy?: "PROFILE_SCALED" | "STANDARD" }) =>
       api.post("/orders/preview", payload),
     checkout: (payload: any) =>
       api.post("/orders/checkout", payload),

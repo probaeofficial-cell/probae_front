@@ -10,6 +10,16 @@ import { Header } from "@/components/admin/Header";
 import { ProbaeButton } from "@/components/ProbaeButton";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 
+type OrderType = "PLAN" | "CUSTOM" | "AFFILIATE" | "TRIAL";
+type ScalingStrategy = "PROFILE_SCALED" | "STANDARD";
+
+function customerHasCalorieTarget(customer: any): boolean {
+  const profile = customer?.calorie_profile;
+  if (!profile) return false;
+  if (Number(profile.probaeTarget || profile.tdee || 0) > 0) return true;
+  return Object.values(profile.mealCalories || {}).some((value: any) => Number(value) > 0);
+}
+
 export default function EditOrderPage({ params }: { params: Promise<{ ulid: string }> }) {
   const { ulid } = use(params);
   const [originalOrder, setOriginalOrder] = useState<any>(null);
@@ -25,6 +35,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
   const [customerSearch, setCustomerSearch] = useState("");
   const [isCustomerOpen, setIsCustomerOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [orderType, setOrderType] = useState<OrderType>("CUSTOM");
+  const [scalingStrategy, setScalingStrategy] = useState<ScalingStrategy>("STANDARD");
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [recalculationError, setRecalculationError] = useState<string | null>(null);
 
   const [bowlSearch, setBowlSearch] = useState("");
   const [isBowlOpen, setIsBowlOpen] = useState(false);
@@ -86,6 +100,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
         return;
       }
       setOriginalOrder(data);
+      setOrderType(data.order_type || "CUSTOM");
+      setScalingStrategy(data.scaling_strategy || "STANDARD");
       setTargetDate(data.target_date.split('T')[0]);
       
       // Make sure the customer object has an id, because Checkout uses customer_id!
@@ -166,6 +182,38 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
     (b.bowl_code && b.bowl_code.toLowerCase().includes(bowlSearch.toLowerCase()))
   );
 
+  const changeScalingStrategy = async (nextStrategy: ScalingStrategy) => {
+    setScalingStrategy(nextStrategy);
+    setRecalculationError(null);
+    if (!selectedCustomer || orderItems.length === 0 || nextStrategy === scalingStrategy) return;
+
+    setIsRecalculating(true);
+    try {
+      const recalculatedItems = await Promise.all(orderItems.map(async (item) => {
+        const response = await endpoints.orders.preview({
+          customer_ulid: selectedCustomer.ulid,
+          bowl_ulid: item.bowlUlid,
+          meal_slot: item.mealSlot,
+          scaling_strategy: nextStrategy,
+        }) as any;
+        if (!response?.success || !response.preview) {
+          throw new Error(`Could not recalculate ${item.bowlName}.`);
+        }
+        return {
+          ...item,
+          previewData: response.preview,
+          workingIngredients: JSON.parse(JSON.stringify(response.preview.ingredients)),
+        };
+      }));
+      setOrderItems(recalculatedItems);
+    } catch (error) {
+      console.error("Failed to recalculate edited order", error);
+      setRecalculationError("Could not recalculate the order. Please try again before saving.");
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   const handleAddBowl = async () => {
     if (!selectedCustomer || !selectedBowl || !selectedMealSlot) return;
     
@@ -174,7 +222,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
       const data = await endpoints.orders.preview({
         customer_ulid: selectedCustomer.ulid,
         bowl_ulid: selectedBowl.ulid,
-        meal_slot: selectedMealSlot
+        meal_slot: selectedMealSlot,
+        scaling_strategy: scalingStrategy,
       }) as any;
 
       if (data.success && data.preview) {
@@ -350,6 +399,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
     try {
       const data = await endpoints.orders.bulkUpdateItems(ulid, {
         items: payloadItems,
+        order_type: orderType,
+        scaling_strategy: scalingStrategy,
         is_paid_now: paymentIntent === 'UPFRONT_PAYMENT',
         payment_method: paymentIntent === 'UPFRONT_PAYMENT' ? paymentMethod : null
       }) as any;
@@ -470,6 +521,42 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
               </div>
             )}
 
+            {selectedCustomer && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="edit-order-type" className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Order Type</label>
+                  <select
+                    id="edit-order-type"
+                    value={orderType}
+                    onChange={(event) => setOrderType(event.target.value as OrderType)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] outline-none"
+                  >
+                    <option value="PLAN">Plan</option>
+                    <option value="CUSTOM">Custom</option>
+                    <option value="AFFILIATE">Affiliate</option>
+                    <option value="TRIAL">Trial</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="edit-scaling-strategy" className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Scaling Strategy</label>
+                  <select
+                    id="edit-scaling-strategy"
+                    value={scalingStrategy}
+                    disabled={isRecalculating}
+                    onChange={(event) => changeScalingStrategy(event.target.value as ScalingStrategy)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] outline-none disabled:opacity-60"
+                  >
+                    <option value="PROFILE_SCALED" disabled={!customerHasCalorieTarget(selectedCustomer)}>Profile Scaled</option>
+                    <option value="STANDARD">Standard (recipe base)</option>
+                  </select>
+                  <p className="mt-2 text-xs text-neutral-500">
+                    {isRecalculating ? "Recalculating cart macros and prices…" : "Changing this updates each bowl from its profile target or base recipe."}
+                  </p>
+                  {recalculationError && <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{recalculationError}</p>}
+                </div>
+              </div>
+            )}
+
             {/* Add Bowl Section */}
             {selectedCustomer && (
               <div className="pt-6 border-t border-neutral-100 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
@@ -531,7 +618,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
                 <div className="md:col-span-3">
                   <button 
                     onClick={handleAddBowl}
-                    disabled={!selectedBowl || isPreviewLoading}
+                    disabled={!selectedBowl || isPreviewLoading || isRecalculating}
                     className="w-full h-[50px] flex items-center justify-center gap-2 bg-[#6A0FAD] text-white font-bold rounded-xl hover:bg-[#5b0c96] transition-colors shadow-sm disabled:opacity-50"
                   >
                     {isPreviewLoading ? <BowlLoader className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
@@ -785,7 +872,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
               </div>
               <ProbaeButton 
                 onClick={initiateCheckout}
-                disabled={isSubmitting || !paymentIntent || (paymentIntent === 'UPFRONT_PAYMENT' && !paymentMethod)}
+                disabled={isSubmitting || isRecalculating || !!recalculationError || !paymentIntent || (paymentIntent === 'UPFRONT_PAYMENT' && !paymentMethod)}
                 className="w-full md:w-auto md:!px-10 disabled:opacity-50"
               >
                 {isSubmitting ? <BowlLoader className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}

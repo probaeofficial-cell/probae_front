@@ -9,6 +9,16 @@ import { Header } from "@/components/admin/Header";
 import { ProbaeButton } from "@/components/ProbaeButton";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 
+type OrderType = "PLAN" | "CUSTOM" | "AFFILIATE" | "TRIAL";
+type ScalingStrategy = "PROFILE_SCALED" | "STANDARD";
+
+function customerHasCalorieTarget(customer: any): boolean {
+  const profile = customer?.calorie_profile;
+  if (!profile) return false;
+  if (Number(profile.probaeTarget || profile.tdee || 0) > 0) return true;
+  return Object.values(profile.mealCalories || {}).some((value: any) => Number(value) > 0);
+}
+
 export default function NewOrderPage() {
   const router = useRouter();
   
@@ -22,6 +32,10 @@ export default function NewOrderPage() {
   const [customerSearch, setCustomerSearch] = useState("");
   const [isCustomerOpen, setIsCustomerOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [orderType, setOrderType] = useState<OrderType>("CUSTOM");
+  const [scalingStrategy, setScalingStrategy] = useState<ScalingStrategy>("STANDARD");
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [recalculationError, setRecalculationError] = useState<string | null>(null);
 
   const [bowlSearch, setBowlSearch] = useState("");
   const [isBowlOpen, setIsBowlOpen] = useState(false);
@@ -42,6 +56,14 @@ export default function NewOrderPage() {
   const [paymentMethod, setPaymentMethod] = useState("UPI");
   const [paymentIntent, setPaymentIntent] = useState<string>("");
   const [showWarningModal, setShowWarningModal] = useState(false);
+
+  // Pick sensible defaults for each newly selected customer. The controls
+  // remain editable so admins can override either automatic choice.
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    setOrderType(selectedCustomer.is_affiliate ? "AFFILIATE" : "CUSTOM");
+    setScalingStrategy(customerHasCalorieTarget(selectedCustomer) ? "PROFILE_SCALED" : "STANDARD");
+  }, [selectedCustomer?.ulid]);
 
   // Delivery charge state
   const [includeDelivery, setIncludeDelivery] = useState(true);
@@ -119,6 +141,38 @@ export default function NewOrderPage() {
     (b.bowl_code && b.bowl_code.toLowerCase().includes(bowlSearch.toLowerCase()))
   );
 
+  const changeScalingStrategy = async (nextStrategy: ScalingStrategy) => {
+    setScalingStrategy(nextStrategy);
+    setRecalculationError(null);
+    if (!selectedCustomer || orderItems.length === 0 || nextStrategy === scalingStrategy) return;
+
+    setIsRecalculating(true);
+    try {
+      const recalculated = await Promise.all(orderItems.map(async (item) => {
+        const response = await endpoints.orders.preview({
+          customer_ulid: selectedCustomer.ulid,
+          bowl_ulid: item.bowlUlid,
+          meal_slot: item.mealSlot,
+          scaling_strategy: nextStrategy,
+        }) as any;
+        if (!response?.success || !response.preview) {
+          throw new Error(`Could not recalculate ${item.bowlName}.`);
+        }
+        return {
+          ...item,
+          previewData: response.preview,
+          workingIngredients: JSON.parse(JSON.stringify(response.preview.ingredients)),
+        };
+      }));
+      setOrderItems(recalculated);
+    } catch (error) {
+      console.error("Failed to recalculate order for scaling strategy", error);
+      setRecalculationError("Could not recalculate the cart. Please try again before checkout.");
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   const handleAddBowl = async () => {
     if (!selectedCustomer || !selectedBowl || !selectedMealSlot) return;
     
@@ -127,7 +181,8 @@ export default function NewOrderPage() {
       const data = await endpoints.orders.preview({
         customer_ulid: selectedCustomer.ulid,
         bowl_ulid: selectedBowl.ulid,
-        meal_slot: selectedMealSlot
+        meal_slot: selectedMealSlot,
+        scaling_strategy: scalingStrategy,
       }) as any;
 
       if (data.success && data.preview) {
@@ -305,6 +360,8 @@ export default function NewOrderPage() {
     try {
       const data = await endpoints.orders.checkout({
         customer_ulid: selectedCustomer.ulid,
+        order_type: orderType,
+        scaling_strategy: scalingStrategy,
         target_date: targetDate,
         items: payloadItems,
         payment_intent: paymentIntent,
@@ -364,6 +421,8 @@ export default function NewOrderPage() {
                     onChange={(e) => {
                       setCustomerSearch(e.target.value);
                       setSelectedCustomer(null);
+                      setOrderItems([]);
+                      setPriceOverrides({});
                       setIsCustomerOpen(true);
                     }}
                     onFocus={() => setIsCustomerOpen(true)}
@@ -379,6 +438,8 @@ export default function NewOrderPage() {
                             key={c.ulid}
                             className="px-4 py-3 hover:bg-neutral-50 cursor-pointer border-b border-neutral-100 last:border-0"
                             onClick={() => {
+                              setOrderItems([]);
+                              setPriceOverrides({});
                               setSelectedCustomer(c);
                               setCustomerSearch(c.name);
                               setIsCustomerOpen(false);
@@ -425,6 +486,42 @@ export default function NewOrderPage() {
                        ))}
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {selectedCustomer && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="order-type" className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Order Type</label>
+                  <select
+                    id="order-type"
+                    value={orderType}
+                    onChange={(event) => setOrderType(event.target.value as OrderType)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] outline-none"
+                  >
+                    <option value="PLAN">Plan</option>
+                    <option value="CUSTOM">Custom</option>
+                    <option value="AFFILIATE">Affiliate</option>
+                    <option value="TRIAL">Trial</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="scaling-strategy" className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Scaling Strategy</label>
+                  <select
+                    id="scaling-strategy"
+                    value={scalingStrategy}
+                    disabled={isRecalculating}
+                    onChange={(event) => changeScalingStrategy(event.target.value as ScalingStrategy)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] outline-none disabled:opacity-60"
+                  >
+                    <option value="PROFILE_SCALED" disabled={!customerHasCalorieTarget(selectedCustomer)}>Profile Scaled</option>
+                    <option value="STANDARD">Standard (recipe base)</option>
+                  </select>
+                  <p className="mt-2 text-xs text-neutral-500">
+                    {isRecalculating ? "Recalculating cart macros and prices…" : "Changing this updates each bowl from its profile target or base recipe."}
+                  </p>
+                  {recalculationError && <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{recalculationError}</p>}
                 </div>
               </div>
             )}
@@ -490,7 +587,7 @@ export default function NewOrderPage() {
                 <div className="md:col-span-3">
                   <button 
                     onClick={handleAddBowl}
-                    disabled={!selectedBowl || isPreviewLoading}
+                    disabled={!selectedBowl || isPreviewLoading || isRecalculating}
                     className="w-full h-[50px] flex items-center justify-center gap-2 bg-[#6A0FAD] text-white font-bold rounded-xl hover:bg-[#5b0c96] transition-colors shadow-sm disabled:opacity-50"
                   >
                     {isPreviewLoading ? <BowlLoader className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
@@ -744,7 +841,7 @@ export default function NewOrderPage() {
             </div>
             <ProbaeButton 
               onClick={initiateCheckout}
-              disabled={isSubmitting || !paymentIntent || (paymentIntent === 'UPFRONT_PAYMENT' && !paymentMethod)}
+              disabled={isSubmitting || isRecalculating || !!recalculationError || !paymentIntent || (paymentIntent === 'UPFRONT_PAYMENT' && !paymentMethod)}
               className="w-full md:w-auto md:!px-10 disabled:opacity-50"
             >
               {isSubmitting ? <BowlLoader className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
