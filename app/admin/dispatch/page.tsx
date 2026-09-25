@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
-import { MessageCircle, CheckCircle2, Send } from "lucide-react";
+import { MessageCircle, CheckCircle2, Send, X } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 type OrderSchema = any;
 
 export default function DispatchOrdersPage() {
   const [orders, setOrders] = useState<OrderSchema[]>([]);
   const [loadingMsg, setLoadingMsg] = useState<string | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -31,27 +33,56 @@ export default function DispatchOrdersPage() {
   };
 
   const handleSendWhatsApp = async (order: OrderSchema) => {
-    const popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
-    if (!popup) {
-      alert("Please allow popups to open WhatsApp.");
+    const rawPhone = String(order.customer?.phone || "");
+    let phone = rawPhone.replace(/\D/g, "");
+    if (phone.startsWith("91")) {
+      const nationalNumber = phone.slice(2).replace(/^0+/, "");
+      phone = `91${nationalNumber}`;
+    } else {
+      if (phone.startsWith("0") && phone.length === 11) phone = phone.slice(1);
+      if (phone.length === 10) phone = `91${phone}`;
+    }
+    if (phone.length < 10) {
+      setErrorMessage("This customer does not have a valid phone number.");
       return;
     }
-    
+
+    // Open synchronously from the click so browser popup blockers allow the chat.
+    // Adding noopener here makes window.open return null in several browsers.
+    const popup = window.open("about:blank", "_blank");
+    if (!popup) {
+      setErrorMessage("Please allow popups to open WhatsApp, then try again.");
+      return;
+    }
+
+    setErrorMessage(null);
     setLoadingMsg(order.ulid);
     try {
       const data: any = await endpoints.orders.generateMessage(order.ulid, "WHATSAPP", "ORDER_DELIVERED");
-      
-      const phone = order.customer.phone.replace(/[^0-9]/g, '');
-      const encodedMsg = encodeURIComponent(data.compiled_message);
-      
-      popup.location.replace(`https://web.whatsapp.com/send?phone=${phone}&text=${encodedMsg}`);
-      
-      await endpoints.orders.markMessageSent(order.ulid, "WHATSAPP");
-      
-      setOrders(prev => prev.map(o => o.ulid === order.ulid ? { ...o, whatsapp_sent: true } : o));
+
+      if (!data?.compiled_message) throw new Error("The WhatsApp message template produced an empty message.");
+      popup.opener = null;
+      popup.location.href = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(data.compiled_message)}`;
+      // Opening a WhatsApp chat does not prove that the message was sent. Save
+      // the per-order sent flag only after the admin confirms sending it.
+      setPendingConfirmation(order.ulid);
     } catch (e: any) {
       popup.close();
-      alert(e.response?.data?.detail || "Failed to generate message");
+      setErrorMessage(e.detail || e.message || "Failed to open the WhatsApp chat.");
+    } finally {
+      setLoadingMsg(null);
+    }
+  };
+
+  const confirmMessageSent = async (orderUlid: string) => {
+    setLoadingMsg(orderUlid);
+    setErrorMessage(null);
+    try {
+      await endpoints.orders.markMessageSent(orderUlid, "WHATSAPP");
+      setOrders(prev => prev.map(order => order.ulid === orderUlid ? { ...order, whatsapp_sent: true } : order));
+      setPendingConfirmation(null);
+    } catch (e: any) {
+      setErrorMessage(e.detail || e.message || "Could not save the sent status for this order.");
     } finally {
       setLoadingMsg(null);
     }
@@ -70,6 +101,13 @@ export default function DispatchOrdersPage() {
               <p className="text-neutral-500 font-medium mt-1">Send WhatsApp notifications for today's delivered orders</p>
             </div>
           </div>
+
+          {errorMessage && (
+            <div role="alert" className="mb-4 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              <span>{errorMessage}</span>
+              <button type="button" onClick={() => setErrorMessage(null)} aria-label="Dismiss error"><X className="h-4 w-4" /></button>
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[500px]">
@@ -98,6 +136,21 @@ export default function DispatchOrdersPage() {
                         <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-50 text-green-700 text-sm font-bold border border-green-100">
                           <CheckCircle2 className="w-4 h-4" /> Sent
                         </span>
+                      ) : pendingConfirmation === order.ulid ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-semibold text-neutral-500">Sent in WhatsApp?</span>
+                          <button
+                            type="button"
+                            onClick={() => confirmMessageSent(order.ulid)}
+                            disabled={loadingMsg === order.ulid}
+                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                          >
+                            <Send className="h-4 w-4" /> Confirm sent
+                          </button>
+                          <button type="button" onClick={() => setPendingConfirmation(null)} className="rounded-lg border border-neutral-200 px-3 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-50">
+                            Not sent
+                          </button>
+                        </div>
                       ) : (
                         <button
                           onClick={() => handleSendWhatsApp(order)}
