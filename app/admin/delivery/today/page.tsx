@@ -6,6 +6,7 @@ import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { MapPin, Phone, Truck, CheckCircle2, User, Loader2, Search, Filter, Navigation } from "lucide-react";
 
 export default function DeliveryToday() {
@@ -14,6 +15,7 @@ export default function DeliveryToday() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [orderToDeliver, setOrderToDeliver] = useState<any | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -93,17 +95,19 @@ export default function DeliveryToday() {
     fetchSettings();
   }, []);
 
-  const handleMarkDelivered = async (ulid: string) => {
-    setUpdatingId(ulid);
+  const handleMarkDelivered = async () => {
+    if (!orderToDeliver) return;
+    setUpdatingId(orderToDeliver.ulid);
     try {
-      const res = await endpoints.orders.updateStatus(ulid, "DELIVERED") as any;
+      const res = await endpoints.orders.updateStatus(orderToDeliver.ulid, "DELIVERED") as any;
       if (res.success) {
-        setOrders(prev => prev.filter(o => o.ulid !== ulid));
+        setOrders(prev => prev.filter(o => o.ulid !== orderToDeliver.ulid));
+        setOrderToDeliver(null);
       } else {
-        alert("Failed to update status");
+        setErrorMsg("Failed to update the order status. Please try again.");
       }
     } catch (e) {
-      alert("Error updating status");
+      setErrorMsg("Error updating the order status. Please try again.");
     } finally {
       setUpdatingId(null);
     }
@@ -142,6 +146,7 @@ export default function DeliveryToday() {
   });
 
   return (
+    <>
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
       <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden">
         <Header />
@@ -316,7 +321,7 @@ export default function DeliveryToday() {
 
                       {/* Action Button */}
                       <button
-                        onClick={() => handleMarkDelivered(order.ulid)}
+                        onClick={() => setOrderToDeliver(order)}
                         disabled={isUpdating}
                         className="w-full py-4 bg-[#1c1c1c] text-white font-black rounded-2xl hover:bg-black transition-all flex items-center justify-center gap-2 disabled:opacity-70 shadow-[0_4px_15px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] active:scale-[0.98]"
                       >
@@ -339,5 +344,17 @@ export default function DeliveryToday() {
         </div>
       </div>
     </div>
+    <ConfirmationModal
+      isOpen={Boolean(orderToDeliver)}
+      onClose={() => { if (!updatingId) setOrderToDeliver(null); }}
+      onConfirm={() => { void handleMarkDelivered(); }}
+      title="Mark order as delivered?"
+      message={orderToDeliver ? `Confirm that order ${orderToDeliver.order_number || orderToDeliver.ulid.slice(-8)} for ${orderToDeliver.customer?.name || "this customer"} has been delivered.` : "Confirm delivery for this order."}
+      type="warning"
+      confirmText="Yes, mark delivered"
+      cancelText="Go back"
+      isLoading={Boolean(orderToDeliver && updatingId === orderToDeliver.ulid)}
+    />
+    </>
   );
 }

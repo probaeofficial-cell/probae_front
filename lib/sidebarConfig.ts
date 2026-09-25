@@ -93,6 +93,17 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       delivered: { label: "Dispatch Orders", dotColor: "bg-pink-500", path: "/admin/dispatch" },
     },
   },
+  delivery: {
+    label: "Delivery",
+    icon: Truck,
+    roles: ["ADMIN"],
+    subItems: {
+      dashboard: { label: "Dashboard", dotColor: "bg-blue-500", path: "/admin/delivery/dashboard" },
+      today: { label: "Delivery Today", dotColor: "bg-orange-500", path: "/admin/delivery/today" },
+      zones: { label: "Delivery Zones", dotColor: "bg-purple-500", path: "/admin/delivery/zones" },
+      agents: { label: "Delivery Agents", dotColor: "bg-pink-500", path: "/admin/delivery/agents" },
+    },
+  },
   transactions: {
     label: "Transactions",
     icon: Banknote,
@@ -121,17 +132,6 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     subItems: {
       directory: { label: "Directory", dotColor: "bg-blue-500", path: "/admin/customers" },
       subscriptions: { label: "Subscriptions", dotColor: "bg-purple-500", path: "/admin/subscriptions" },
-    },
-  },
-  delivery: {
-    label: "Delivery",
-    icon: Truck,
-    roles: ["ADMIN"],
-    subItems: {
-      dashboard: { label: "Dashboard", dotColor: "bg-blue-500", path: "/admin/delivery/dashboard" },
-      today: { label: "Delivery Today", dotColor: "bg-orange-500", path: "/admin/delivery/today" },
-      zones: { label: "Delivery Zones", dotColor: "bg-purple-500", path: "/admin/delivery/zones" },
-      agents: { label: "Delivery Agents", dotColor: "bg-pink-500", path: "/admin/delivery/agents" },
     },
   },
 };

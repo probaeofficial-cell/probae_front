@@ -3,26 +3,25 @@
 import { useEffect, useState } from "react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
-import { MessageCircle, CheckCircle2, Send, X } from "lucide-react";
+import { MessageCircle, CheckCircle2, Send, X, Calendar } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 type OrderSchema = any;
 
 export default function DispatchOrdersPage() {
+  const [targetDate, setTargetDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]);
   const [orders, setOrders] = useState<OrderSchema[]>([]);
   const [loadingMsg, setLoadingMsg] = useState<string | null>(null);
   const [pendingConfirmation, setPendingConfirmation] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(targetDate);
+  }, [targetDate]);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (date: string) => {
     try {
-      // Fetch today's DELIVERED orders
-      const targetDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
       const data: any = await endpoints.orders.list({
-        target_date: targetDate,
+        target_date: date,
         status: "DELIVERED",
         limit: 100
       });
@@ -95,11 +94,21 @@ export default function DispatchOrdersPage() {
         <Breadcrumbs segments={["Admin", "Delivery", "Dispatch Orders"]} />
         
         <div className="mt-4 flex-1 flex flex-col min-h-0">
-          <div className="flex justify-between items-center mb-6 shrink-0">
+          <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6 shrink-0">
             <div>
               <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Manual Dispatch</h1>
-              <p className="text-neutral-500 font-medium mt-1">Send WhatsApp notifications for today's delivered orders</p>
+              <p className="text-neutral-500 font-medium mt-1">Send WhatsApp notifications for delivered orders on the selected date</p>
             </div>
+            <label className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-2 shadow-sm">
+              <Calendar className="h-4 w-4 text-[#6A0FAD]" />
+              <span className="text-xs font-bold uppercase tracking-wide text-neutral-500">Date</span>
+              <input
+                type="date"
+                value={targetDate}
+                onChange={(event) => setTargetDate(event.target.value)}
+                className="bg-transparent py-1 text-sm font-semibold text-neutral-800 outline-none"
+              />
+            </label>
           </div>
 
           {errorMessage && (
@@ -126,10 +135,10 @@ export default function DispatchOrdersPage() {
                       <span className="font-mono text-sm text-neutral-600 font-medium">{order.order_number || order.ulid.slice(-8)}</span>
                     </td>
                     <td className="py-4 px-6">
-                      <div className="font-bold text-neutral-800">{order.customer.name}</div>
+                      <div className="font-bold text-neutral-800">{order.customer?.name || "Unknown customer"}</div>
                     </td>
                     <td className="py-4 px-6">
-                      <span className="text-sm text-neutral-600">{order.customer.phone}</span>
+                      <span className="text-sm text-neutral-600">{order.customer?.phone || "No phone number"}</span>
                     </td>
                     <td className="py-4 px-6">
                       {order.whatsapp_sent ? (
@@ -171,7 +180,7 @@ export default function DispatchOrdersPage() {
                 {orders.length === 0 && (
                   <tr>
                     <td colSpan={4} className="py-12 text-center text-neutral-500 font-medium">
-                      No delivered orders found for today.
+                      No delivered orders found for {targetDate}.
                     </td>
                   </tr>
                 )}
