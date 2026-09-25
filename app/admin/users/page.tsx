@@ -49,7 +49,7 @@ export default function UsersListPage() {
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]"><div className="p-4 sm:p-8 h-full flex flex-col bg-[#E6E6E6] overflow-hidden"><Header />
 <Breadcrumbs segments={["ADMIN", "SYSTEM USERS"]} />
 <div className="flex-1 overflow-y-auto space-y-8 pb-10">
-      <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center shrink-0">
+      <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-stretch sm:items-center shrink-0">
         <ProbaeSearch
           value={search}
           onChange={(v) => { setSearch(v); setPage(1); }}

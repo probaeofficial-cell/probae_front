@@ -19,9 +19,10 @@ export interface LocationPickerProps {
   latitude: number | null;
   longitude: number | null;
   onChange: (lat: number | null, lng: number | null) => void;
+  label?: string;
 }
 
-export function LocationPicker({ latitude, longitude, onChange }: LocationPickerProps) {
+export function LocationPicker({ latitude, longitude, onChange, label = "Pinpoint Delivery Location" }: LocationPickerProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -130,7 +131,7 @@ export function LocationPicker({ latitude, longitude, onChange }: LocationPicker
     <div className="flex flex-col gap-3 w-full relative">
       <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
         <MapPin className="w-4 h-4 text-[#6A0FAD]" />
-        Pinpoint Delivery Location
+        {label}
       </label>
 
       {/* Search Bar */}

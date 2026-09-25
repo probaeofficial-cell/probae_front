@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Bell, User, Mail, Shield, ToggleLeft, ToggleRight, Check, Database } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
+import { LocationPicker } from "@/components/admin/LocationPicker";
 
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
@@ -22,6 +23,12 @@ export default function SettingsPage() {
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "", AUTO_ASSIGN_DRIVERS: "false" });
   const [sysSaveStatus, setSysSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
+  // Delivery pricing config state
+  const [deliveryConfig, setDeliveryConfig] = useState({
+    KITCHEN_LAT: "", KITCHEN_LNG: "", FREE_DELIVERY_KM: "", DELIVERY_CHARGE_PER_KM: ""
+  });
+  const [deliverySaveStatus, setDeliverySaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/admin/login");
@@ -31,10 +38,16 @@ export default function SettingsPage() {
   useEffect(() => {
     async function fetchSystemSettings() {
       try {
-        const data = await endpoints.settings.getSystemSettings();
+        const data = await endpoints.settings.getSystemSettings() as any;
         if (data && data.R2_BASE_URL !== undefined) {
-          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL, AUTO_ASSIGN_DRIVERS: (data as any).AUTO_ASSIGN_DRIVERS || "false" });
+          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL, AUTO_ASSIGN_DRIVERS: data.AUTO_ASSIGN_DRIVERS || "false" });
         }
+        setDeliveryConfig({
+          KITCHEN_LAT: data.KITCHEN_LAT || "",
+          KITCHEN_LNG: data.KITCHEN_LNG || "",
+          FREE_DELIVERY_KM: data.FREE_DELIVERY_KM || "",
+          DELIVERY_CHARGE_PER_KM: data.DELIVERY_CHARGE_PER_KM || "",
+        });
       } catch (error) {
         console.error("Error fetching system settings:", error);
       }
@@ -66,6 +79,24 @@ export default function SettingsPage() {
       return;
     }
     setTimeout(() => setSysSaveStatus("idle"), 2500);
+  };
+
+  const handleSaveDeliveryConfig = async () => {
+    setDeliverySaveStatus("saving");
+    try {
+      await endpoints.settings.updateSystemSettings({
+        KITCHEN_LAT: deliveryConfig.KITCHEN_LAT,
+        KITCHEN_LNG: deliveryConfig.KITCHEN_LNG,
+        FREE_DELIVERY_KM: deliveryConfig.FREE_DELIVERY_KM,
+        DELIVERY_CHARGE_PER_KM: deliveryConfig.DELIVERY_CHARGE_PER_KM,
+      });
+      setDeliverySaveStatus("saved");
+    } catch (error) {
+      console.error("Error saving delivery config:", error);
+      setDeliverySaveStatus("idle");
+      return;
+    }
+    setTimeout(() => setDeliverySaveStatus("idle"), 2500);
   };
 
   if (isLoading || !user) {
@@ -198,6 +229,73 @@ export default function SettingsPage() {
                     : sysSaveStatus === "saved"
                     ? "Configurations Saved!"
                     : "Save Configurations"}
+                </ProbaeButton>
+              </div>
+            </div>
+
+            {/* ── Delivery Pricing Config Card ─────────────────────── */}
+            <div className="bg-white border border-neutral-100 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 shrink-0">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <div>
+                  <h2 className="font-bold text-neutral-800 text-lg">Delivery Pricing</h2>
+                  <p className="text-sm text-neutral-500 mt-0.5">
+                    Set the kitchen location and per-km delivery charge. Orders within the free radius are not charged.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+                <div className="sm:col-span-2 mb-2">
+                  <LocationPicker
+                    label="Kitchen Location"
+                    latitude={deliveryConfig.KITCHEN_LAT ? parseFloat(deliveryConfig.KITCHEN_LAT) : null}
+                    longitude={deliveryConfig.KITCHEN_LNG ? parseFloat(deliveryConfig.KITCHEN_LNG) : null}
+                    onChange={(lat, lng) => {
+                      setDeliveryConfig(prev => ({
+                        ...prev,
+                        KITCHEN_LAT: lat ? lat.toString() : "",
+                        KITCHEN_LNG: lng ? lng.toString() : ""
+                      }));
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Free Delivery Radius (km)</label>
+                  <input
+                    type="number" step="0.1" min="0" placeholder="e.g. 5"
+                    value={deliveryConfig.FREE_DELIVERY_KM}
+                    onChange={e => setDeliveryConfig({ ...deliveryConfig, FREE_DELIVERY_KM: e.target.value })}
+                    className="w-full border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all"
+                  />
+                  <p className="text-[11px] text-neutral-400 mt-1">Customers within this radius get free delivery</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Charge Per km (₹)</label>
+                  <input
+                    type="number" step="0.5" min="0" placeholder="e.g. 10"
+                    value={deliveryConfig.DELIVERY_CHARGE_PER_KM}
+                    onChange={e => setDeliveryConfig({ ...deliveryConfig, DELIVERY_CHARGE_PER_KM: e.target.value })}
+                    className="w-full border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all"
+                  />
+                  <p className="text-[11px] text-neutral-400 mt-1">Charged for each km beyond the free radius</p>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <ProbaeButton
+                  onClick={handleSaveDeliveryConfig}
+                  disabled={deliverySaveStatus === "saving" || deliverySaveStatus === "saved"}
+                  className="!w-auto px-6"
+                >
+                  {deliverySaveStatus === "saving" && (
+                    <svg className="animate-spin w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                  )}
+                  {deliverySaveStatus === "saved" && <Check className="w-4 h-4 mr-2" />}
+                  {deliverySaveStatus === "saving" ? "Saving..." : deliverySaveStatus === "saved" ? "Saved!" : "Save Delivery Config"}
                 </ProbaeButton>
               </div>
             </div>

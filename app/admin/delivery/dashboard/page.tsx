@@ -468,7 +468,7 @@ export default function DeliveryDashboard() {
                           disabled={order.status === "DELIVERED"}
                         />
                       </td>
-                      <td className="py-4 px-4 text-sm font-medium text-neutral-900">#{order.order_number || order.ulid.slice(-6)}</td>
+                      <td className="py-4 px-4 text-sm font-medium text-neutral-900">{order.order_number || order.ulid.slice(-6)}</td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-amber-800 text-white flex items-center justify-center font-bold text-xs shrink-0">

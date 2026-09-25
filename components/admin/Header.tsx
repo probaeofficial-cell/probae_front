@@ -33,9 +33,12 @@ export function Header() {
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -45,6 +48,9 @@ export function Header() {
       }
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setIsNotifOpen(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSearchResults(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -105,6 +111,34 @@ export function Header() {
   // Derive initials or avatar letter from user email
   const avatarLetter = user?.email?.charAt(0).toUpperCase() ?? "A";
 
+  const SEARCH_ROUTES = [
+    { name: "Dashboard", path: "/admin/dashboard", keywords: "home main dashboard analytics" },
+    { name: "Daily Orders", path: "/admin/orders", keywords: "orders daily queue dispatch list" },
+    { name: "Customers", path: "/admin/customers", keywords: "clients users people customers list directory" },
+    { name: "Create Customer", path: "/admin/customers/new", keywords: "new add create customer client" },
+    { name: "Subscriptions", path: "/admin/subscriptions", keywords: "active subscriptions plans renewals" },
+    { name: "Plans & Tiers", path: "/admin/plans", keywords: "plans tiers setup configure pricing" },
+    { name: "Bowls & Menu", path: "/admin/bowls", keywords: "food bowls menu recipes dishes meals" },
+    { name: "Ingredients", path: "/admin/ingredients", keywords: "raw materials ingredients stock inventory" },
+    { name: "Menu Rotation", path: "/admin/menu-rotation", keywords: "menu rotate schedule calendar" },
+    { name: "Users & Staff", path: "/admin/users", keywords: "staff admins drivers users team" },
+    { name: "Deliveries & Drivers", path: "/admin/delivery", keywords: "delivery drivers dispatch routing maps" },
+    { name: "System Settings", path: "/admin/settings", keywords: "system settings configuration config profile password rules" },
+    { name: "Finance & Accounts", path: "/admin/finance", payment: "money accounting finance ledger revenue tax" },
+    { name: "KDS: Prep", path: "/admin/kds/prep", keywords: "kitchen display prep cooking station" },
+    { name: "KDS: Assembly", path: "/admin/kds/assembly", keywords: "kitchen display assembly station" },
+    { name: "KDS: Packaging", path: "/admin/kds/packaging", keywords: "kitchen display packaging station" },
+    { name: "KDS: Dispatch", path: "/admin/kds/dispatch", keywords: "kitchen display dispatch station" },
+    { name: "Message Templates", path: "/admin/message-templates", keywords: "whatsapp email templates messages sms communications" },
+  ];
+
+  const filteredRoutes = searchQuery.trim() === "" 
+    ? [] 
+    : SEARCH_ROUTES.filter(r => 
+        r.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (r.keywords || "").toLowerCase().includes(searchQuery.toLowerCase())
+      ).slice(0, 8); // show max 8 results
+
   return (
     <header className="flex items-center justify-between mb-8 relative z-40">
       {/* Mobile Hamburger */}
@@ -117,13 +151,54 @@ export function Header() {
       </button>
 
       {/* Search Bar */}
-      <div className="relative flex-1 sm:flex-initial sm:w-full max-w-[180px] sm:max-w-md mr-2 sm:mr-0">
+      <div className="relative flex-1 sm:flex-initial sm:w-full max-w-[180px] sm:max-w-md mr-2 sm:mr-0" ref={searchRef}>
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
         <input
           type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setShowSearchResults(true);
+          }}
+          onFocus={() => setShowSearchResults(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && filteredRoutes.length > 0) {
+              setShowSearchResults(false);
+              setSearchQuery("");
+              router.push(filteredRoutes[0].path);
+            }
+          }}
           placeholder="Search your today"
-          className="w-full pl-10 pr-4 py-2 rounded-full border border-neutral-300 focus:outline-none focus:border-neutral-400 text-sm placeholder:text-neutral-400 bg-transparent text-black"
+          className="w-full pl-10 pr-4 py-2 rounded-full border border-neutral-300 focus:outline-none focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] text-sm placeholder:text-neutral-400 bg-transparent text-black transition-all"
         />
+        
+        {showSearchResults && searchQuery.trim() !== "" && (
+          <div className="absolute top-full left-0 mt-2 w-full sm:w-[350px] bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-neutral-100 overflow-hidden z-50">
+            {filteredRoutes.length > 0 ? (
+              <div className="py-2">
+                <div className="px-4 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Navigate to</div>
+                {filteredRoutes.map((route, idx) => (
+                  <button
+                    key={route.path}
+                    onClick={() => {
+                      setShowSearchResults(false);
+                      setSearchQuery("");
+                      router.push(route.path);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-[#6A0FAD] transition-colors flex flex-col"
+                  >
+                    <span className="font-bold">{route.name}</span>
+                    <span className="text-[10px] text-neutral-400 uppercase font-medium mt-0.5">{route.path}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 text-center text-sm text-neutral-500 font-medium">
+                No matching pages found
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Right side icons */}

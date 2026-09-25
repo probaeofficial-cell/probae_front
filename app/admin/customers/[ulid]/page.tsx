@@ -48,6 +48,7 @@ export default function CustomerDetailPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
   const [mealCategories, setMealCategories] = useState<any[]>([]);
   const [allPlans, setAllPlans] = useState<any[]>([]);
@@ -86,16 +87,21 @@ export default function CustomerDetailPage() {
     probaeTarget: 0,
     mealCalories: {} as Record<string, number>,
     lockedMeals: {} as Record<string, boolean>,
-    image_filename: null as string | null
+    image_filename: null as string | null,
+    include_delivery: true
   });
 
-    const fetchPreview = async (planUlid: string, goal: string, mealCalories: any) => {
+    const fetchPreview = async (planUlid: string, goal: string, mealCalories: any, overrideIncludeDelivery?: boolean) => {
     setIsPreviewLoading(true);
     try {
+      const isDeliveryIncluded = overrideIncludeDelivery !== undefined ? overrideIncludeDelivery : formData.include_delivery;
       const resData: any = await endpoints.customers.previewPlanPrice({
         plan_tier_ulid: planUlid,
         goal: goal,
-        calorie_profile: { mealCalories: mealCalories || {} }
+        calorie_profile: { mealCalories: mealCalories || {} },
+        include_delivery: isDeliveryIncluded,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : undefined
       });
       if (resData && resData.success) {
         setPreviewData(resData);
@@ -150,7 +156,8 @@ export default function CustomerDetailPage() {
           probaeTarget: profile.probaeTarget || profile.total || 0,
           mealCalories: profile.mealCalories || {},
           lockedMeals: profile.lockedMeals || {},
-          image_filename: data.image_filename || null
+          image_filename: data.image_filename || null,
+          include_delivery: data.include_delivery ?? true
         });
       }
     } catch (err) {
@@ -397,6 +404,7 @@ export default function CustomerDetailPage() {
         selected_plan_id: formData.selectedPlanId,
         status: finalStatus,
         image_filename: formData.image_filename,
+        include_delivery: formData.include_delivery,
         calorie_profile: customer.calorie_profile ? {
           ...customer.calorie_profile,
           probaeTarget: formData.probaeTarget,
@@ -519,7 +527,17 @@ export default function CustomerDetailPage() {
                     <button onClick={() => {setIsEditMode(false); fetchCustomer();}} className="px-4 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 rounded-xl transition-colors">
                       Cancel
                     </button>
-                    <ProbaeButton onClick={handleSave} disabled={isSubmitting} className="!w-auto">
+                    <ProbaeButton 
+                      onClick={() => {
+                        if (formData.selectedPlanId && formData.selectedPlanId !== customer.selected_plan_id) {
+                          setShowConfirmModal(true);
+                        } else {
+                          handleSave();
+                        }
+                      }} 
+                      disabled={isSubmitting} 
+                      className="!w-auto"
+                    >
                       {isSubmitting ? <BowlLoader className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
                       Save Changes
                     </ProbaeButton>
@@ -647,6 +665,8 @@ export default function CustomerDetailPage() {
                             placeholder="e.g. Leave at the front desk, second building on the left..."
                           />
                         </div>
+
+
                         <div className="mt-4">
                           <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Delivery Zone</label>
                           <select 
@@ -835,6 +855,23 @@ export default function CustomerDetailPage() {
                       {plans.length > 0 && (
                         <div className="mt-6 pt-6 border-t border-neutral-100">
                           <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider mb-4">Available Plans</h3>
+                          
+                          <div className="flex items-center justify-between bg-white border border-neutral-200 rounded-xl px-4 py-3 cursor-pointer mb-4" onClick={() => {
+                            const newStatus = !formData.include_delivery;
+                            updateField("include_delivery", newStatus);
+                            if (formData.selectedPlanId) {
+                              fetchPreview(formData.selectedPlanId, formData.goal, customer?.calorie_profile?.mealCalories || {}, newStatus);
+                            }
+                          }}>
+                            <div>
+                              <h4 className="text-sm font-bold text-neutral-900">Include Delivery Cost</h4>
+                              <p className="text-xs text-neutral-500 font-medium">Automatically add delivery charges based on coordinates</p>
+                            </div>
+                            <div className={`w-12 h-6 rounded-full flex items-center p-1 transition-colors ${formData.include_delivery ? 'bg-[#6A0FAD]' : 'bg-neutral-300'}`}>
+                              <div className={`w-4 h-4 bg-white rounded-full transition-transform ${formData.include_delivery ? 'translate-x-6' : 'translate-x-0'}`} />
+                            </div>
+                          </div>
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {plans.map(p => (
                               <div 
@@ -895,20 +932,37 @@ export default function CustomerDetailPage() {
 
                 {!isPreviewLoading && previewData && (
                   <div className="space-y-6">
-                    <div className="bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col md:flex-row justify-between items-center gap-6">
-                      <div className="flex-1 text-center md:text-left">
-                        <div className="text-sm font-bold text-neutral-500 uppercase tracking-wider">Gross Value</div>
-                        <div className="text-2xl font-bold text-neutral-900">₹{previewData.gross_price}</div>
+                    <div className="bg-white rounded-2xl border border-neutral-200 p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 shadow-sm">
+                      <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start w-full">
+                        <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Cost Breakdown</div>
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
+                           <span className="w-36 text-left">Food Cost:</span> 
+                           <span className="font-bold w-20 text-right">₹{previewData.total_food_cost ?? previewData.gross_price}</span>
+                        </div>
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
+                           <span className="w-36 text-left flex items-center gap-1">
+                             Delivery Cost:
+                             {previewData.delivery_distance_km > 0 && (
+                               <span className="text-[10px] bg-neutral-100 px-1 py-0.5 rounded text-neutral-500 leading-none">{previewData.delivery_distance_km} km</span>
+                             )}
+                           </span> 
+                           <span className="font-bold w-20 text-right">₹{previewData.total_delivery_cost ?? 0}</span>
+                        </div>
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-900 mt-2 border-t border-neutral-100 pt-2 w-full">
+                           <span className="w-36 text-left font-bold">Gross Value:</span> 
+                           <span className="font-black text-lg w-20 text-right">₹{previewData.gross_price}</span>
+                        </div>
                       </div>
-                      <div className="w-px h-12 bg-neutral-200 hidden md:block"></div>
-                      <div className="flex-1 text-center">
+                      <div className="w-full h-px md:w-px md:h-20 bg-neutral-200"></div>
+                      <div className="flex-1 text-center w-full">
                         <div className="text-sm font-bold text-red-500 uppercase tracking-wider">Plan Discount ({previewData.discount_percentage}%)</div>
                         <div className="text-2xl font-bold text-red-600">- ₹{previewData.discount_amount}</div>
                       </div>
-                      <div className="w-px h-12 bg-neutral-200 hidden md:block"></div>
-                      <div className="flex-1 text-center md:text-right">
+                      <div className="w-full h-px md:w-px md:h-20 bg-neutral-200"></div>
+                      <div className="flex-1 text-center md:text-right w-full flex flex-col items-center md:items-end">
                         <div className="text-sm font-bold text-[#6A0FAD] uppercase tracking-wider">Final Price</div>
                         <div className="text-3xl font-black text-[#6A0FAD]">₹{previewData.final_discounted_price}</div>
+                        <div className="text-xs text-neutral-400 font-medium mt-1">Inclusive of all costs</div>
                       </div>
                     </div>
 
@@ -1111,6 +1165,20 @@ export default function CustomerDetailPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={() => {
+          setShowConfirmModal(false);
+          handleSave();
+        }}
+        title="Assign Plan & Finalize"
+        message="Are you sure you want to assign this plan to the customer and finalize their setup?"
+        type="info"
+        confirmText="Yes, Finalize"
+        cancelText="Cancel"
+      />
 
       <ConfirmationModal
         isOpen={showDeleteModal}

@@ -206,7 +206,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
                     <div className="flex items-center gap-1.5 text-neutral-700 font-medium">
                       <User className="w-3.5 h-3.5" />
                       <span className="truncate">{bowl.customer_name}</span>
-                      <span className="text-neutral-400 ml-1 font-mono text-xs">#{bowl.order_number || bowl.order_ulid?.slice(-6)}</span>
+                      <span className="text-neutral-400 ml-1 font-mono text-xs">{bowl.order_number || bowl.order_ulid?.slice(-6)}</span>
                     </div>
                     {bowl.packaging_name && (
                       <div className="flex items-center gap-1.5 text-neutral-500 text-xs">

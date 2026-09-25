@@ -123,8 +123,8 @@ export default function PlansPage() {
                 <th className="px-6 py-4 rounded-tl-xl border-b border-neutral-200">Plan Name</th>
                 <th className="px-6 py-4 border-b border-neutral-200">Category</th>
                 <th className="px-6 py-4 border-b border-neutral-200">Duration / Days</th>
-                <th className="px-6 py-4 border-b border-neutral-200">Meal Type</th>
-                <th className="px-6 py-4 border-b border-neutral-200">Price</th>
+                <th className="px-6 py-4 border-b border-neutral-200">Plan Type</th>
+                <th className="px-6 py-4 border-b border-neutral-200">Included Slots</th>
                 <th className="px-6 py-4 rounded-tr-xl border-b border-neutral-200 text-right">Actions</th>
               </tr>
             </thead>
@@ -135,7 +135,7 @@ export default function PlansPage() {
                 <tr><td colSpan={6} className="text-center py-10 text-neutral-400">No Plan Tiers found</td></tr>
               ) : (
                 tiers.map((tier) => (
-                  <tr key={tier.ulid} className="hover:bg-neutral-50/50 transition-colors">
+                  <tr key={tier.ulid || tier._id} className="hover:bg-neutral-50/50 transition-colors">
                     <td className="px-6 py-4 font-semibold text-neutral-900">{tier.name}</td>
                     <td className="px-6 py-4">
                       <span className="px-3 py-1 text-xs font-bold rounded-full bg-[#f8f5fb] text-[#6b21a8]">
@@ -144,28 +144,23 @@ export default function PlansPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="capitalize font-medium text-neutral-800">{tier.duration.toLowerCase()}</span>
-                        <span className="text-xs text-neutral-500">{getTotalDeliveredDays(tier.duration, tier.days)} Days</span>
+                        <span className="capitalize font-medium text-neutral-800">{tier.duration?.toLowerCase() || 'N/A'}</span>
+                        <span className="text-xs text-neutral-500">{tier.duration ? getTotalDeliveredDays(tier.duration, tier.days) : 0} Days</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
+                      <span className="px-2 py-0.5 bg-neutral-100 rounded text-xs font-bold text-neutral-600">
+                        {tier.plan_type || "STANDARD"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
-                        {tier.mealType.split(" + ").map((m: string, idx: number) => (
+                        {(tier.included_meal_slots || []).map((m: string, idx: number) => (
                           <span key={idx} className="px-2 py-0.5 bg-neutral-100 rounded text-[11px] font-bold text-neutral-600 whitespace-nowrap">
                             {m}
                           </span>
                         ))}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {tier.discountPrice > 0 ? (
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-emerald-600">₹{tier.discountPrice.toFixed(2)}</span>
-                          <span className="text-xs text-neutral-400 line-through">₹{tier.totalPrice?.toFixed(2)}</span>
-                        </div>
-                      ) : (
-                        <span className="text-sm font-bold text-neutral-900">₹{tier.totalPrice?.toFixed(2)}</span>
-                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">

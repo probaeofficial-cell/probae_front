@@ -281,7 +281,7 @@ export default function OrderDetailPage() {
   return (<>
     <div className="flex flex-col flex-1 h-full bg-[#f8f9fa] overflow-y-auto">
       <div className="p-4 sm:p-8 flex flex-col mx-auto w-full max-w-7xl">
-        <Breadcrumbs segments={["Admin", "Orders & KDS", `Order #${order.ulid.slice(-6)}`]} />
+        <Breadcrumbs segments={["Admin", "Orders & KDS", order.order_number || order.ulid.slice(-6)]} />
         
         <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div className="flex items-center gap-4">
@@ -294,7 +294,7 @@ export default function OrderDetailPage() {
             </button>
             <div>
               <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Order Details</h1>
-              <p className="text-neutral-500 font-medium mt-1">Manage fulfilment for #{order.order_number|| order.ulid.substring(order.ulid.length - 6)}</p>
+              <p className="text-neutral-500 font-medium mt-1">Manage fulfilment for {order.order_number|| order.ulid.substring(order.ulid.length - 6)}</p>
             </div>
           </div>
           <div className="flex gap-3">
@@ -605,7 +605,7 @@ export default function OrderDetailPage() {
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDelete}
         title="Delete Order"
-        message={`Are you sure you want to delete order #${order?.order_number || order?.ulid}? This action cannot be undone.`}
+        message={`Are you sure you want to delete order ${order?.order_number || order?.ulid}? This action cannot be undone.`}
         confirmText={deleteLoading ? "Deleting..." : "Delete Order"}
         type="delete"
       />

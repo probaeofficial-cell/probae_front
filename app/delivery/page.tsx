@@ -144,7 +144,7 @@ export default function DeliveryPortal() {
                         <div className="flex justify-between items-start mb-5">
                           <div>
                             <h3 className="font-bold text-neutral-900 text-lg">{order.customer?.name}</h3>
-                            <p className="text-xs font-mono text-neutral-400 mt-0.5">#{order.order_number || order.ulid.slice(-8)}</p>
+                            <p className="text-xs font-mono text-neutral-400 mt-0.5">{order.order_number || order.ulid.slice(-8)}</p>
                           </div>
                           <span className="px-3 py-1.5 bg-[#eaddf7] text-[#6A0FAD] font-bold text-[10px] rounded-full uppercase tracking-wider">
                             Out for Delivery
@@ -244,7 +244,7 @@ export default function DeliveryPortal() {
                         <div key={order.ulid} className="bg-white rounded-2xl p-5 shadow-sm border border-neutral-100 flex justify-between items-center">
                           <div>
                             <p className="font-bold text-neutral-900">{order.customer?.name}</p>
-                            <p className="text-xs font-mono text-neutral-400">#{order.order_number || order.ulid.slice(-8)}</p>
+                            <p className="text-xs font-mono text-neutral-400">{order.order_number || order.ulid.slice(-8)}</p>
                           </div>
                           <CheckCircle className="w-5 h-5 text-green-500" />
                         </div>

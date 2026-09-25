@@ -126,19 +126,19 @@ export default function SubscriptionsDashboard() {
           <Header />
           <Breadcrumbs segments={["Admin", "Subscriptions"]} />
           <div className="mt-8"></div>
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-0 mb-8">
             <div>
-              <h1 className="text-2xl font-black text-black flex items-center gap-3">
+              <h1 className="text-2xl font-black text-black flex flex-wrap items-center gap-3">
                 Subscription Management
                 <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Sync Active</span>
               </h1>
               <p className="text-neutral-500 text-sm font-medium mt-1">Track active customer plans, bowl utilization, and automatic schedule projections.</p>
             </div>
-            <div className="flex gap-3">
-              <button onClick={handleExport} className="px-4 py-2 border border-neutral-200 bg-white rounded-xl text-sm font-bold text-neutral-600 hover:bg-neutral-50 transition-colors">
+            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+              <button onClick={handleExport} className="w-full sm:w-auto px-4 py-2 border border-neutral-200 bg-white rounded-xl text-sm font-bold text-neutral-600 hover:bg-neutral-50 transition-colors">
                 Export Audit
               </button>
-              <button onClick={() => setShowAddModal(true)} className="px-4 py-2 bg-[#6A0FAD] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#6A0FAD]/20 hover:bg-[#5a0c96] transition-colors">
+              <button onClick={() => setShowAddModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#6A0FAD] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#6A0FAD]/20 hover:bg-[#5a0c96] transition-colors">
                 + Add Subscription
               </button>
             </div>
@@ -186,7 +186,7 @@ export default function SubscriptionsDashboard() {
           </div>
 
           {/* Filters & Search */}
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center mb-6">
             <div className="flex-1 w-full max-w-md">
               <ProbaeSearch
                 placeholder="Search customer by name, phone, or ID..."
@@ -194,11 +194,11 @@ export default function SubscriptionsDashboard() {
                 onChange={(v) => { setSearchTerm(v); setPage(1); }}
               />
             </div>
-            <div className="flex gap-3">
+            <div className="flex w-full md:w-auto gap-3">
               <select 
                 value={statusFilter} 
                 onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-                className="h-[42px] pl-4 pr-8 bg-white border border-neutral-200 rounded-xl text-sm font-bold text-neutral-700 outline-none focus:border-[#6A0FAD] cursor-pointer"
+                className="h-[42px] w-full md:w-auto pl-4 pr-8 bg-white border border-neutral-200 rounded-xl text-sm font-bold text-neutral-700 outline-none focus:border-[#6A0FAD] cursor-pointer"
               >
                 <option value="All">All Statuses</option>
                 <option value="Active">Active</option>
@@ -210,8 +210,8 @@ export default function SubscriptionsDashboard() {
 
           {/* Table Layout */}
           <div className="flex flex-col lg:flex-row gap-6 items-start">
-            <div className="flex-1 flex flex-col gap-4 min-w-0">
-              <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-x-auto">
+            <div className="flex-1 flex flex-col gap-4 min-w-0 w-full">
+              <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-x-auto w-full">
                 <table className="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
                   <thead className="bg-[#1a1a1a]">
                     <tr className="text-[10px] text-neutral-400 uppercase tracking-widest border-b border-[#333]">

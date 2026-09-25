@@ -211,7 +211,7 @@ export default function DispatchPrepPage() {
                 {paginatedOrders.map(order => (
                   <tr key={order.ulid} className="hover:bg-neutral-50/50 transition-colors">
                     <td className="py-4 px-6 font-black text-neutral-900">
-                      #{order.order_number || order.ulid.slice(-6)}
+                      {order.order_number || order.ulid.slice(-6)}
                     </td>
                     <td className="py-4 px-6 font-bold text-neutral-800">
                       {order.customer?.name || "Unknown"}

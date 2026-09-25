@@ -195,24 +195,24 @@ export default function MenuBlueprintPage() {
       <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden">
         <Header />
         
-        <div className="mt-4 flex flex-col flex-1 min-h-0">
+        <div className="mt-4 flex flex-col flex-1 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0">
           <Breadcrumbs segments={["Plans", "Menu Rotations"]} />
           
-          <div className="flex items-center justify-between mb-8 shrink-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 lg:mb-8 shrink-0">
             <div>
-              <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Menu Rotations</h1>
+              <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight">Menu Rotations</h1>
               <p className="text-sm font-medium text-neutral-500 mt-1">Configure the global master rotation template for plan assignments</p>
             </div>
-            <ProbaeButton onClick={handleSave} disabled={isSaving} className="!w-auto flex items-center gap-2 h-[48px]">
+            <ProbaeButton onClick={handleSave} disabled={isSaving} className="w-full sm:!w-auto flex items-center justify-center gap-2 h-[48px]">
               <Save className="w-4 h-4" /> {isSaving ? "Saving..." : "Save Rotation"}
             </ProbaeButton>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-8 flex-1 min-h-0">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 flex-1 min-h-0">
             {/* Left: Configuration & Drag Area */}
-            <div className="flex-1 flex flex-col bg-neutral-50/50 border border-neutral-200 rounded-3xl p-6 min-h-0">
-              <div className="flex flex-wrap gap-4 mb-6 shrink-0">
-                <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 flex flex-col bg-neutral-50/50 border border-neutral-200 rounded-3xl p-4 sm:p-6 min-h-[500px] lg:min-h-0 shrink-0 lg:shrink">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 shrink-0">
+                <div className="flex-1 w-full sm:min-w-[200px]">
                   <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Duration</label>
                   <div className="flex gap-2">
                     {["WEEKLY", "MONTHLY"].map(d => (
@@ -307,8 +307,8 @@ export default function MenuBlueprintPage() {
             </div>
 
             {/* Right: Bowl Library */}
-            <div className="w-full lg:w-[400px] flex flex-col bg-white border border-neutral-200 rounded-3xl min-h-0">
-              <div className="p-5 border-b border-neutral-100 bg-neutral-50/50 shrink-0 rounded-t-3xl">
+            <div className="w-full lg:w-[400px] flex flex-col bg-white border border-neutral-200 rounded-3xl min-h-[400px] lg:min-h-0 shrink-0 lg:shrink">
+              <div className="p-4 sm:p-5 border-b border-neutral-100 bg-neutral-50/50 shrink-0 rounded-t-3xl">
                 <h3 className="font-black text-neutral-800 mb-4 flex items-center gap-2"><Utensils className="w-4 h-4 text-[#6A0FAD]" /> Bowl Library</h3>
                 <div className="relative">
                   <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />

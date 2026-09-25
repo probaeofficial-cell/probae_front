@@ -94,12 +94,12 @@ export default function UserPreviewPage() {
 
       <div className="col-span-2 space-y-6">
         <div className="bg-white rounded-3xl p-8 shadow-sm border border-neutral-100">
-          <div className="flex items-center justify-between mb-8 pb-6 border-b border-neutral-100">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-6 border-b border-neutral-100 gap-4 sm:gap-0">
                 <div className="flex items-center gap-4">
                   <button
                     type="button"
                     onClick={() => router.push("/admin/users")}
-                    className="w-10 h-10 bg-neutral-50 hover:bg-neutral-100 rounded-2xl flex items-center justify-center text-neutral-600 transition-colors border border-neutral-200/60 shadow-sm"
+                    className="w-10 h-10 bg-neutral-50 hover:bg-neutral-100 rounded-2xl flex items-center justify-center text-neutral-600 transition-colors border border-neutral-200/60 shadow-sm shrink-0"
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </button>
@@ -108,7 +108,7 @@ export default function UserPreviewPage() {
                   </h1>
                 </div>
                 {!isEditing && (
-                  <button type="button" onClick={() => router.push(`?edit=true`)} className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold rounded-xl text-sm transition-colors">
+                  <button type="button" onClick={() => router.push(`?edit=true`)} className="w-full sm:w-auto px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold rounded-xl text-sm transition-colors">
                     Edit Mode
                   </button>
                 )}
@@ -151,11 +151,11 @@ export default function UserPreviewPage() {
             </div>
             
             {isEditing && (
-              <div className="pt-6 border-t border-neutral-100 flex justify-end gap-4">
-                <button type="button" onClick={() => router.push(`/admin/users/${params.ulid}`)} className="h-[52px] px-6 text-neutral-500 hover:text-neutral-700 font-bold rounded-[16px] hover:bg-neutral-100 transition-colors">
+              <div className="pt-6 border-t border-neutral-100 flex flex-col-reverse sm:flex-row justify-end gap-4">
+                <button type="button" onClick={() => router.push(`/admin/users/${params.ulid}`)} className="w-full sm:w-auto h-[52px] px-6 text-neutral-500 hover:text-neutral-700 font-bold rounded-[16px] hover:bg-neutral-100 transition-colors">
                   Cancel
                 </button>
-                <button type="submit" disabled={saving} className="bg-[#6A0FAD] hover:bg-[#5b0c96] text-white h-[52px] px-8 rounded-[16px] font-bold flex items-center gap-2 transition-all shadow-sm">
+                <button type="submit" disabled={saving} className="w-full sm:w-auto justify-center bg-[#6A0FAD] hover:bg-[#5b0c96] text-white h-[52px] px-8 rounded-[16px] font-bold flex items-center gap-2 transition-all shadow-sm">
                   {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                   Save Changes
                 </button>

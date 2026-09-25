@@ -562,6 +562,17 @@ export const endpoints = {
     updateSystemSettings: async (payload: Record<string, string>): Promise<Record<string, string>> => {
       return await api.put<Record<string, string>>("/settings/", payload);
     },
+    calculateDeliveryCharge: async (customerUlid: string): Promise<{
+      distance_km: number | null;
+      delivery_charge: number;
+      free_km: number;
+      billable_km: number;
+      charge_per_km: number;
+      configured: boolean;
+      no_location: boolean;
+    }> => {
+      return await api.post("/orders/calculate-delivery", { customer_ulid: customerUlid });
+    },
   },
 
   bowlCategories: {

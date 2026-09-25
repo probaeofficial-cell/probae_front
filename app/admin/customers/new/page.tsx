@@ -51,6 +51,7 @@ export default function NewCustomerPage() {
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [zones, setZones] = useState<any[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -78,7 +79,8 @@ export default function NewCustomerPage() {
     probaeTarget: 2000,
     lockedMeals: {} as Record<string, boolean>,
     selectedPlanId: null as string | null,
-    status: "ONBOARDING"
+    status: "ONBOARDING",
+    include_delivery: true
   });
 
 
@@ -318,15 +320,19 @@ export default function NewCustomerPage() {
     }
   };
 
-    const handlePlanSelect = async (planUlid: string) => {
+    const handlePlanSelect = async (planUlid: string, overrideIncludeDelivery?: boolean) => {
     updateField("selectedPlanId", planUlid);
     setIsPreviewLoading(true);
     setPreviewData(null);
     try {
+      const isDeliveryIncluded = overrideIncludeDelivery !== undefined ? overrideIncludeDelivery : formData.include_delivery;
       const data: any = await endpoints.customers.previewPlanPrice({
         plan_tier_ulid: planUlid,
         goal: formData.goal,
-        calorie_profile: { mealCalories: formData.mealCalories || {} }
+        calorie_profile: { mealCalories: formData.mealCalories || {} },
+        include_delivery: isDeliveryIncluded,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : undefined
       });
       if (data && data.success) {
         setPreviewData(data);
@@ -363,7 +369,8 @@ export default function NewCustomerPage() {
         chef_instructions: formData.comments,
         calorie_profile: calorieProfile ? { ...calorieProfile, probaeTarget: formData.probaeTarget, mealCalories: formData.mealCalories, mealSlots: formData.mealSlots, lockedMeals: formData.lockedMeals } : null,
         selected_plan_id: skipPlan ? null : formData.selectedPlanId,
-        status: skipPlan ? "PENDING_PLAN" : "ACTIVE"
+        status: skipPlan ? "PENDING_PLAN" : "ACTIVE",
+        include_delivery: formData.include_delivery
       };
 
       await endpoints.customers.create(payload);
@@ -465,7 +472,9 @@ export default function NewCustomerPage() {
                       rows={2} 
                     />
                   </div>
+
                   
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 col-span-1 md:col-span-2">
                     <div className="md:col-span-3">
                       <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Biological Sex</label>
@@ -693,6 +702,21 @@ export default function NewCustomerPage() {
                   <button type="button" onClick={() => setStep(3)} className="p-2 hover:bg-neutral-200 rounded-full"><ArrowLeft className="w-5 h-5 text-neutral-600" /></button>
                   <h2 className="text-2xl font-bold text-neutral-900">Select Plan</h2>
                 </div>
+                <div className="flex items-center justify-between bg-white border border-neutral-200 rounded-xl px-4 py-3 cursor-pointer mb-6" onClick={() => {
+                  const newStatus = !formData.include_delivery;
+                  updateField("include_delivery", newStatus);
+                  if (formData.selectedPlanId) {
+                    handlePlanSelect(formData.selectedPlanId, newStatus);
+                  }
+                }}>
+                  <div>
+                    <h4 className="text-sm font-bold text-neutral-900">Include Delivery Cost</h4>
+                    <p className="text-xs text-neutral-500 font-medium">Automatically add delivery charges based on coordinates</p>
+                  </div>
+                  <div className={`w-12 h-6 rounded-full flex items-center p-1 transition-colors ${formData.include_delivery ? 'bg-[#6A0FAD]' : 'bg-neutral-300'}`}>
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${formData.include_delivery ? 'translate-x-6' : 'translate-x-0'}`} />
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {plans.length === 0 ? (
@@ -726,20 +750,37 @@ export default function NewCustomerPage() {
                 {!isPreviewLoading && previewData && (
                   <div className="space-y-6">
                     {/* Financial Summary */}
-                    <div className="bg-white rounded-2xl border border-neutral-200 p-6 flex flex-col md:flex-row justify-between items-center gap-6">
-                      <div className="flex-1 text-center md:text-left">
-                        <div className="text-sm font-bold text-neutral-500 uppercase tracking-wider">Gross Value</div>
-                        <div className="text-2xl font-bold text-neutral-900">₹{previewData.gross_price}</div>
+                    <div className="bg-white rounded-2xl border border-neutral-200 p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 shadow-sm">
+                      <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start w-full">
+                        <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Cost Breakdown</div>
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
+                           <span className="w-36 text-left">Food Cost:</span> 
+                           <span className="font-bold w-20 text-right">₹{previewData.total_food_cost ?? previewData.gross_price}</span>
+                        </div>
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
+                           <span className="w-36 text-left flex items-center gap-1">
+                             Delivery Cost:
+                             {previewData.delivery_distance_km > 0 && (
+                               <span className="text-[10px] bg-neutral-100 px-1 py-0.5 rounded text-neutral-500 leading-none">{previewData.delivery_distance_km} km</span>
+                             )}
+                           </span> 
+                           <span className="font-bold w-20 text-right">₹{previewData.total_delivery_cost ?? 0}</span>
+                        </div>
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-900 mt-2 border-t border-neutral-100 pt-2 w-full">
+                           <span className="w-36 text-left font-bold">Gross Value:</span> 
+                           <span className="font-black text-lg w-20 text-right">₹{previewData.gross_price}</span>
+                        </div>
                       </div>
-                      <div className="w-px h-12 bg-neutral-200 hidden md:block"></div>
-                      <div className="flex-1 text-center">
+                      <div className="w-full h-px md:w-px md:h-20 bg-neutral-200"></div>
+                      <div className="flex-1 text-center w-full">
                         <div className="text-sm font-bold text-red-500 uppercase tracking-wider">Plan Discount ({previewData.discount_percentage}%)</div>
                         <div className="text-2xl font-bold text-red-600">- ₹{previewData.discount_amount}</div>
                       </div>
-                      <div className="w-px h-12 bg-neutral-200 hidden md:block"></div>
-                      <div className="flex-1 text-center md:text-right">
+                      <div className="w-full h-px md:w-px md:h-20 bg-neutral-200"></div>
+                      <div className="flex-1 text-center md:text-right w-full flex flex-col items-center md:items-end">
                         <div className="text-sm font-bold text-[#6A0FAD] uppercase tracking-wider">Final Price</div>
                         <div className="text-3xl font-black text-[#6A0FAD]">₹{previewData.final_discounted_price}</div>
+                        <div className="text-xs text-neutral-400 font-medium mt-1">Inclusive of all costs</div>
                       </div>
                     </div>
 
@@ -790,7 +831,7 @@ export default function NewCustomerPage() {
                   <button type="button" onClick={() => handleSaveCustomer(true)} disabled={isSubmitting} className="text-neutral-500 font-bold hover:text-neutral-900 transition-colors">
                     Skip & Save Customer
                   </button>
-                  <ProbaeButton  onClick={() => handleSaveCustomer(false)} disabled={!formData.selectedPlanId || isSubmitting} className="!w-auto flex items-center gap-2">
+                  <ProbaeButton  onClick={() => setShowConfirmModal(true)} disabled={!formData.selectedPlanId || isSubmitting} className="!w-auto flex items-center gap-2">
                     {isSubmitting ? <BowlLoader className="w-4 h-4 animate-spin" /> : "Finalize"}
                   </ProbaeButton>
                 </div>
@@ -801,6 +842,20 @@ export default function NewCustomerPage() {
         </div>
       </div>
       
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={() => {
+          setShowConfirmModal(false);
+          handleSaveCustomer(false);
+        }}
+        title="Assign Plan & Finalize"
+        message="Are you sure you want to assign this plan to the customer and finalize their setup?"
+        type="info"
+        confirmText="Yes, Finalize"
+        cancelText="Cancel"
+      />
+
       <ConfirmationModal
         isOpen={!!errorMsg}
         onClose={() => setErrorMsg("")}

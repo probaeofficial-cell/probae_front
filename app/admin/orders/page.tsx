@@ -37,6 +37,7 @@ export default function OrdersPage() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isCronRunning, setIsCronRunning] = useState(false);
   const [cronToast, setCronToast] = useState<{type: "success"|"error", msg: string} | null>(null);
+  const [showGenerateConfirm, setShowGenerateConfirm] = useState(false);
 
   const handleRunCron = async () => {
     setIsCronRunning(true);
@@ -155,10 +156,10 @@ export default function OrdersPage() {
               <p className="text-neutral-500 font-medium mt-1">Manage subscription dispatches and custom orders</p>
             </div>
             
-            <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4 w-full md:w-auto">
+            <div className="flex flex-col sm:flex-row flex-wrap md:flex-nowrap items-stretch sm:items-center gap-3 md:gap-4 w-full md:w-auto">
               <button
                 onClick={() => setIsWindowModalOpen(true)}
-                className="flex items-center gap-2 h-11 px-4 rounded-2xl bg-white border border-neutral-200 text-neutral-700 font-bold text-sm hover:bg-neutral-50 hover:border-neutral-300 shadow-sm transition-colors"
+                className="flex items-center justify-center gap-2 h-11 px-4 rounded-2xl bg-white border border-neutral-200 text-neutral-700 font-bold text-sm hover:bg-neutral-50 hover:border-neutral-300 shadow-sm transition-colors w-full sm:w-auto"
               >
                 <Clock className="w-4 h-4 text-[#6A0FAD]" /> Order Window
               </button>
@@ -171,27 +172,27 @@ export default function OrdersPage() {
                   setTempStatus(status);
                   setIsFilterModalOpen(true);
                 }}
-                className={`flex items-center justify-center w-11 h-11 rounded-2xl border transition-all ${
+                className={`flex items-center justify-center w-full sm:w-11 h-11 rounded-2xl border transition-all ${
                   (search || targetDate || customerId || status) 
                     ? "bg-[#6A0FAD]/10 border-[#6A0FAD]/30 text-[#6A0FAD]" 
                     : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50"
                 }`}
               >
-                <Filter className="w-5 h-5" />
+                <Filter className="w-5 h-5 mr-2 sm:mr-0" /> <span className="sm:hidden font-bold">Filter Orders</span>
               </button>
 
               <button
-                onClick={handleRunCron}
+                onClick={() => setShowGenerateConfirm(true)}
                 disabled={isCronRunning}
                 title="Manually run the plan order queue for tomorrow. Safe to click multiple times."
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-sm hover:bg-amber-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-sm hover:bg-amber-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
               >
                 {isCronRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 {isCronRunning ? "Running..." : "Run Daily Generation"}
               </button>
 
-              <Link href="/admin/orders/new">
-                <ProbaeButton className="!w-auto flex items-center gap-2">
+              <Link href="/admin/orders/new" className="w-full sm:w-auto">
+                <ProbaeButton className="w-full sm:!w-auto flex items-center justify-center gap-2">
                   <Plus className="w-4 h-4" /> Custom Order
                 </ProbaeButton>
               </Link>
@@ -219,25 +220,25 @@ export default function OrdersPage() {
 
               <button
                 onClick={() => { setActiveTab("ALL"); setPage(1); }}
-                className={`relative z-10 flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-bold text-sm transition-colors duration-300 ${activeTab === "ALL" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-700 hover:text-neutral-900"}`}
+                className={`relative z-10 flex-1 py-2.5 px-2 sm:px-4 rounded-xl flex items-center justify-center gap-1 sm:gap-2 font-bold text-xs sm:text-sm transition-colors duration-300 ${activeTab === "ALL" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-700 hover:text-neutral-900"}`}
               >
-                <List className="w-4 h-4" /> All Orders
+                <List className="w-4 h-4 hidden sm:block" /> All
               </button>
               <button
                 onClick={() => { setActiveTab("PLAN"); setPage(1); }}
-                className={`relative z-10 flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-bold text-sm transition-colors duration-300 ${activeTab === "PLAN" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-700 hover:text-neutral-900"}`}
+                className={`relative z-10 flex-1 py-2.5 px-2 sm:px-4 rounded-xl flex items-center justify-center gap-1 sm:gap-2 font-bold text-xs sm:text-sm transition-colors duration-300 ${activeTab === "PLAN" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-700 hover:text-neutral-900"}`}
               >
-                <Calendar className="w-4 h-4" /> Plan Orders
+                <Calendar className="w-4 h-4 hidden sm:block" /> Plan
               </button>
               <button
                 onClick={() => { setActiveTab("CUSTOM"); setPage(1); }}
-                className={`relative z-10 flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-bold text-sm transition-colors duration-300 ${activeTab === "CUSTOM" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-700 hover:text-neutral-900"}`}
+                className={`relative z-10 flex-1 py-2.5 px-2 sm:px-4 rounded-xl flex items-center justify-center gap-1 sm:gap-2 font-bold text-xs sm:text-sm transition-colors duration-300 ${activeTab === "CUSTOM" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-700 hover:text-neutral-900"}`}
               >
-                <ListChecks className="w-4 h-4" /> Custom Orders
+                <ListChecks className="w-4 h-4 hidden sm:block" /> Custom
               </button>
             </div>
 
-            <div className="flex flex-col h-[calc(100%-4.5rem)] bg-white rounded-2xl border border-neutral-200">
+            <div className="flex flex-col flex-1 min-h-0 bg-white rounded-2xl border border-neutral-200">
 
               <div className="flex-1 overflow-auto">
                 <table className="w-full text-left border-collapse min-w-[800px]">
@@ -265,7 +266,7 @@ export default function OrdersPage() {
                     ) : (
                       orders.map((order) => (
                         <tr key={order.ulid} className="hover:bg-neutral-50/50 transition-colors">
-                          <td className="px-6 py-4 font-mono text-xs text-neutral-500 whitespace-nowrap">#{order.order_number || order.ulid.substring(order.ulid.length - 6)}</td>
+                          <td className="px-6 py-4 font-mono text-xs text-neutral-500 whitespace-nowrap">{order.order_number || order.ulid.substring(order.ulid.length - 6)}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="font-bold text-neutral-900">{order.customer?.name || "Unknown"}</div>
                             <div className="text-xs text-neutral-500 font-medium">#{order.customer?.ulid.substring(order.customer.ulid.length - 6) || ""}</div>
@@ -462,6 +463,20 @@ export default function OrdersPage() {
       confirmText="Yes, Change Status"
       cancelText="Cancel"
       isLoading={isUpdatingStatus}
+    />
+
+    <ConfirmationModal
+      isOpen={showGenerateConfirm}
+      onClose={() => setShowGenerateConfirm(false)}
+      onConfirm={() => {
+        setShowGenerateConfirm(false);
+        handleRunCron();
+      }}
+      title="Generate Plan Orders"
+      message="Are you sure you want to run the plan order queue for tomorrow? This will generate daily orders for all active plans scheduled for tomorrow. This action is safe to run multiple times, as it skips existing orders."
+      type="info"
+      confirmText="Yes, Generate Orders"
+      cancelText="Cancel"
     />
 
     <OrderWindowModal 

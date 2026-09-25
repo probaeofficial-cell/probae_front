@@ -136,7 +136,7 @@ export default function PackagingDashboardPage() {
           
         <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-2xl pt-2 pb-6 px-6 sm:pt-2 sm:pb-8 sm:px-8">
           
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 shrink-0 gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 shrink-0 gap-4">
             <div>
               <h1 className="text-xl font-bold text-neutral-800 flex items-center gap-2">
                 <Package className="w-5 h-5 text-[#00E5FF]" />
@@ -144,17 +144,37 @@ export default function PackagingDashboardPage() {
               </h1>
               <p className="text-sm text-neutral-500 mt-1 flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                Today's Requirements &bull; Last updated {lastUpdated.toLocaleTimeString()}
+                {targetDate === new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]
+                  ? "Today's Requirements"
+                  : `Requirements for ${new Date(targetDate + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`
+                } &bull; Last updated {lastUpdated.toLocaleTimeString()}
               </p>
             </div>
-            <button
-              onClick={fetchData}
-              disabled={loading}
-              className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl font-medium transition-colors disabled:opacity-50 text-sm"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="relative flex items-center gap-2 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2">
+                <Calendar className="w-4 h-4 text-neutral-400 shrink-0" />
+                <input
+                  type="date"
+                  value={targetDate}
+                  onChange={e => setTargetDate(e.target.value)}
+                  className="bg-transparent text-sm text-neutral-700 font-medium outline-none cursor-pointer"
+                />
+              </div>
+              <button
+                onClick={() => setTargetDate(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0])}
+                className="text-xs font-bold px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 transition-colors"
+              >
+                Today
+              </button>
+              <button
+                onClick={fetchData}
+                disabled={loading}
+                className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl font-medium transition-colors disabled:opacity-50 text-sm"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -275,7 +295,7 @@ export default function PackagingDashboardPage() {
                                         </div>
                                       )}
                                     </td>
-                                    <td className="px-6 py-4 font-mono text-neutral-500">#{order.order_number || order.order_ulid.slice(-6)}</td>
+                                    <td className="px-6 py-4 font-mono text-neutral-500">{order.order_number || order.order_ulid.slice(-6)}</td>
                                     <td className="px-6 py-4 font-bold text-neutral-800">{order.customer_name}</td>
                                     <td className="px-6 py-4 font-bold text-neutral-800">{Math.round(order.calories)}</td>
                                     <td className="px-6 py-4">{Math.round(order.protein)}g</td>
