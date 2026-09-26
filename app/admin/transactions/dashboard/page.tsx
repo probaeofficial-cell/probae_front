@@ -91,7 +91,7 @@ export default function TransactionsDashboardPage() {
           <div className="py-12 flex justify-center"><BowlLoader className="w-10 h-10 text-[#6A0FAD]" /></div>
         ) : financials ? (
           <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             <div className="group bg-white rounded-3xl p-6 border border-neutral-200 shadow-sm hover:shadow-lg hover:border-neutral-300 hover:-translate-y-1 transition-all duration-300 cursor-default">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600 transition-transform duration-300 group-hover:scale-110"><IndianRupee className="w-6 h-6" /></div>
@@ -114,6 +114,14 @@ export default function TransactionsDashboardPage() {
               </div>
               <p className="text-sm font-bold text-neutral-500 uppercase">Expenses</p>
               <h2 className="text-3xl font-black text-neutral-900 mt-1">₹{financials.total_expenses.toFixed(2)}</h2>
+            </div>
+
+            <div className="group bg-white rounded-3xl p-6 border border-neutral-200 shadow-sm hover:shadow-lg hover:border-neutral-300 hover:-translate-y-1 transition-all duration-300 cursor-default">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-[#6A0FAD] transition-transform duration-300 group-hover:scale-110"><Wallet className="w-6 h-6" /></div>
+              </div>
+              <p className="text-sm font-bold text-neutral-500 uppercase">Realized Margin</p>
+              <h2 className="text-3xl font-black text-[#6A0FAD] mt-1">₹{financials.total_realized_margin ? financials.total_realized_margin.toFixed(2) : "0.00"}</h2>
             </div>
 
             <div className={`group rounded-3xl p-6 shadow-sm border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-default ${financials.net_profit >= 0 ? "bg-green-600 border-green-700 hover:bg-green-500 text-white" : "bg-red-600 border-red-700 hover:bg-red-500 text-white"}`}>

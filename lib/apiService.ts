@@ -309,7 +309,12 @@ export const endpoints = {
       if (params.date_to) q.append('date_to', params.date_to);
       return api.get(`/transactions?${q.toString()}`);
     },
-    dailySummary: (date?: string) => api.get('/transactions/daily-summary' + (date ? `?target_date=${date}` : ''))
+    dailySummary: (dateFrom?: string, dateTo?: string) => {
+      const p = new URLSearchParams();
+      if (dateFrom) p.append('date_from', dateFrom);
+      if (dateTo) p.append('date_to', dateTo);
+      return api.get(`/transactions/daily-summary${p.toString() ? `?${p.toString()}` : ''}`);
+    }
   },
 
   logistics: {
@@ -743,7 +748,12 @@ export const endpoints = {
       if (params.is_manual) p.append("is_manual", "true");
       return api.get(`/transactions?${p.toString()}`);
     },
-    dailySummary: (date?: string) => api.get(`/transactions/daily-summary${date ? `?target_date=${date}` : ''}`),
+    dailySummary: (dateFrom?: string, dateTo?: string) => {
+      const p = new URLSearchParams();
+      if (dateFrom) p.append('date_from', dateFrom);
+      if (dateTo) p.append('date_to', dateTo);
+      return api.get(`/transactions/daily-summary${p.toString() ? `?${p.toString()}` : ''}`);
+    },
     delete: (ulid: string) => api.delete(`/transactions/${ulid}`),
   },
   customers: {

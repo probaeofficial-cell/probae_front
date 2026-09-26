@@ -14,6 +14,7 @@ type Summary = {
   total_upi_deposits: number;
   total_dispatched_revenue: number;
   total_outstanding_dues: number;
+  total_realized_margin: number;
 };
 
 type Transaction = {
@@ -78,12 +79,12 @@ export default function WalletAndTransactionsPage() {
   
   const fetchSummary = useCallback(async () => {
     try {
-      const data = await endpoints.transactions.dailySummary() as any;
+      const data = await endpoints.transactions.dailySummary(dateFrom || undefined, dateTo || undefined) as any;
       setSummary(data);
     } catch (e) {
       console.error(e);
     }
-  }, []);
+  }, [dateFrom, dateTo]);
 
   const fetchTransactions = useCallback(async () => {
     setIsLoading(true);
@@ -218,15 +219,15 @@ export default function WalletAndTransactionsPage() {
           </div>
 
           {/* TASK 2: METRICS DASHBOARD */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 shrink-0">
             <div className="bg-white rounded-3xl p-6 border border-neutral-100 shadow-sm flex flex-col justify-between h-32">
-              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Today's UPI Collections</p>
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Total UPI Collections</p>
               <p className="text-3xl font-black text-[#6A0FAD]">
                 ₹{summary ? summary.total_upi_deposits.toFixed(2) : "0.00"}
               </p>
             </div>
             <div className="bg-white rounded-3xl p-6 border border-neutral-100 shadow-sm flex flex-col justify-between h-32">
-              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Today's Cash Collections</p>
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Total Cash Collections</p>
               <p className="text-3xl font-black text-green-600">
                 ₹{summary ? summary.total_cash_deposits.toFixed(2) : "0.00"}
               </p>
@@ -236,6 +237,15 @@ export default function WalletAndTransactionsPage() {
               <p className="text-3xl font-black text-red-600">
                 ₹{summary ? summary.total_outstanding_dues.toFixed(2) : "0.00"}
               </p>
+            </div>
+            <div className="bg-white rounded-3xl p-6 border border-neutral-100 shadow-sm flex flex-col justify-between h-32">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Realized Margin (Profit)</p>
+              <div>
+                <p className="text-3xl font-black text-blue-600">
+                  ₹{summary && summary.total_realized_margin ? summary.total_realized_margin.toFixed(2) : "0.00"}
+                </p>
+                <p className="text-[10px] text-neutral-400 mt-1 truncate">From dispatched & delivered orders</p>
+              </div>
             </div>
           </div>
 
