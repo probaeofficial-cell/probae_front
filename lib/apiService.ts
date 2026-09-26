@@ -281,6 +281,7 @@ export const endpoints = {
     createCategory: (payload: any) => api.post('/expenses/categories', payload),
     updateCategory: (ulid: string, payload: any) => api.put(`/expenses/categories/${ulid}`, payload),
     deleteCategory: (ulid: string) => api.del(`/expenses/categories/${ulid}`),
+    dashboardMetrics: (dateFrom: string, dateTo: string) => api.get(`/expenses/dashboard?date_from=${dateFrom}&date_to=${dateTo}`),
     list: (params: { page?: number, limit?: number, month?: string, category_ulid?: string, search?: string }) => {
       const q = new URLSearchParams();
       if (params.page) q.append('page', params.page.toString());
