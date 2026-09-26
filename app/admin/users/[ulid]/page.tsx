@@ -28,6 +28,10 @@ export default function UserPreviewPage() {
     is_active: true
   });
 
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreLogs, setHasMoreLogs] = useState(true);
+
   useEffect(() => {
     if (ulid) {
       fetchData();
@@ -45,11 +49,12 @@ export default function UserPreviewPage() {
 
       const [uRes, logRes] = await Promise.all([
         api.get<any>(`/auth/admin/${ulid}`),
-        api.get<any>(`/auth/admin/${ulid}/audit-logs`)
+        api.get<any[]>(`/auth/admin/${ulid}/audit-logs?page=1&limit=20`)
       ]);
 
       setUser(uRes);
       setLogs(logRes);
+      if (logRes.length < 20) setHasMoreLogs(false);
 
       setForm({
         username: uRes.username,
@@ -63,6 +68,34 @@ export default function UserPreviewPage() {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMoreLogs = async () => {
+    if (!hasMoreLogs || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const newLogs = await api.get<any[]>(`/auth/admin/${ulid}/audit-logs?page=${nextPage}&limit=20`);
+      
+      if (newLogs.length === 0) {
+        setHasMoreLogs(false);
+      } else {
+        setLogs(prev => [...prev, ...newLogs]);
+        setPage(nextPage);
+        if (newLogs.length < 20) setHasMoreLogs(false);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 50) {
+      fetchMoreLogs();
     }
   };
 
@@ -84,8 +117,25 @@ export default function UserPreviewPage() {
     }
   };
 
-  if (loading) return <div className="flex justify-center p-8"><BowlLoader className="h-8 w-8 text-[#6A0FAD]" /></div>;
-  if (!user) return <div className="p-8 text-center">User not found</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
+        <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden justify-center items-center">
+          <BowlLoader className="w-10 h-10 text-[#6A0FAD]" />
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return (
+      <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
+        <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-hidden justify-center items-center">
+          <div className="text-xl font-bold text-neutral-400">User not found</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]"><div className="p-4 sm:p-8 h-full flex flex-col bg-[#E6E6E6] overflow-hidden"><Header />
@@ -171,7 +221,7 @@ export default function UserPreviewPage() {
           <h2 className="text-lg font-black text-neutral-900 mb-6 flex items-center gap-2">
             <Activity className="w-5 h-5 text-[#6A0FAD]" /> API Audit Log
           </h2>
-          <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+          <div onScroll={handleScroll} className="space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin">
             {logs.length === 0 ? (
               <div className="text-sm text-neutral-500 text-center py-4">No recent activity</div>
             ) : logs.map((log) => (
@@ -203,6 +253,16 @@ export default function UserPreviewPage() {
                 )}
               </div>
             ))}
+            
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <BowlLoader className="w-6 h-6 text-[#6A0FAD]" />
+              </div>
+            )}
+            
+            {!hasMoreLogs && logs.length > 0 && (
+              <div className="text-center text-xs text-neutral-400 py-4 font-bold">No more logs to display</div>
+            )}
           </div>
         </div>
       </div>
