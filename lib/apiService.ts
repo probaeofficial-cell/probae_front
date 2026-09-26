@@ -731,6 +731,19 @@ export const endpoints = {
       api.post(`/customers/${customerUlid}/transactions`, payload),
     list: (customerUlid: string, page: number = 1) => 
       api.get(`/customers/${customerUlid}/transactions?page=${page}`),
+    listGlobal: (params: any) => {
+      const p = new URLSearchParams();
+      if (params.page) p.append("page", params.page.toString());
+      if (params.limit) p.append("limit", params.limit.toString());
+      if (params.search) p.append("search", params.search);
+      if (params.transaction_type) p.append("transaction_type", params.transaction_type);
+      if (params.date_from) p.append("date_from", params.date_from);
+      if (params.date_to) p.append("date_to", params.date_to);
+      if (params.is_manual) p.append("is_manual", "true");
+      return api.get(`/transactions?${p.toString()}`);
+    },
+    dailySummary: (date?: string) => api.get(`/transactions/daily-summary${date ? `?target_date=${date}` : ''}`),
+    delete: (ulid: string) => api.delete(`/transactions/${ulid}`),
   },
   customers: {
     list: async (params?: any) => {
