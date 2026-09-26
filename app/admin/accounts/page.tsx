@@ -86,7 +86,7 @@ export default function AccountsDashboardPage() {
               disabled={loading}
               className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl font-medium transition-colors disabled:opacity-50 text-sm h-[36px]"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? <BowlLoader className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
               Refresh
             </button>
           </div>

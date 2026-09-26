@@ -1,5 +1,6 @@
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle, Info, Trash2, X, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, Trash2, X } from "lucide-react";
 
 export type ModalType = "success" | "warning" | "delete" | "info" | "error";
 
@@ -167,7 +168,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               onClick={onConfirm}
               disabled={isLoading}
             >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading && <BowlLoader className="mr-2 h-4 w-4"  />}
               {confirmText}
             </button>
           )}

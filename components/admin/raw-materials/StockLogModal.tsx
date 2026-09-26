@@ -1,6 +1,6 @@
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect } from "react";
-import { X, Loader2, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+import { X, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { RawMaterial, StockLog } from "@/lib/types";
 import { endpoints } from "@/lib/apiService";
 
@@ -56,7 +56,7 @@ export function StockLogModal({ isOpen, onClose, material }: Props) {
             <div className="h-80 overflow-y-auto pr-2 scrollbar-thin">
                 {isLoading ? (
                     <div className="flex h-full items-center justify-center">
-                        <BowlLoader className="w-6 h-6 text-[#6b21a8] animate-spin" />
+                        <BowlLoader className="w-6 h-6 text-[#6b21a8]" />
                     </div>
                 ) : logs.length === 0 ? (
                     <div className="flex h-full items-center justify-center text-sm font-semibold text-neutral-400">

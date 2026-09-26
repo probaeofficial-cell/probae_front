@@ -3,7 +3,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Wheat } from "lucide-react";
+import { ArrowLeft, Wheat } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -68,7 +68,7 @@ export default function MacrosPreviewPage({ params }: PageProps) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#fafafa]">
         <div className="flex flex-col items-center gap-3">
-          <BowlLoader className="w-8 h-8 text-[#6b21a8] animate-spin" />
+          <BowlLoader className="w-8 h-8 text-[#6b21a8]" />
           <span className="text-neutral-500 font-medium">Loading preview...</span>
         </div>
       </div>

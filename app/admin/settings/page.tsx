@@ -1,4 +1,5 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect } from "react";
 import { TwoFactorSetup } from "@/components/admin/TwoFactorSetup";
 import { Header } from "@/components/admin/Header";
@@ -102,7 +103,7 @@ export default function SettingsPage() {
   if (isLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#fafafa]">
-        <div className="animate-pulse text-neutral-500 font-medium">Loading...</div>
+        <BowlLoader className="h-8 w-8 text-[#6A0FAD]" />
       </div>
     );
   }
@@ -218,10 +219,7 @@ export default function SettingsPage() {
                   className="!w-auto px-5 py-2.5 text-sm"
                 >
                   {sysSaveStatus === "saving" && (
-                    <svg className="animate-spin w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                    </svg>
+                    <BowlLoader className="w-4 h-4 mr-2" />
                   )}
                   {sysSaveStatus === "saved" && <Check className="w-4 h-4 mr-2" />}
                   {sysSaveStatus === "saving"
@@ -289,10 +287,7 @@ export default function SettingsPage() {
                   className="!w-auto px-6"
                 >
                   {deliverySaveStatus === "saving" && (
-                    <svg className="animate-spin w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                    </svg>
+                    <BowlLoader className="w-4 h-4 mr-2" />
                   )}
                   {deliverySaveStatus === "saved" && <Check className="w-4 h-4 mr-2" />}
                   {deliverySaveStatus === "saving" ? "Saving..." : deliverySaveStatus === "saved" ? "Saved!" : "Save Delivery Config"}
@@ -386,10 +381,7 @@ export default function SettingsPage() {
                   className="!w-auto px-5 py-2.5 text-sm"
                 >
                   {saveStatus === "saving" && (
-                    <svg className="animate-spin w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                    </svg>
+                    <BowlLoader className="w-4 h-4 mr-2" />
                   )}
                   {saveStatus === "saved" && <Check className="w-4 h-4 mr-2" />}
                   {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Preferences Saved!" : "Save Preferences"}

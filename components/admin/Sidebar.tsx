@@ -3,12 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import {
-  ChevronsLeft,
-  ChevronsRight,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ChevronDown, ChevronUp } from "lucide-react";
 import { MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
 import { endpoints } from "@/lib/apiService";
 import { useAuth } from "@/lib/AuthContext";

@@ -1,5 +1,6 @@
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { X, Loader2 } from "lucide-react";
+import { X } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import AsyncPlanTierSelect from "./AsyncPlanTierSelect";
 import AsyncBowlSelect from "./AsyncBowlSelect";
@@ -99,7 +100,7 @@ export function LegacySubscriptionModal({
                 Cancel
               </button>
               <button type="submit" disabled={loading} className="flex-1 py-3 px-4 bg-[#6A0FAD] text-white font-bold rounded-xl hover:bg-[#5b0c96] flex justify-center items-center">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Log Subscription"}
+                {loading ? <BowlLoader className="w-5 h-5"  /> : "Log Subscription"}
               </button>
             </div>
           </form>
@@ -312,7 +313,7 @@ export function LegacyOrderModal({
                 Cancel
               </button>
               <button type="submit" disabled={loading} className="flex-1 py-3 px-4 bg-[#6A0FAD] text-white font-bold rounded-xl hover:bg-[#5b0c96] flex justify-center items-center">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Log Past Meal"}
+                {loading ? <BowlLoader className="w-5 h-5"  /> : "Log Past Meal"}
               </button>
             </div>
           </form>

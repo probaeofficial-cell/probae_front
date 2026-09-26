@@ -3,15 +3,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Loader2, 
-  Wheat,
-  AlertTriangle,
-  CheckCircle2,
-  Search,
-  ChevronDown,
-  ArrowLeft
-} from "lucide-react";
+import { Wheat, AlertTriangle, CheckCircle2, Search, ChevronDown, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -327,7 +319,7 @@ export default function AddMacrosPage() {
                     {/* Loading indicator inside select list */}
                     {isDropdownLoading && (
                       <div className="py-2 flex items-center justify-center gap-1.5 text-neutral-400 text-[10px]">
-                        <BowlLoader className="w-3.5 h-3.5 animate-spin" />
+                        <BowlLoader className="w-3.5 h-3.5" />
                         <span>Loading more...</span>
                       </div>
                     )}
@@ -492,7 +484,7 @@ export default function AddMacrosPage() {
                   disabled={isSaving || !selectedMaterial}
                   className="py-3.5 rounded-[20px] text-[15px]"
                 >
-                  {isSaving && <BowlLoader className="w-4 h-4 animate-spin text-white mr-1.5" />}
+                  {isSaving && <BowlLoader className="w-4 h-4 text-white mr-1.5" />}
                   Save
                 </ProbaeButton>
               </div>

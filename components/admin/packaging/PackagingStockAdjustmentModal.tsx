@@ -95,7 +95,7 @@ export function PackagingStockAdjustmentModal({ component, onClose, onSuccess }:
                     disabled={isUpdatingThreshold}
                     className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-200 text-green-700 hover:bg-green-300 disabled:opacity-50"
                   >
-                    {isUpdatingThreshold ? <BowlLoader className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    {isUpdatingThreshold ? <BowlLoader className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                   </button>
                 </div>
               ) : (
@@ -165,7 +165,7 @@ export function PackagingStockAdjustmentModal({ component, onClose, onSuccess }:
             Cancel
           </button>
           <ProbaeButton className="flex-1" onClick={handleSubmit} disabled={isSubmitting || totalStock < 0}>
-            {isSubmitting ? <BowlLoader className="w-5 h-5 animate-spin" /> : "Save"}
+            {isSubmitting ? <BowlLoader className="w-5 h-5" /> : "Save"}
           </ProbaeButton>
         </div>
       </div>

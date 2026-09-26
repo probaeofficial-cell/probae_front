@@ -1,9 +1,10 @@
 "use client";
 
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { endpoints } from "@/lib/apiService";
-import { Search, Loader2, Users, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Search, Users, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
@@ -97,7 +98,7 @@ export default function AffiliatesPage() {
                 {loading && affiliates.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-12 text-center">
-                      <Loader2 className="w-6 h-6 animate-spin text-[#6A0FAD] mx-auto" />
+                      <BowlLoader className="w-6 h-6 text-[#6A0FAD] mx-auto"  />
                     </td>
                   </tr>
                 ) : affiliates.length === 0 ? (

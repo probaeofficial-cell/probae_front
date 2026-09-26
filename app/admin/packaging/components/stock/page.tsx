@@ -2,17 +2,7 @@
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Package,
-  ChevronRight,
-  ChevronLeft,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  BarChart3,
-  ListOrdered,
-} from "lucide-react";
+import { ArrowLeft, Package, ChevronRight, ChevronLeft, AlertTriangle, CheckCircle2, XCircle, BarChart3, ListOrdered } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -116,7 +106,7 @@ export default function PackagingComponentStockPage() {
           <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl border border-neutral-200 overflow-hidden">
             {isLoading ? (
               <div className="flex-1 flex items-center justify-center">
-                <BowlLoader className="w-10 h-10 animate-spin text-[#6A0FAD]" />
+                <BowlLoader className="w-10 h-10 text-[#6A0FAD]" />
               </div>
             ) : components.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-4">

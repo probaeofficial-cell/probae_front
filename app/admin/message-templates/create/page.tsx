@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { Copy, Plus, MessageCircle, Save, ArrowLeft } from "lucide-react";
@@ -238,7 +239,7 @@ function CreateTemplatePageInner() {
 
 export default function CreateTemplatePage() {
   return (
-    <Suspense fallback={<div className="flex-1 flex items-center justify-center text-neutral-400">Loading...</div>}>
+    <Suspense fallback={<div className="flex-1 flex items-center justify-center"><BowlLoader className="h-8 w-8 text-[#6A0FAD]" /></div>}>
       <CreateTemplatePageInner />
     </Suspense>
   );

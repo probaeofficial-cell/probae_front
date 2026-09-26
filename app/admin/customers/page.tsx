@@ -10,6 +10,7 @@ import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 export default function CustomersPage() {
   const router = useRouter();
@@ -97,7 +98,7 @@ export default function CustomersPage() {
               <tbody className="divide-y divide-neutral-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-neutral-500">Loading...</td>
+                    <td colSpan={5} className="px-6 py-8 text-center"><BowlLoader className="mx-auto h-8 w-8 text-[#6A0FAD]" /></td>
                   </tr>
                 ) : customers.length === 0 ? (
                   <tr>

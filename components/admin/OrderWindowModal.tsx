@@ -1,7 +1,8 @@
 "use client";
 
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect } from "react";
-import { X, Loader2 } from "lucide-react";
+import { X } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 
 export interface OrderWindowModalProps {
@@ -66,7 +67,7 @@ export function OrderWindowModal({ isOpen, onClose }: OrderWindowModalProps) {
         {/* Body */}
         <div className="p-6 space-y-6">
           {isFetching ? (
-            <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin text-[#6A0FAD]" /></div>
+            <div className="flex justify-center py-4"><BowlLoader className="w-6 h-6 text-[#6A0FAD]"  /></div>
           ) : (
             <>
               <div className="flex gap-4">
@@ -110,7 +111,7 @@ export function OrderWindowModal({ isOpen, onClose }: OrderWindowModalProps) {
             disabled={isLoading || isFetching}
             className="px-6 py-3 rounded-full bg-[#4B0082] text-white font-bold hover:bg-[#3a0066] transition-colors disabled:opacity-50 flex items-center gap-2"
           >
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isLoading && <BowlLoader className="w-4 h-4"  />}
             Save Configuration
           </button>
         </div>

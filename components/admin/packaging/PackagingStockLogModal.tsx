@@ -70,7 +70,7 @@ export function PackagingStockLogModal({ component, onClose }: Props) {
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <BowlLoader className="w-8 h-8 animate-spin text-[#6A0FAD]" />
+              <BowlLoader className="w-8 h-8 text-[#6A0FAD]" />
             </div>
           ) : logs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">

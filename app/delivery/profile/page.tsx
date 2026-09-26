@@ -1,5 +1,6 @@
 "use client";
 
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
@@ -124,10 +125,7 @@ export default function ProfilePage() {
 
                   {isUploading && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white backdrop-blur-[2px] z-10">
-                      <svg className="animate-spin w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                      </svg>
+                      <BowlLoader className="w-6 h-6 text-white" />
                     </div>
                   )}
                 </div>
@@ -172,10 +170,7 @@ export default function ProfilePage() {
                   className="mt-3 text-sm text-[#6A0FAD] hover:text-violet-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center sm:justify-start gap-1.5"
                 >
                   {isUploading && (
-                    <svg className="animate-spin w-3.5 h-3.5 text-[#6A0FAD]" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                    </svg>
+                    <BowlLoader className="w-3.5 h-3.5 text-[#6A0FAD]" />
                   )}
                   {isUploading ? "Uploading..." : "Upload new photo"}
                 </button>
@@ -257,10 +252,7 @@ export default function ProfilePage() {
                 } disabled:opacity-60`}
               >
                 {saveStatus === "saving" && (
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
+                  <BowlLoader className="w-4 h-4" />
                 )}
                 {saveStatus === "saved" && <Check className="w-4 h-4" />}
                 {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved!" : (

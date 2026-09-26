@@ -3,16 +3,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { 
-  Loader2, 
-  ChevronLeft,
-  Package,
-  Plus,
-  Trash2,
-  Box,
-  AlertTriangle,
-  ArrowLeft
-} from "lucide-react";
+import { ChevronLeft, Package, Plus, Trash2, Box, AlertTriangle, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -130,7 +121,7 @@ export default function PackagingBundleFormPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-[#fafafa]">
         <div className="flex flex-col items-center gap-3">
-          <BowlLoader className="w-8 h-8 text-[#7c3aed] animate-spin" />
+          <BowlLoader className="w-8 h-8 text-[#7c3aed]" />
           <span className="text-neutral-500 font-medium">Loading packaging set builder...</span>
         </div>
       </div>
@@ -267,7 +258,7 @@ export default function PackagingBundleFormPage() {
 
         <div className="flex justify-end mb-8">
           <ProbaeButton onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto px-12 h-14 text-lg">
-            {isSaving ? <><BowlLoader className="w-5 h-5 animate-spin mr-2" /> Saving...</> : "Save Packaging Set"}
+            {isSaving ? <><BowlLoader className="w-5 h-5 mr-2" /> Saving...</> : "Save Packaging Set"}
           </ProbaeButton>
         </div>
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { Header } from "@/components/admin/Header";
@@ -140,8 +141,8 @@ export default function EditPlanTierPage() {
 
           <div className="flex-1 overflow-y-auto scrollbar-thin max-w-3xl">
             {isLoading ? (
-              <div className="flex justify-center p-12 text-[#6A0FAD]">
-                Loading...
+              <div className="flex justify-center p-12">
+                <BowlLoader className="h-8 w-8 text-[#6A0FAD]" />
               </div>
             ) : (
               <div className="bg-neutral-50/50 border border-neutral-200 rounded-3xl p-8 space-y-8">

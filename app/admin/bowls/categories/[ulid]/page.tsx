@@ -3,7 +3,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Loader2, UploadCloud, Trash2 } from "lucide-react";
+import { ArrowLeft, UploadCloud, Trash2 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { endpoints } from "@/lib/apiService";
 import { BowlCategoryUpdateInput, BowlCategoryCreateInput } from "@/lib/types";
@@ -181,7 +181,7 @@ export default function BowlCategoryFormPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-[#fafafa]">
         <div className="flex flex-col items-center gap-3">
-          <BowlLoader className="w-8 h-8 text-neutral-400 animate-spin" />
+          <BowlLoader className="w-8 h-8 text-neutral-400" />
           <div className="text-neutral-500 font-medium">Loading form...</div>
         </div>
       </div>
@@ -225,7 +225,7 @@ export default function BowlCategoryFormPage() {
                   <ProbaeButton onClick={handleSave} disabled={isSaving} className="px-8 font-semibold text-sm h-11">
                     {isSaving ? (
                       <span className="flex items-center gap-2">
-                        <BowlLoader className="w-4 h-4 animate-spin" /> Saving...
+                        <BowlLoader className="w-4 h-4" /> Saving...
                       </span>
                     ) : (
                       "Save"

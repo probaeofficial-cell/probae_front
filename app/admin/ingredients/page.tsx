@@ -3,18 +3,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Search, 
-  Filter, 
-  Loader2, 
-  ChevronLeft, 
-  ChevronRight,
-  Utensils,
-  AlertTriangle,
-  CheckCircle2,
-  Pencil,
-  Trash2
-} from "lucide-react";
+import { Search, Filter, ChevronLeft, ChevronRight, Utensils, AlertTriangle, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";

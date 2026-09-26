@@ -1,5 +1,6 @@
 "use client";
 
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -167,7 +168,7 @@ export default function DispatchOrdersPage() {
                           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#25D366] text-white text-sm font-bold shadow-sm hover:bg-[#20bd5a] transition-all disabled:opacity-50"
                         >
                           {loadingMsg === order.ulid ? (
-                            <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                            <BowlLoader className="h-4 w-4 text-white" />
                           ) : (
                             <MessageCircle className="w-4 h-4" />
                           )}

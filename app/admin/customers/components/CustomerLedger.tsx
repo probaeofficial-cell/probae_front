@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { endpoints } from "@/lib/apiService";
 import { Plus, ArrowDown, ArrowUp, RotateCcw } from "lucide-react";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -105,7 +106,7 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-neutral-500">Loading...</td>
+                  <td colSpan={5} className="px-6 py-8 text-center"><BowlLoader className="mx-auto h-8 w-8 text-[#6A0FAD]" /></td>
                 </tr>
               ) : transactions.length === 0 ? (
                 <tr>

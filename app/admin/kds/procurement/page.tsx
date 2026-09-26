@@ -2,10 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { api as apiService } from "@/lib/apiService";
-import { 
-  ShoppingCart, AlertCircle, RefreshCw, 
-  CheckCircle2, Info 
-} from "lucide-react";
+import { ShoppingCart, AlertCircle, RefreshCw, CheckCircle2, Info } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { BowlLoader } from "@/components/admin/BowlLoader";
@@ -110,7 +107,7 @@ export default function ProcurementDashboardPage() {
                 disabled={loading}
                 className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl font-medium transition-colors disabled:opacity-50 text-sm h-[36px]"
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? <BowlLoader className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
                 Refresh
               </button>
             </div>

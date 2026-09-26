@@ -3,13 +3,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { 
-  Loader2, 
-  ArrowLeft,
-  Trash2,
-  UploadCloud,
-  AlertTriangle
-} from "lucide-react";
+import { ArrowLeft, Trash2, UploadCloud, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -263,7 +257,7 @@ export default function BowlBuilderPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-[#fafafa]">
         <div className="flex flex-col items-center gap-3">
-          <BowlLoader className="w-8 h-8 text-[#7c3aed] animate-spin" />
+          <BowlLoader className="w-8 h-8 text-[#7c3aed]" />
           <span className="text-neutral-500 font-medium">Loading bowl builder...</span>
         </div>
       </div>
@@ -641,7 +635,7 @@ export default function BowlBuilderPage() {
             disabled={isSaving}
             className="h-10 px-6 bg-[#6A0FAD] text-white font-bold text-sm rounded-lg hover:bg-white hover:text-[#6A0FAD] border border-[#6A0FAD] transition-all shadow-sm flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {isSaving ? <BowlLoader className="w-4 h-4 animate-spin" /> : null}
+            {isSaving ? <BowlLoader className="w-4 h-4" /> : null}
             {isEdit ? "Save Changes" : "Create Bowl"}
           </button>
         </div>

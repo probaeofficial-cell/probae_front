@@ -90,7 +90,7 @@ export default function TransactionLogsPage() {
         </div>
 
         {isLoading ? (
-          <div className="py-12 flex justify-center"><BowlLoader className="w-10 h-10 animate-spin text-[#6A0FAD]" /></div>
+          <div className="py-12 flex justify-center"><BowlLoader className="w-10 h-10 text-[#6A0FAD]" /></div>
         ) : (
           <div className="bg-white rounded-3xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col flex-1 min-h-0">
             <div className="overflow-auto flex-1 scrollbar-thin">

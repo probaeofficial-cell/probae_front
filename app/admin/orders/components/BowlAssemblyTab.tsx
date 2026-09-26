@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect, useMemo } from "react";
-import { Loader2, Package, Search, CheckCircle2, Circle, User } from "lucide-react";
+import { Package, Search, CheckCircle2, Circle, User } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 
@@ -105,7 +105,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
   }, [data, searchQuery, statusFilter]);
 
   if (isLoading) {
-    return <div className="p-8 flex justify-center"><BowlLoader className="animate-spin w-8 h-8 text-neutral-400" /></div>;
+    return <div className="p-8 flex justify-center"><BowlLoader className="w-8 h-8 text-neutral-400" /></div>;
   }
 
   if (!data) return <div className="p-8 text-center text-neutral-500">Failed to load assembly list.</div>;

@@ -3,16 +3,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Loader2, 
-  ChevronLeft, 
-  ChevronRight,
-  Pencil,
-  Trash2,
-  Plus,
-  UploadCloud,
-  X
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Trash2, Plus, UploadCloud, X } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -250,7 +241,7 @@ export default function MealCategoriesPage() {
           <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
           {isLoading ? (
             <div className="h-64 flex flex-col items-center justify-center gap-3">
-              <BowlLoader className="w-8 h-8 text-[#7c3aed] animate-spin" />
+              <BowlLoader className="w-8 h-8 text-[#7c3aed]" />
               <span className="text-neutral-500 text-sm font-medium">Loading...</span>
             </div>
           ) : categories.length === 0 ? (

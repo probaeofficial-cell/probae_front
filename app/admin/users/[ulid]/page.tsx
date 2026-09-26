@@ -1,7 +1,8 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
-import { ArrowLeft, Save, Loader2, Activity } from "lucide-react";
+import { ArrowLeft, Save, Activity } from "lucide-react";
 import { api } from "@/lib/apiService";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -83,7 +84,7 @@ export default function UserPreviewPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (loading) return <div className="flex justify-center p-8"><BowlLoader className="h-8 w-8 text-[#6A0FAD]" /></div>;
   if (!user) return <div className="p-8 text-center">User not found</div>;
 
   return (
@@ -156,7 +157,7 @@ export default function UserPreviewPage() {
                   Cancel
                 </button>
                 <button type="submit" disabled={saving} className="w-full sm:w-auto justify-center bg-[#6A0FAD] hover:bg-[#5b0c96] text-white h-[52px] px-8 rounded-[16px] font-bold flex items-center gap-2 transition-all shadow-sm">
-                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                  {saving ? <BowlLoader className="w-5 h-5"  /> : <Save className="w-5 h-5" />}
                   Save Changes
                 </button>
               </div>

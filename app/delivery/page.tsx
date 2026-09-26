@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { BowlLoader } from "@/components/admin/BowlLoader";
-import { MapPin, Phone, CheckCircle, IndianRupee, Loader2, Package, RefreshCw, Navigation } from "lucide-react";
+import { MapPin, Phone, CheckCircle, IndianRupee, Package, RefreshCw, Navigation } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { endpoints } from "@/lib/apiService";
 
@@ -207,7 +207,7 @@ export default function DeliveryPortal() {
                               disabled={processingUlid === order.ulid}
                               className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center shadow-lg shadow-amber-500/20 disabled:opacity-70"
                             >
-                              {processingUlid === order.ulid ? <BowlLoader className="w-6 h-6 animate-spin" /> : "✓ Payment Received"}
+                              {processingUlid === order.ulid ? <BowlLoader className="w-6 h-6" /> : "✓ Payment Received"}
                             </button>
                           </div>
                         ) : (
@@ -226,7 +226,7 @@ export default function DeliveryPortal() {
                               disabled={processingUlid === order.ulid}
                               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center shadow-lg shadow-green-600/20 disabled:opacity-70 mt-2"
                             >
-                              {processingUlid === order.ulid ? <BowlLoader className="w-6 h-6 animate-spin" /> : "Mark as Delivered"}
+                              {processingUlid === order.ulid ? <BowlLoader className="w-6 h-6" /> : "Mark as Delivered"}
                             </button>
                           </div>
                         )}

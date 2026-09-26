@@ -188,7 +188,7 @@ export default function DispatchPrepPage() {
         <div className="flex-1 overflow-auto scrollbar-thin border border-neutral-200 rounded-2xl bg-neutral-50 overflow-x-auto">
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
-              <BowlLoader className="w-10 h-10 animate-spin text-[#6A0FAD]" />
+              <BowlLoader className="w-10 h-10 text-[#6A0FAD]" />
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -246,7 +246,7 @@ export default function DispatchPrepPage() {
                         className="!w-auto inline-flex items-center gap-2 px-4 py-2"
                       >
                         {updatingId === order.ulid ? (
-                          <BowlLoader className="w-4 h-4 animate-spin text-white" />
+                          <BowlLoader className="w-4 h-4 text-white" />
                         ) : (
                           <><Truck className="w-4 h-4" /> Dispatch</>
                         )}

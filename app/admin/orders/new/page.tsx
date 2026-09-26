@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, ArrowLeft, CheckCircle2, Search, Plus, Trash2, User, Activity } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Search, Plus, Trash2, User, Activity } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { endpoints } from "@/lib/apiService";
@@ -590,7 +590,7 @@ export default function NewOrderPage() {
                     disabled={!selectedBowl || isPreviewLoading || isRecalculating}
                     className="w-full h-[50px] flex items-center justify-center gap-2 bg-[#6A0FAD] text-white font-bold rounded-xl hover:bg-[#5b0c96] transition-colors shadow-sm disabled:opacity-50"
                   >
-                    {isPreviewLoading ? <BowlLoader className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                    {isPreviewLoading ? <BowlLoader className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                     Add to Order
                   </button>
                 </div>
@@ -780,7 +780,7 @@ export default function NewOrderPage() {
                   </h3>
                   <div className="text-sm text-neutral-500 mt-1">
                     {deliveryLoading ? (
-                      <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/> Calculating...</span>
+                      <span className="flex items-center gap-2"><BowlLoader className="w-4 h-4" /> Calculating...</span>
                     ) : !deliveryInfo?.configured ? (
                       <span className="text-amber-600">Kitchen location not configured in Settings.</span>
                     ) : deliveryInfo.no_location ? (
@@ -844,7 +844,7 @@ export default function NewOrderPage() {
               disabled={isSubmitting || isRecalculating || !!recalculationError || !paymentIntent || (paymentIntent === 'UPFRONT_PAYMENT' && !paymentMethod)}
               className="w-full md:w-auto md:!px-10 disabled:opacity-50"
             >
-              {isSubmitting ? <BowlLoader className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+              {isSubmitting ? <BowlLoader className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
               Approve & Create Order
             </ProbaeButton>
             </div>
@@ -862,7 +862,7 @@ export default function NewOrderPage() {
               <div className="flex gap-4">
                 <button onClick={() => setShowWarningModal(false)} className="flex-1 py-3 bg-neutral-100 text-neutral-600 font-bold rounded-[20px] hover:bg-neutral-200 transition-colors">Cancel</button>
                 <ProbaeButton onClick={() => { setShowWarningModal(false); handleCheckout(); }} className="flex-1">
-                  {isSubmitting ? <BowlLoader className="w-5 h-5 animate-spin" /> : null}
+                  {isSubmitting ? <BowlLoader className="w-5 h-5" /> : null}
                   Approve Anyway
                 </ProbaeButton>
               </div>

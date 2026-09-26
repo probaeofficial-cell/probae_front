@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Loader2, Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap, CheckCircle2 } from "lucide-react";
+import { Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -225,7 +225,7 @@ export default function OrdersPage() {
                 title="Manually run the plan order queue for tomorrow. Safe to click multiple times."
                 className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-sm hover:bg-amber-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
               >
-                {isCronRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                {isCronRunning ? <BowlLoader className="w-4 h-4"  /> : <Zap className="w-4 h-4" />}
                 {isCronRunning ? "Running..." : "Run Daily Generation"}
               </button>
 
@@ -344,7 +344,7 @@ export default function OrdersPage() {
                     {isLoading ? (
                       <tr>
                         <td colSpan={9} className="px-6 py-8 text-center">
-                          <div className="flex justify-center"><BowlLoader className="w-6 h-6 animate-spin text-[#6A0FAD]" /></div>
+                          <div className="flex justify-center"><BowlLoader className="w-6 h-6 text-[#6A0FAD]" /></div>
                         </td>
                       </tr>
                     ) : orders.length === 0 ? (

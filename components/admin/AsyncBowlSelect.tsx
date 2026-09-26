@@ -161,7 +161,7 @@ export default function AsyncBowlSelect({ value, onChange, mealCategoryId, selec
             
             {hasMore && (
               <div ref={loadingNodeRef} className="py-3 flex justify-center">
-                <BowlLoader className="w-4 h-4 animate-spin text-neutral-400" />
+                <BowlLoader className="w-4 h-4 text-neutral-400" />
               </div>
             )}
             

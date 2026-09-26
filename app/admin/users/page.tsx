@@ -7,6 +7,7 @@ import { Header } from "@/components/admin/Header";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 
 export default function UsersListPage() {
   const router = useRouter();
@@ -108,7 +109,7 @@ export default function UsersListPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} className="p-8 text-center text-neutral-500">Loading...</td></tr>
+              <tr><td colSpan={4} className="p-8 text-center"><BowlLoader className="mx-auto h-8 w-8 text-[#6A0FAD]" /></td></tr>
             ) : data.users.length === 0 ? (
               <tr><td colSpan={4} className="p-8 text-center text-neutral-500">No users found.</td></tr>
             ) : data.users.map((u: any) => (

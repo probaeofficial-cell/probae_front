@@ -1,5 +1,6 @@
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { X, Loader2, RefreshCw } from "lucide-react";
+import { X, RefreshCw } from "lucide-react";
 import { api, endpoints } from "@/lib/apiService";
 import AsyncPlanTierSelect from "./AsyncPlanTierSelect";
 
@@ -131,7 +132,7 @@ export function RenewalModal({
               
               {loadingPreview ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#6A0FAD]" />
+                  <BowlLoader className="w-6 h-6 text-[#6A0FAD]"  />
                 </div>
               ) : preview ? (
                 <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-200 space-y-3">
@@ -177,7 +178,7 @@ export function RenewalModal({
             disabled={renewing || (!isMigration && !preview)}
             className="flex-1 py-3 px-4 bg-[#6A0FAD] text-white font-bold rounded-xl hover:bg-[#5b0c96] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {renewing ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+            {renewing ? <BowlLoader className="w-5 h-5"  /> : null}
             {renewing ? "Processing..." : (isMigration ? "Confirm Migration" : "Confirm Renewal")}
           </button>
         </div>

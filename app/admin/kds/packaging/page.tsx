@@ -171,7 +171,7 @@ export default function PackagingDashboardPage() {
                 disabled={loading}
                 className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl font-medium transition-colors disabled:opacity-50 text-sm"
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? <BowlLoader className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
                 Refresh
               </button>
             </div>
@@ -188,7 +188,7 @@ export default function PackagingDashboardPage() {
             
             {loading ? (
               <div className="py-12 flex flex-col items-center justify-center gap-3">
-                <BowlLoader className="w-10 h-10 animate-spin text-[#6b21a8]" />
+                <BowlLoader className="w-10 h-10 text-[#6b21a8]" />
                 <span className="text-neutral-500 text-sm font-medium">Loading packaging data...</span>
               </div>
             ) : !loading && !error && data.length === 0 ? (

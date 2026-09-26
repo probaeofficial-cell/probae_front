@@ -7,7 +7,7 @@ import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
-import { MapPin, Phone, Truck, CheckCircle2, User, Loader2, Search, Filter, Navigation } from "lucide-react";
+import { MapPin, Phone, Truck, CheckCircle2, User, Search, Filter, Navigation } from "lucide-react";
 
 export default function DeliveryToday() {
   const [targetDate, setTargetDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
@@ -327,7 +327,7 @@ export default function DeliveryToday() {
                       >
                         {isUpdating ? (
                           <>
-                            <Loader2 className="w-5 h-5 animate-spin" /> Updating Status...
+                            <BowlLoader className="w-5 h-5"  /> Updating Status...
                           </>
                         ) : (
                           <>

@@ -2,17 +2,7 @@
 
 import React, { useState } from "react";
 import { Header } from "@/components/admin/Header";
-import {
-  TrendingUp,
-  TrendingDown,
-  ArrowUpRight,
-  MoreHorizontal,
-  Check,
-  X,
-  Phone,
-  ArrowRight,
-  ChevronDown,
-} from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowUpRight, MoreHorizontal, Check, X, Phone, ArrowRight, ChevronDown } from "lucide-react";
 
 // ─── Tiny sparkline SVG ───────────────────────────────────────────────────────
 function Sparkline({

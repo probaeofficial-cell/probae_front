@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { endpoints } from "@/lib/apiService";
-import { Plus, MapPin, Loader2, Trash2, Edit2, X } from "lucide-react";
+import { Plus, MapPin, Trash2, Edit2, X } from "lucide-react";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import dynamic from "next/dynamic";
 
@@ -109,7 +109,7 @@ export default function DeliveryZonesPage() {
 
           <div className="flex-1 overflow-y-auto min-h-0 pb-10 pr-2 custom-scrollbar">
             {isLoading ? (
-              <div className="p-8 flex justify-center"><BowlLoader className="w-10 h-10 animate-spin text-[#6A0FAD]" /></div>
+              <div className="p-8 flex justify-center"><BowlLoader className="w-10 h-10 text-[#6A0FAD]" /></div>
             ) : zones.length === 0 ? (
               <div className="text-center p-12 border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
                 <MapPin className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
@@ -217,7 +217,7 @@ export default function DeliveryZonesPage() {
                 disabled={isSaving}
               >
                 <div className="flex items-center gap-2">
-                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {isSaving ? <BowlLoader className="w-4 h-4"  /> : null}
                   {isSaving ? "Saving..." : editingZone ? "Update Zone" : "Save Zone"}
                 </div>
               </ProbaeButton>

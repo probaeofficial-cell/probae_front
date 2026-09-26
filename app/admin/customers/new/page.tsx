@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
-import { ArrowRight, ArrowLeft, Check, Plus, Lock, Unlock, Loader2, Camera, Upload } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Plus, Lock, Unlock, Camera, Upload } from "lucide-react";
 import { endpoints, api } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -410,7 +410,7 @@ export default function NewCustomerPage() {
                   <div className="relative">
                     <div className="w-24 h-24 rounded-full bg-neutral-100 border-2 border-dashed border-neutral-300 flex items-center justify-center overflow-hidden">
                       {isUploadingImage ? (
-                        <BowlLoader className="w-6 h-6 animate-spin text-neutral-400" />
+                        <BowlLoader className="w-6 h-6 text-neutral-400" />
                       ) : formData.image_filename ? (
                         <img src={getMediaUrl(systemSettings.R2_BASE_URL, formData.image_filename) as string} alt="Customer" className="w-full h-full object-cover" />
                       ) : (
@@ -571,7 +571,7 @@ export default function NewCustomerPage() {
                     Save Customer Now
                   </button>
                   <ProbaeButton  type="submit" disabled={isSubmitting} className="!w-auto flex items-center gap-2">
-                    {isSubmitting ? <BowlLoader className="w-4 h-4 animate-spin" /> : <>Calculate Profile <ArrowRight className="w-4 h-4" /></>}
+                    {isSubmitting ? <BowlLoader className="w-4 h-4" /> : <>Calculate Profile <ArrowRight className="w-4 h-4" /></>}
                   </ProbaeButton>
                 </div>
               </form>
@@ -690,7 +690,7 @@ export default function NewCustomerPage() {
 
                 <div className="flex justify-end pt-6">
                   <ProbaeButton  type="submit" disabled={isLoadingPlans} className="!w-auto flex items-center gap-2">
-                    {isLoadingPlans ? <BowlLoader className="w-4 h-4 animate-spin" /> : <>Find Plans <ArrowRight className="w-4 h-4" /></>}
+                    {isLoadingPlans ? <BowlLoader className="w-4 h-4" /> : <>Find Plans <ArrowRight className="w-4 h-4" /></>}
                   </ProbaeButton>
                 </div>
               </form>
@@ -742,7 +742,7 @@ export default function NewCustomerPage() {
 
                                 {isPreviewLoading && (
                   <div className="flex items-center justify-center p-8 bg-white rounded-2xl border border-neutral-200">
-                    <BowlLoader className="w-8 h-8 text-[#6A0FAD] animate-spin" />
+                    <BowlLoader className="w-8 h-8 text-[#6A0FAD]" />
                     <span className="ml-3 text-neutral-600 font-bold">Scaling recipe macros & calculating dynamic pricing...</span>
                   </div>
                 )}
@@ -832,7 +832,7 @@ export default function NewCustomerPage() {
                     Skip & Save Customer
                   </button>
                   <ProbaeButton  onClick={() => setShowConfirmModal(true)} disabled={!formData.selectedPlanId || isSubmitting} className="!w-auto flex items-center gap-2">
-                    {isSubmitting ? <BowlLoader className="w-4 h-4 animate-spin" /> : "Finalize"}
+                    {isSubmitting ? <BowlLoader className="w-4 h-4" /> : "Finalize"}
                   </ProbaeButton>
                 </div>
               </div>

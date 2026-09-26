@@ -1,7 +1,8 @@
 "use client";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { api } from "@/lib/apiService";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -90,7 +91,7 @@ export default function CreateUserPage() {
           
           <div className="pt-6 border-t border-neutral-100 flex justify-end">
             <button type="submit" disabled={loading} className="w-full sm:w-auto justify-center bg-[#6A0FAD] hover:bg-[#5b0c96] text-white h-[52px] px-8 rounded-[16px] font-bold flex items-center gap-2 transition-all shadow-sm">
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+              {loading ? <BowlLoader className="w-5 h-5"  /> : <Save className="w-5 h-5" />}
               Create User
             </button>
           </div>

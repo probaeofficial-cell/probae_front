@@ -3,7 +3,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Loader2, Plus, X, UploadCloud, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, X, UploadCloud, Trash2, Pencil } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { endpoints } from "@/lib/apiService";
 import { IngredientUpdateInput, IngredientCreateInput, RawMaterial } from "@/lib/types";
@@ -366,7 +366,7 @@ export default function IngredientFormPage() {
       <div className="flex-1 overflow-auto scrollbar-thin flex flex-col items-center">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
-            <BowlLoader className="w-8 h-8 text-neutral-500 animate-spin" />
+            <BowlLoader className="w-8 h-8 text-neutral-500" />
             <span className="text-neutral-500 font-medium">Loading component...</span>
           </div>
         ) : (
@@ -674,7 +674,7 @@ export default function IngredientFormPage() {
                   disabled={isSaving}
                   className="py-3.5 text-lg rounded-[20px]"
                 >
-                  {isSaving ? <BowlLoader className="w-5 h-5 animate-spin mr-2" /> : null}
+                  {isSaving ? <BowlLoader className="w-5 h-5 mr-2" /> : null}
                   Save
                 </ProbaeButton>
               </div>

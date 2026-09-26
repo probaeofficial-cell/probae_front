@@ -3,7 +3,7 @@
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/admin/Header";
-import { User, Search, Filter, Loader2, RefreshCw, Briefcase, Map, ClipboardList, MoreVertical, ChevronLeft, ChevronRight, Phone } from "lucide-react";
+import { User, Search, Filter, RefreshCw, Briefcase, Map, ClipboardList, MoreVertical, ChevronLeft, ChevronRight, Phone } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 
 function toLocalDateStr(d: Date) {
@@ -408,7 +408,7 @@ export default function DeliveryDashboard() {
                     disabled={!assignDriverUlid || isAssigning}
                     className="bg-[#6A0FAD] hover:bg-[#5a0d91] disabled:bg-neutral-300 disabled:text-neutral-500 disabled:cursor-not-allowed text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2"
                   >
-                    {isAssigning ? <><Loader2 className="w-3 h-3 animate-spin" /> Assigning...</> : "Assign Agent"}
+                    {isAssigning ? <><BowlLoader className="w-3 h-3"  /> Assigning...</> : "Assign Agent"}
                   </button>
                   <button 
                     onClick={() => { setSelectedIds([]); setAssignDriverUlid(""); }}
@@ -454,7 +454,7 @@ export default function DeliveryDashboard() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {isLoading ? (
-                    <tr><td colSpan={9} className="py-12 text-center text-neutral-500"><BowlLoader className="w-8 h-8 animate-spin mx-auto text-[#6A0FAD]" /></td></tr>
+                    <tr><td colSpan={9} className="py-12 text-center text-neutral-500"><BowlLoader className="w-8 h-8 mx-auto text-[#6A0FAD]" /></td></tr>
                   ) : filteredOrders.length === 0 ? (
                     <tr><td colSpan={9} className="py-12 text-center text-neutral-500 font-medium">No deliveries found for this slot.</td></tr>
                   ) : filteredOrders.map(order => (

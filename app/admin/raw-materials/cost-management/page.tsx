@@ -3,24 +3,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  Pencil, 
-  Trash2, 
-  X, 
-  UploadCloud, 
-  Loader2, 
-  ArrowLeft, 
-  ChevronLeft, 
-  ChevronRight,
-  Wheat,
-  AlertTriangle,
-  CheckCircle2,
-  ArrowUp,
-  ArrowDown
-} from "lucide-react";
+import { Search, Filter, Plus, Pencil, Trash2, X, UploadCloud, ArrowLeft, ChevronLeft, ChevronRight, Wheat, AlertTriangle, CheckCircle2, ArrowUp, ArrowDown } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";

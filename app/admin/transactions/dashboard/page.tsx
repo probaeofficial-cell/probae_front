@@ -88,7 +88,7 @@ export default function TransactionsDashboardPage() {
         )}
 
         {isLoading ? (
-          <div className="py-12 flex justify-center"><BowlLoader className="w-10 h-10 animate-spin text-[#6A0FAD]" /></div>
+          <div className="py-12 flex justify-center"><BowlLoader className="w-10 h-10 text-[#6A0FAD]" /></div>
         ) : financials ? (
           <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

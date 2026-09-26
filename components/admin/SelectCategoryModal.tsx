@@ -1,6 +1,6 @@
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect } from "react";
-import { X, Search, Loader2, FolderTree } from "lucide-react";
+import { X, Search, FolderTree } from "lucide-react";
 import { RawMaterialCategory } from "@/lib/types";
 import { endpoints } from "@/lib/apiService";
 
@@ -122,7 +122,7 @@ export function SelectCategoryModal({ isOpen, onClose, onSelect, selectedCategor
 
             {isLoading && page === 1 ? (
               <div className="flex h-40 items-center justify-center">
-                <BowlLoader className="w-6 h-6 text-[#6b21a8] animate-spin" />
+                <BowlLoader className="w-6 h-6 text-[#6b21a8]" />
               </div>
             ) : categories.length === 0 ? (
               <div className="flex h-40 items-center justify-center text-sm font-semibold text-neutral-400">
@@ -163,7 +163,7 @@ export function SelectCategoryModal({ isOpen, onClose, onSelect, selectedCategor
                 ))}
                 {isLoading && page > 1 && (
                   <div className="flex justify-center p-4">
-                    <BowlLoader className="w-5 h-5 text-[#6b21a8] animate-spin" />
+                    <BowlLoader className="w-5 h-5 text-[#6b21a8]" />
                   </div>
                 )}
               </div>

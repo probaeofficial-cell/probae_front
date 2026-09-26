@@ -1,6 +1,6 @@
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect } from "react";
-import { X, Minus, Plus, Loader2, Edit2, Check } from "lucide-react";
+import { X, Minus, Plus, Edit2, Check } from "lucide-react";
 import { RawMaterial } from "@/lib/types";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
@@ -124,7 +124,7 @@ export function StockAdjustmentModal({ isOpen, onClose, material, onSuccess, sys
                       disabled={isUpdatingThreshold}
                       className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-200 text-green-700 hover:bg-green-300 disabled:opacity-50"
                     >
-                      {isUpdatingThreshold ? <BowlLoader className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      {isUpdatingThreshold ? <BowlLoader className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                     </button>
                   </div>
                 ) : (
@@ -193,7 +193,7 @@ export function StockAdjustmentModal({ isOpen, onClose, material, onSuccess, sys
             Cancel
           </button>
           <ProbaeButton className="flex-1" onClick={handleSubmit} disabled={isSubmitting || totalStock < 0}>
-            {isSubmitting ? <BowlLoader className="w-5 h-5 animate-spin" /> : "Save"}
+            {isSubmitting ? <BowlLoader className="w-5 h-5" /> : "Save"}
           </ProbaeButton>
         </div>
 

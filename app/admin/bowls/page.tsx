@@ -5,18 +5,7 @@ import { Filter, SlidersHorizontal, X } from "lucide-react";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Loader2, 
-  ChevronLeft, 
-  ChevronRight,
-  Coffee,
-  AlertTriangle,
-  CheckCircle2,
-  Pencil,
-  Trash2,
-  Copy,
-  Plus
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Coffee, AlertTriangle, CheckCircle2, Pencil, Trash2, Copy, Plus } from "lucide-react";
 import AsyncMealCategorySelect from "@/components/admin/AsyncMealCategorySelect";
 import AsyncBowlCategorySelect from "@/components/admin/AsyncBowlCategorySelect";
 import { useAuth } from "@/lib/AuthContext";

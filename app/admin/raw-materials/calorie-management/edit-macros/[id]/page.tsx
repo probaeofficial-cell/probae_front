@@ -3,13 +3,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Loader2, 
-  Wheat,
-  AlertTriangle,
-  CheckCircle2,
-  ArrowLeft
-} from "lucide-react";
+import { Wheat, AlertTriangle, CheckCircle2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -380,7 +374,7 @@ export default function EditMacrosPage({ params }: PageProps) {
                   disabled={isSaving}
                   className="py-3.5 rounded-[20px] text-[15px]"
                 >
-                  {isSaving && <BowlLoader className="w-4 h-4 animate-spin text-white mr-1.5" />}
+                  {isSaving && <BowlLoader className="w-4 h-4 text-white mr-1.5" />}
                   Save
                 </ProbaeButton>
               </div>

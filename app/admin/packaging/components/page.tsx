@@ -3,20 +3,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Loader2, 
-  ChevronLeft, 
-  ChevronRight,
-  Package,
-  AlertTriangle,
-  CheckCircle2,
-  Pencil,
-  Trash2,
-  Box,
-  Plus,
-  X,
-  BarChart3,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Package, AlertTriangle, CheckCircle2, Pencil, Trash2, Box, Plus, X, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
 import { Header } from "@/components/admin/Header";
@@ -237,7 +224,7 @@ export default function PackagingComponentsPage() {
           <div className="flex-1 overflow-y-auto pr-2 pb-6 scrollbar-thin" onScroll={handleScroll}>
             {isLoading ? (
               <div className="h-64 flex flex-col items-center justify-center gap-3">
-                <BowlLoader className="w-8 h-8 text-[#7c3aed] animate-spin" />
+                <BowlLoader className="w-8 h-8 text-[#7c3aed]" />
                 <span className="text-neutral-500 text-sm font-medium">Loading items...</span>
               </div>
             ) : components.length === 0 ? (
@@ -279,7 +266,7 @@ export default function PackagingComponentsPage() {
             )}
             {isFetchingNextPage && (
               <div className="py-6 flex justify-center items-center w-full">
-                <BowlLoader className="w-6 h-6 text-[#7c3aed] animate-spin" />
+                <BowlLoader className="w-6 h-6 text-[#7c3aed]" />
                 <span className="ml-2 text-sm text-neutral-500 font-medium">Loading more...</span>
               </div>
             )}
@@ -360,7 +347,7 @@ export default function PackagingComponentsPage() {
                 </button>
                 <ProbaeButton type="submit" disabled={isSubmitting} className="px-8">
                   {isSubmitting ? (
-                    <span className="flex items-center gap-2"><BowlLoader className="w-4 h-4 animate-spin" /> Saving...</span>
+                    <span className="flex items-center gap-2"><BowlLoader className="w-4 h-4" /> Saving...</span>
                   ) : (
                     "Save Item"
                   )}

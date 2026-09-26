@@ -4,7 +4,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
-import { Users, CheckCircle, Truck, Search, Plus, MoreVertical, Loader2 } from "lucide-react";
+import { Users, CheckCircle, Truck, Search, Plus, MoreVertical } from "lucide-react";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
 import Image from "next/image";
@@ -179,7 +179,7 @@ export default function DeliveryAgents() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {isLoading ? (
-                    <tr><td colSpan={8} className="py-12 text-center text-neutral-500"><BowlLoader className="w-8 h-8 animate-spin mx-auto text-[#6A0FAD]" /></td></tr>
+                    <tr><td colSpan={8} className="py-12 text-center text-neutral-500"><BowlLoader className="w-8 h-8 mx-auto text-[#6A0FAD]" /></td></tr>
                   ) : pagedAgents.length === 0 ? (
                     <tr><td colSpan={8} className="py-12 text-center text-neutral-500 font-medium">No agents found matching your search.</td></tr>
                   ) : pagedAgents.map((agent, localIdx) => {

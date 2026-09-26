@@ -9,7 +9,7 @@ import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { api } from "@/lib/apiService";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { SubscriptionSidePanel } from "@/components/admin/SubscriptionSidePanel";
-import { MoreVertical, X, CheckCircle2, Loader2, Hourglass, PauseCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { MoreVertical, X, CheckCircle2, Hourglass, PauseCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function SubscriptionsDashboard() {
   const router = useRouter();
@@ -158,7 +158,7 @@ export default function SubscriptionsDashboard() {
             <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <h3 className="text-xs font-bold text-neutral-500 uppercase">Bowls Remaining</h3>
-                <div className="w-8 h-8 rounded-full bg-[#6A0FAD]/10 flex items-center justify-center text-[#6A0FAD]"><Loader2 className="w-4 h-4" /></div>
+                <div className="w-8 h-8 rounded-full bg-[#6A0FAD]/10 flex items-center justify-center text-[#6A0FAD]"><BowlLoader className="w-4 h-4"  /></div>
               </div>
               <div className="mt-4">
                 <p className="text-4xl font-black text-[#6A0FAD]">{kpis.bowlsRemaining} <span className="text-sm text-neutral-400 font-medium">/ {kpis.totalBowls} total</span></p>

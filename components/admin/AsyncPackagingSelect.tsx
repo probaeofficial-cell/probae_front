@@ -2,7 +2,7 @@
 import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronDown, Search, Loader2 } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import { Packaging } from "@/lib/types";
 
@@ -159,7 +159,7 @@ export default function AsyncPackagingSelect({ value, onChange, selectedPackagin
             
             {/* Loading / Observer target */}
             <div ref={loadingNodeRef} className="py-3 flex justify-center">
-              {isLoading && <BowlLoader className="w-4 h-4 text-neutral-400 animate-spin" />}
+              {isLoading && <BowlLoader className="w-4 h-4 text-neutral-400" />}
             </div>
           </div>
         </div>
