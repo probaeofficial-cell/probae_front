@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserAvatar } from "./UserAvatar";
 import { endpoints } from "@/lib/apiService";
 import { formatTimeAgo } from "@/lib/timeUtils";
+import { MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -111,26 +112,39 @@ export function Header() {
   // Derive initials or avatar letter from user email
   const avatarLetter = user?.email?.charAt(0).toUpperCase() ?? "A";
 
-  const SEARCH_ROUTES = [
-    { name: "Dashboard", path: "/admin/dashboard", keywords: "home main dashboard analytics" },
-    { name: "Daily Orders", path: "/admin/orders", keywords: "orders daily queue dispatch list" },
-    { name: "Customers", path: "/admin/customers", keywords: "clients users people customers list directory" },
-    { name: "Create Customer", path: "/admin/customers/new", keywords: "new add create customer client" },
-    { name: "Subscriptions", path: "/admin/subscriptions", keywords: "active subscriptions plans renewals" },
-    { name: "Plans & Tiers", path: "/admin/plans", keywords: "plans tiers setup configure pricing" },
-    { name: "Bowls & Menu", path: "/admin/bowls", keywords: "food bowls menu recipes dishes meals" },
-    { name: "Ingredients", path: "/admin/ingredients", keywords: "raw materials ingredients stock inventory" },
-    { name: "Menu Rotation", path: "/admin/menu-rotation", keywords: "menu rotate schedule calendar" },
-    { name: "Users & Staff", path: "/admin/users", keywords: "staff admins drivers users team" },
-    { name: "Deliveries & Drivers", path: "/admin/delivery", keywords: "delivery drivers dispatch routing maps" },
-    { name: "System Settings", path: "/admin/settings", keywords: "system settings configuration config profile password rules" },
-    { name: "Finance & Accounts", path: "/admin/finance", payment: "money accounting finance ledger revenue tax" },
-    { name: "KDS: Prep", path: "/admin/kds/prep", keywords: "kitchen display prep cooking station" },
-    { name: "KDS: Assembly", path: "/admin/kds/assembly", keywords: "kitchen display assembly station" },
-    { name: "KDS: Packaging", path: "/admin/kds/packaging", keywords: "kitchen display packaging station" },
-    { name: "KDS: Dispatch", path: "/admin/kds/dispatch", keywords: "kitchen display dispatch station" },
-    { name: "Message Templates", path: "/admin/message-templates", keywords: "whatsapp email templates messages sms communications" },
-  ];
+    const SEARCH_ROUTES = React.useMemo(() => {
+    const routes = [
+      { name: "Create Customer", path: "/admin/customers/new", keywords: "new add create customer client" },
+      { name: "Create User", path: "/admin/users/create", keywords: "new add create user staff admin" },
+      { name: "Create Order", path: "/admin/orders/new", keywords: "new add create order" },
+    ];
+    Object.values(MAIN_MENU).forEach(item => {
+      if (item.path) {
+        routes.push({ name: item.label, path: item.path, keywords: item.label.toLowerCase() });
+      }
+      if (item.subItems) {
+        Object.values(item.subItems).forEach(sub => {
+          if (sub.path) {
+            routes.push({ name: `${item.label} > ${sub.label}`, path: sub.path, keywords: `${item.label} ${sub.label}`.toLowerCase() });
+          }
+        });
+      }
+    });
+    Object.values(BOTTOM_MENU).forEach(item => {
+      if (item.path) {
+        routes.push({ name: item.label, path: item.path, keywords: item.label.toLowerCase() });
+      }
+    });
+    
+    // Deduplicate
+    const unique = new Map();
+    routes.forEach(r => {
+      if (!unique.has(r.path)) {
+        unique.set(r.path, r);
+      }
+    });
+    return Array.from(unique.values());
+  }, []);
 
   const filteredRoutes = searchQuery.trim() === "" 
     ? [] 
