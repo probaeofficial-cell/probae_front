@@ -799,14 +799,21 @@ export default function CustomerDetailPage() {
                           <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Plan Duration</label>
                           <div className="flex gap-2">
                             {["WEEKLY", "MONTHLY"].map(d => (
-                              <button type="button" key={d} onClick={() => updateField("planDuration", d)} className={`flex-1 py-3 rounded-xl border text-sm font-bold ${formData.planDuration === d ? "bg-[#6A0FAD] text-white border-[#6A0FAD]" : "bg-white text-neutral-600 border-neutral-300"}`}>{d}</button>
+                              <button type="button" key={d} onClick={() => {
+                                updateField("planDuration", d);
+                                if (d === "MONTHLY" && !["22 DAYS", "26 DAYS", "30 DAYS"].includes(formData.planFrequency)) {
+                                  updateField("planFrequency", "22 DAYS");
+                                } else if (d === "WEEKLY" && !["5 DAYS", "6 DAYS", "7 DAYS"].includes(formData.planFrequency)) {
+                                  updateField("planFrequency", "5 DAYS");
+                                }
+                              }} className={`flex-1 py-3 rounded-xl border text-sm font-bold ${formData.planDuration === d ? "bg-[#6A0FAD] text-white border-[#6A0FAD]" : "bg-white text-neutral-600 border-neutral-300"}`}>{d}</button>
                             ))}
                           </div>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Frequency</label>
                           <div className="flex gap-2">
-                            {["5 DAYS", "6 DAYS", "7 DAYS"].map(f => (
+                            {(formData.planDuration === "MONTHLY" ? ["22 DAYS", "26 DAYS", "30 DAYS"] : ["5 DAYS", "6 DAYS", "7 DAYS"]).map(f => (
                               <button type="button" key={f} onClick={() => updateField("planFrequency", f)} className={`flex-1 py-3 rounded-xl border text-sm font-bold ${formData.planFrequency === f ? "bg-[#6A0FAD] text-white border-[#6A0FAD]" : "bg-white text-neutral-600 border-neutral-300"}`}>{f}</button>
                             ))}
                           </div>

@@ -123,7 +123,7 @@ export function PriceTrends() {
 
       <div className="p-8">
         <div className="border border-neutral-200 rounded-3xl p-6 mb-8 flex flex-col gap-6">
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
             <div className="relative w-full md:w-96">
               <input 
                 type="text" 
@@ -173,10 +173,10 @@ export function PriceTrends() {
               <div className="text-center py-12 text-neutral-400 font-medium">No trends found.</div>
             ) : (
               filtered.map((t) => (
-                <div key={t.id} className="border border-neutral-200 rounded-3xl p-6 flex flex-col lg:flex-row items-center gap-8 bg-white transition-all hover:shadow-md">
+                <div key={t.id} className="border border-neutral-200 rounded-3xl p-6 flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-8 bg-white transition-all hover:shadow-md">
                   
                   {/* Info Section */}
-                  <div className="flex items-center gap-4 min-w-[250px] lg:border-r lg:border-neutral-100 lg:pr-8 w-full lg:w-auto">
+                  <div className="flex items-center gap-4 w-full lg:min-w-[250px] lg:border-r lg:border-neutral-100 lg:pr-8 lg:w-auto">
                     <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center shrink-0 border border-neutral-200 overflow-hidden">
                        <div className="w-full h-full bg-neutral-200" />
                     </div>
@@ -188,7 +188,7 @@ export function PriceTrends() {
                   </div>
 
                   {/* Pricing Section */}
-                  <div className="flex items-center gap-12 lg:border-r lg:border-neutral-100 lg:pr-8 w-full lg:w-auto flex-1">
+                  <div className="flex flex-row items-start sm:items-center justify-between gap-4 lg:gap-12 lg:border-r lg:border-neutral-100 lg:pr-8 w-full lg:w-auto flex-1">
                     <div>
                       <p className="text-xs text-neutral-500 mb-1">Current Price</p>
                       <p className="text-2xl font-black text-neutral-900">{formatCurrency(t.current_price)}<span className="text-sm font-medium text-neutral-500">/{t.unit}</span></p>
