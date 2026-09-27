@@ -790,7 +790,7 @@ export const endpoints = {
     migrateActivePlan: async (ulid: string, data: any) => await api.post(`/customers/${ulid}/migrate-active-plan`, data),
     legacySubscription: async (ulid: string, data: any) => await api.post(`/customers/${ulid}/legacy-subscription`, data),
     updateDeliveryStatus: async (ulid: string, data: any) => await api.patch(`/customers/${ulid}/delivery-status`, data),
-    legacyOrder: async (ulid: string, data: any) => await api.post(`/customers/${ulid}/legacy-order`, data),
+    legacyOrder: async (ulid: string, data: any) => await api.post(`/orders/customers/${ulid}/legacy-order`, data),
   },
   planTiers: {
     list: async (params?: any) => {

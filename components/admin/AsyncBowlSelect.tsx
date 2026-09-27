@@ -8,11 +8,12 @@ import { endpoints } from "@/lib/apiService";
 interface AsyncBowlSelectProps {
   value: string;
   onChange: (ulid: string) => void;
+  onSelectBowl?: (bowl: any) => void;
   mealCategoryId?: number;
   selectedBowl?: any;
 }
 
-export default function AsyncBowlSelect({ value, onChange, mealCategoryId, selectedBowl }: AsyncBowlSelectProps) {
+export default function AsyncBowlSelect({ value, onChange, mealCategoryId, selectedBowl, onSelectBowl }: AsyncBowlSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<any[]>([]);
@@ -141,6 +142,7 @@ export default function AsyncBowlSelect({ value, onChange, mealCategoryId, selec
                 key={opt.ulid}
                 onClick={() => {
                   onChange(opt.ulid);
+                  if (onSelectBowl) onSelectBowl(opt);
                   setIsOpen(false);
                   setSearch("");
                 }}

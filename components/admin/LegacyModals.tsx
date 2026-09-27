@@ -135,6 +135,24 @@ export function LegacyOrderModal({
     custom_fiber: ""
   });
   const [mealCategoryId, setMealCategoryId] = useState<number>(0);
+  const [isPatching, setIsPatching] = useState(false);
+
+  const handleBowlSelect = (bowl: any) => {
+    setIsPatching(true);
+    setTimeout(() => {
+      setFormData(prev => ({
+        ...prev,
+        bowl_ulid: bowl?.ulid || "",
+        custom_calories: bowl?.total_calories ? String(bowl.total_calories) : "",
+        custom_protein: bowl?.total_protein ? String(bowl.total_protein) : "",
+        custom_carbs: bowl?.total_carbs ? String(bowl.total_carbs) : "",
+        custom_fat: bowl?.total_fat ? String(bowl.total_fat) : "",
+        custom_fiber: bowl?.total_fiber ? String(bowl.total_fiber) : "",
+      }));
+      setIsPatching(false);
+    }, 600);
+  };
+
 
   
 
@@ -242,10 +260,18 @@ export function LegacyOrderModal({
               <AsyncBowlSelect
                 value={formData.bowl_ulid}
                 onChange={(val) => setFormData({...formData, bowl_ulid: val})}
+                onSelectBowl={handleBowlSelect}
                 mealCategoryId={mealCategoryId !== 0 ? mealCategoryId : undefined}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="relative">
+              {isPatching && (
+                <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-xl">
+                  <BowlLoader className="w-8 h-8 text-[#6A0FAD]" />
+                  <span className="text-xs font-bold text-[#6A0FAD] mt-2">Patching macros...</span>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-bold text-neutral-700 mb-1">Override Calories</label>
                 <input 
@@ -306,6 +332,7 @@ export function LegacyOrderModal({
                   placeholder="Optional"
                 />
               </div>
+            </div>
             </div>
             
             <div className="pt-4 flex gap-3">
