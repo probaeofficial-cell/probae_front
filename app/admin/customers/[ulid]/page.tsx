@@ -76,6 +76,8 @@ export default function CustomerDetailPage() {
     weight: "75",
     activityLevel: "Lightly Active",
     goal: "Weight Loss",
+    isOverrideEnabled: false,
+    overrideTotalPrice: "",
     dietaryPreferences: [] as string[],
     allergies: [] as string[],
     comments: "",
@@ -157,7 +159,9 @@ export default function CustomerDetailPage() {
           mealCalories: profile.mealCalories || {},
           lockedMeals: profile.lockedMeals || {},
           image_filename: data.image_filename || null,
-          include_delivery: data.include_delivery ?? true
+          include_delivery: data.include_delivery ?? true,
+          isOverrideEnabled: false,
+          overrideTotalPrice: ""
         });
       }
     } catch (err) {
@@ -405,6 +409,7 @@ export default function CustomerDetailPage() {
         status: finalStatus,
         image_filename: formData.image_filename,
         include_delivery: formData.include_delivery,
+        override_total_price: formData.isOverrideEnabled && formData.overrideTotalPrice ? parseFloat(formData.overrideTotalPrice) : null,
         calorie_profile: customer.calorie_profile ? {
           ...customer.calorie_profile,
           probaeTarget: formData.probaeTarget,
@@ -943,20 +948,28 @@ export default function CustomerDetailPage() {
                       <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start w-full">
                         <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Cost Breakdown</div>
                         <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
-                           <span className="w-36 text-left">Food Cost:</span> 
-                           <span className="font-bold w-20 text-right">₹{previewData.total_food_cost ?? previewData.gross_price}</span>
+                           <span className="w-36 text-left">Raw Materials:</span> 
+                           <span className="font-bold w-20 text-right">₹{previewData.total_raw_cost ?? 0}</span>
+                        </div>
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
+                           <span className="w-36 text-left">Packaging:</span> 
+                           <span className="font-bold w-20 text-right">₹{previewData.total_packaging_cost ?? 0}</span>
                         </div>
                         <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
                            <span className="w-36 text-left flex items-center gap-1">
-                             Delivery Cost:
+                             Delivery:
                              {previewData.delivery_distance_km > 0 && (
                                <span className="text-[10px] bg-neutral-100 px-1 py-0.5 rounded text-neutral-500 leading-none">{previewData.delivery_distance_km} km</span>
                              )}
                            </span> 
                            <span className="font-bold w-20 text-right">₹{previewData.total_delivery_cost ?? 0}</span>
                         </div>
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
+                           <span className="w-36 text-left">Fixed Cost (Margin):</span> 
+                           <span className="font-bold w-20 text-right">₹{previewData.total_fixed_cost ?? 0}</span>
+                        </div>
                         <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-900 mt-2 border-t border-neutral-100 pt-2 w-full">
-                           <span className="w-36 text-left font-bold">Gross Value:</span> 
+                           <span className="w-36 text-left font-bold">Calculated Total:</span> 
                            <span className="font-black text-lg w-20 text-right">₹{previewData.gross_price}</span>
                         </div>
                       </div>
@@ -967,9 +980,35 @@ export default function CustomerDetailPage() {
                       </div>
                       <div className="w-full h-px md:w-px md:h-20 bg-neutral-200"></div>
                       <div className="flex-1 text-center md:text-right w-full flex flex-col items-center md:items-end">
-                        <div className="text-sm font-bold text-[#6A0FAD] uppercase tracking-wider">Final Price</div>
-                        <div className="text-3xl font-black text-[#6A0FAD]">₹{previewData.final_discounted_price}</div>
+                        <div className="text-sm font-bold text-[#6A0FAD] uppercase tracking-wider">Final Billed Amount</div>
+                        <div className={`text-3xl font-black ${formData.isOverrideEnabled ? "text-neutral-400 line-through text-2xl" : "text-[#6A0FAD]"}`}>
+                          ₹{previewData.final_discounted_price}
+                        </div>
+                        {formData.isOverrideEnabled && formData.overrideTotalPrice && (
+                          <div className="text-3xl font-black text-[#6A0FAD] mt-1">₹{formData.overrideTotalPrice}</div>
+                        )}
                         <div className="text-xs text-neutral-400 font-medium mt-1">Inclusive of all costs</div>
+                        
+                        <div className="mt-4 w-full text-left">
+                          <label className="flex items-center gap-2 cursor-pointer mb-2">
+                            <input 
+                              type="checkbox" 
+                              checked={formData.isOverrideEnabled} 
+                              onChange={(e) => updateField("isOverrideEnabled", e.target.checked)} 
+                              className="w-4 h-4 text-[#6A0FAD] bg-gray-100 border-gray-300 rounded focus:ring-[#6A0FAD]"
+                            />
+                            <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Override Plan Price</span>
+                          </label>
+                          {formData.isOverrideEnabled && (
+                            <input 
+                              type="number" 
+                              placeholder="Custom total..."
+                              value={formData.overrideTotalPrice} 
+                              onChange={(e) => updateField("overrideTotalPrice", e.target.value)}
+                              className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 font-bold focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]"
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
 
