@@ -1,6 +1,6 @@
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, AlertCircle } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import AsyncPlanTierSelect from "./AsyncPlanTierSelect";
 import AsyncBowlSelect from "./AsyncBowlSelect";
@@ -17,6 +17,7 @@ export function LegacySubscriptionModal({
 }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     plan_tier_ulid: "",
     start_date: "",
@@ -27,6 +28,7 @@ export function LegacySubscriptionModal({
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       await endpoints.customers.legacySubscription(customerUlid, formData);
       setSuccess(true);
@@ -34,7 +36,7 @@ export function LegacySubscriptionModal({
         onSuccess();
       }, 2000);
     } catch (err: any) {
-      alert("Failed to log legacy subscription: " + (err?.detail || err?.message));
+      setError(err?.detail || err?.message || "Failed to log legacy subscription");
     } finally {
       setLoading(false);
     }
@@ -60,6 +62,12 @@ export function LegacySubscriptionModal({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 flex-1 overflow-y-auto space-y-4">
+            {error && (
+              <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-sm flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-bold text-neutral-700 mb-1">Plan Tier</label>
               <AsyncPlanTierSelect
@@ -136,6 +144,7 @@ export function LegacyOrderModal({
   });
   const [mealCategoryId, setMealCategoryId] = useState<number>(0);
   const [isPatching, setIsPatching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleBowlSelect = (bowl: any) => {
     setIsPatching(true);
@@ -159,7 +168,7 @@ export function LegacyOrderModal({
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
-    
+    setError(null);
     const payload: any = { ...formData };
     if (payload.custom_calories) payload.custom_calories = parseFloat(payload.custom_calories);
     else delete payload.custom_calories;
@@ -186,7 +195,7 @@ export function LegacyOrderModal({
         onSuccess();
       }, 2000);
     } catch (err: any) {
-      alert("Failed to log legacy meal: " + (err?.detail || err?.message));
+      setError(err?.detail || err?.message || "Failed to log legacy meal");
     } finally {
       setLoading(false);
     }
@@ -212,6 +221,12 @@ export function LegacyOrderModal({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 flex-1 overflow-y-auto space-y-4">
+            {error && (
+              <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-sm flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <span className="flex-1">{error}</span>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-bold text-neutral-700 mb-1">Target Date</label>
               <input 
