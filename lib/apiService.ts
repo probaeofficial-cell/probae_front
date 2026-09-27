@@ -296,7 +296,8 @@ export const endpoints = {
     del: (ulid: string) => api.del(`/expenses/${ulid}`)
   },
   dashboard: {
-    financials: (params: { start_date: string, end_date: string }) => api.get(`/dashboard/financials?start_date=${params.start_date}&end_date=${params.end_date}`)
+    financials: (params: { start_date: string, end_date: string }) => api.get(`/dashboard/financials?start_date=${params.start_date}&end_date=${params.end_date}`),
+    adminOverview: () => api.get('/dashboard/admin-overview')
   },
   globalTransactions: {
     delete: (ulid: string) => api.del(`/transactions/${ulid}`),

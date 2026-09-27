@@ -108,6 +108,8 @@ function SalesGauge({ value }: { value: number }) {
   const cx = 100;
   const cy = 100;
 
+  const clampedValue = Math.max(0, Math.min(100, value || 0));
+
   return (
     <div className="relative flex items-center justify-center" style={{ width: 200, height: 110 }}>
       <svg width="200" height="110" viewBox="0 0 200 120">
@@ -118,7 +120,7 @@ function SalesGauge({ value }: { value: number }) {
           const y1 = Number((cy - (radius - 14) * Math.sin(rad)).toFixed(2));
           const x2 = Number((cx + (radius + 2) * Math.cos(rad)).toFixed(2));
           const y2 = Number((cy - (radius + 2) * Math.sin(rad)).toFixed(2));
-          const isActive = i / bars < value / 100;
+          const isActive = i / bars <= clampedValue / 100;
           return (
             <line
               key={i}
@@ -134,7 +136,7 @@ function SalesGauge({ value }: { value: number }) {
         })}
       </svg>
       <div className="absolute bottom-1 flex flex-col items-center">
-        <span className="text-neutral-800 font-bold text-2xl">{value}%</span>
+        <span className="text-neutral-800 font-bold text-2xl">{clampedValue.toFixed(1)}%</span>
         <span className="text-neutral-400 text-[11px]">Sales Goals</span>
       </div>
     </div>
@@ -207,30 +209,49 @@ function GoalBar({
 }
 
 // ─── Lollipop / candlestick chart (Revenue Overview) ─────────────────────────
-function LollipopChart() {
-  const months = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function LollipopChart({ data }: { data?: { label: string; value: number }[] }) {
+  const [hoverIndex, setHoverIndex] = React.useState<number | null>(null);
+
   const H = 100;
   const W = 320;
-  
-  // Data coordinates (y-values on a 0-100 scale, where 0 is top, 100 is bottom)
-  const lines = [
-    { x: 35, yMin: 85, yMax: 35, dots: [85, 35] },
-    { x: 85, yMin: 85, yMax: 45, dots: [85, 45] },
-    { x: 135, yMin: 85, yMax: 25, dots: [85, 25], active: true, val: "₹396.27" },
-    { x: 185, yMin: 85, yMax: 40, dots: [85, 40] },
-    { x: 235, yMin: 85, yMax: 15, dots: [85, 50, 15] },
-    { x: 285, yMin: 85, yMax: 50, dots: [85, 50] },
-  ];
+
+  if (!data || data.length === 0) {
+    return <div className="w-full flex justify-center py-2 h-[125px] items-center text-neutral-400">Loading...</div>;
+  }
+
+  const points = data.slice(0, 6);
+  const maxVal = Math.max(...points.map(d => d.value), 1);
+
+  const lines = points.map((d, i) => {
+    const x = 35 + i * 50; 
+    const yMin = 85;
+    const yMax = Math.max(15, 85 - (d.value / maxVal) * 70);
+    const valStr = `₹${d.value >= 1000 ? (d.value / 1000).toFixed(1) + 'k' : d.value.toFixed(1)}`;
+    return {
+      x,
+      yMin,
+      yMax,
+      dots: [yMin, yMax], 
+      val: valStr,
+      label: d.label
+    };
+  });
 
   return (
-    <div className="w-full flex justify-center py-2">
-      <svg width={W} height={H + 25} viewBox={`0 0 ${W} ${H + 25}`} className="overflow-visible">
+    <div className="w-full flex justify-center py-2 relative">
+      <svg width={W} height={H + 25} viewBox={`0 0 ${W} ${H + 25}`} className="overflow-visible" onMouseLeave={() => setHoverIndex(null)}>
         {lines.map((line, i) => {
-          const color = line.active ? "#7c26d9" : "#1a1a1a";
+          const isActive = hoverIndex === i;
+          const color = isActive ? "#7c26d9" : "#1a1a1a";
           const strokeWidth = "1.5";
+          
+          const midY = (line.yMin + line.yMax) / 2;
+
           return (
-            <g key={i}>
-              {/* Vertical line */}
+            <g key={i} onMouseEnter={() => setHoverIndex(i)} className="cursor-pointer transition-opacity">
+              {/* Invisible wider line for easier hover tracking */}
+              <line x1={line.x} y1={15} x2={line.x} y2={100} stroke="transparent" strokeWidth={30} />
+              
               <line
                 x1={line.x}
                 y1={line.yMin}
@@ -239,35 +260,33 @@ function LollipopChart() {
                 stroke={color}
                 strokeWidth={strokeWidth}
                 strokeLinecap="round"
+                className="transition-colors duration-200"
               />
               
-              {/* Dots along the line */}
               {line.dots.map((y, dotIdx) => (
                 <circle
                   key={dotIdx}
                   cx={line.x}
                   cy={y}
                   r="3.5"
-                  fill={line.active ? "#7c26d9" : "#1a1a1a"}
+                  fill={color}
+                  className="transition-colors duration-200"
                 />
               ))}
 
-              {/* Active value bubble */}
-              {line.active && line.val && (
-                <g>
-                  {/* Bubble body */}
+              {isActive && line.val && (
+                <g className="animate-in fade-in zoom-in duration-200">
                   <rect
                     x={line.x - 26}
-                    y={50}
+                    y={midY - 10}
                     width={52}
                     height={20}
                     rx={10}
                     fill="#7c26d9"
                   />
-                  {/* Bubble text */}
                   <text
                     x={line.x}
-                    y={63}
+                    y={midY + 3}
                     textAnchor="middle"
                     fill="white"
                     fontSize="9"
@@ -278,16 +297,15 @@ function LollipopChart() {
                 </g>
               )}
 
-              {/* Month Label */}
               <text
                 x={line.x}
                 y={H + 18}
                 textAnchor="middle"
-                fill="#888888"
+                fill={isActive ? "#1a1a1a" : "#888888"}
                 fontSize="11"
-                className="font-medium"
+                className="font-medium transition-colors duration-200"
               >
-                {months[i]}
+                {line.label}
               </text>
             </g>
           );
@@ -298,12 +316,26 @@ function LollipopChart() {
 }
 
 // ─── Category half-donut (Employment Agreement Tracker) ───────────────────────
-function CategoryDonut() {
+function CategoryDonut({
+  p1 = 50,
+  p2 = 30,
+  p3 = 20
+}: { p1?: number, p2?: number, p3?: number }) {
+  // Map percentages to angles. The half donut spans 180 degrees (from -180 to 0)
+  // We leave a small gap between segments (e.g., 2 degrees)
+  const total = p1 + p2 + p3;
+  const safeTotal = total > 0 ? total : 100;
+  
+  const a1 = (p1 / safeTotal) * 176; // Using 176 to leave 4 degrees for 2 gaps
+  const a2 = (p2 / safeTotal) * 176;
+  const a3 = (p3 / safeTotal) * 176;
+
   const segments = [
-    { start: -178, end: -92, color: "#5b21b6" }, // Dark purple
-    { start: -88, end: -38, color: "#9061d4" },  // Medium purple
-    { start: -34, end: -2, color: "#d1c4e9" },   // Light purple
+    { start: -180, end: -180 + a1, color: "#5b21b6" },
+    { start: -180 + a1 + 2, end: -180 + a1 + 2 + a2, color: "#9061d4" },
+    { start: -180 + a1 + 2 + a2 + 2, end: 0, color: "#d1c4e9" },
   ];
+
   const R = 80;
   const cx = 120;
   const cy = 100;
@@ -312,6 +344,7 @@ function CategoryDonut() {
   return (
     <svg width="240" height="120" viewBox="0 0 240 120" className="overflow-visible">
       {segments.map((seg, i) => {
+        // SVG angles start at 3 o'clock and go clockwise. Math.sin/cos expect standard radians.
         const startRad = (seg.start * Math.PI) / 180;
         const endRad = (seg.end * Math.PI) / 180;
         
@@ -330,6 +363,7 @@ function CategoryDonut() {
             stroke={seg.color}
             strokeWidth={strokeW}
             strokeLinecap="round"
+            className="transition-all duration-500"
           />
         );
       })}
@@ -440,34 +474,26 @@ function RevenueBar({
 }
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
+import { endpoints } from "@/lib/apiService";
+
 export default function DashboardPage() {
   const [callAccepted, setCallAccepted] = useState<boolean | null>(null);
   const [revenueFilter, setRevenueFilter] = useState("Monthly");
+  const [data, setData] = useState<any>(null);
 
-  const incomePoints = [18, 25, 20, 30, 22, 35, 28, 40, 32, 45, 38, 50];
-  const expensePoints = [28, 20, 35, 25, 40, 30, 45, 32, 50, 35, 42, 38];
+  React.useEffect(() => {
+    endpoints.dashboard.adminOverview().then((res: any) => setData(res)).catch(console.error);
+  }, []);
 
-  const mostOrderedBowls = [
+  const incomePoints = data?.income_points || [18, 25, 20, 30, 22, 35, 28, 40, 32, 45, 38, 50];
+  const expensePoints = data?.expense_points || [28, 20, 35, 25, 40, 30, 45, 32, 50, 35, 42, 38];
+
+  const mostOrderedBowls = data?.most_ordered_bowls || [
     {
-      name: "AAPL",
-      price: "₹134.67",
-      logo: (
-        <svg className="w-4 h-4 text-black" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18.71,19.5 C17.88,20.74 17,21.95 15.66,22 C14.32,22.05 13.89,21.24 12.37,21.24 C10.84,21.24 10.37,21.97 9.1,22.03 C7.79,22.08 6.8,20.74 5.96,19.53 C4.26,17.06 2.97,12.5 4.72,9.47 C5.6,7.95 7.16,6.97 8.86,6.94 C10.15,6.92 11.38,7.82 12.18,7.82 C12.97,7.82 14.45,6.74 16.02,6.9 C16.68,6.93 18.53,7.17 19.74,8.93 C19.64,8.99 17.27,10.37 17.29,13.25 C17.31,16.67 20.14,17.8 20.17,17.82 C20.15,17.88 19.71,19.38 18.71,19.5 M15.97,4.17 C16.63,3.37 17.07,2.28 16.95,1 C16,1.04 14.9,1.6 14.24,2.38 C13.68,3.04 13.19,4.14 13.34,5.39 C14.39,5.47 15.4,4.88 15.97,4.17 Z" />
-        </svg>
-      ),
-    },
-    {
-      name: "ADS",
-      price: "₹156.17",
-      logo: (
-        <svg className="w-4 h-4 text-black" viewBox="0 0 24 24" fill="currentColor">
-          <polygon points="3,17 7,17 11,11 7,11" />
-          <polygon points="8,17 12,17 17,7 13,7" />
-          <polygon points="13,17 17,17 22,3 18,3" />
-        </svg>
-      ),
-    },
+      name: "Loading...",
+      price: "-",
+      logo: null
+    }
   ];
 
   return (
@@ -483,17 +509,17 @@ export default function DashboardPage() {
             <StatCard
               dark
               title="Total Orders Today"
-              value="₹21.5k"
+              value={data ? `₹${(data.total_orders_today_value || 0).toLocaleString(undefined, {maximumFractionDigits: 2})}` : "₹0"}
               delay={0}
               sub={
                 <div className="flex flex-col gap-0.5 text-[11px] text-neutral-400 mt-1">
                   <div className="flex justify-between w-full">
                     <span>Custom Bowl Orders</span>
-                    <span className="text-white font-semibold">₹400</span>
+                    <span className="text-white font-semibold">₹{data ? (data.custom_orders_today_value || 0).toLocaleString(undefined, {maximumFractionDigits: 2}) : "0"}</span>
                   </div>
                   <div className="flex justify-between w-full">
                     <span>Standard Bowl Orders</span>
-                    <span className="text-white font-semibold">₹630</span>
+                    <span className="text-white font-semibold">₹{data ? (data.standard_orders_today_value || 0).toLocaleString(undefined, {maximumFractionDigits: 2}) : "0"}</span>
                   </div>
                 </div>
               }
@@ -501,22 +527,22 @@ export default function DashboardPage() {
 
             <StatCard
               title="Revenue Today"
-              value="₹3.8k"
+              value={data ? `₹${(data.revenue_today || 0).toLocaleString(undefined, {maximumFractionDigits: 2})}` : "₹0"}
               delay={100}
               sub={
                 <p className="text-[11px] text-neutral-800 font-semibold mt-1">
-                  Payout <span className="text-neutral-500 font-normal">• 7.34k will be available soon</span>
+                  Payout <span className="text-neutral-500 font-normal">• Active deposits</span>
                 </p>
               }
             />
 
             <StatCard
               title="Subscription Active"
-              value="3556"
+              value={data ? (data.active_subscriptions || 0).toString() : "0"}
               delay={200}
               sub={
                 <p className="text-[11px] text-neutral-800 font-semibold mt-1">
-                  Payout <span className="text-neutral-500 font-normal">• 6.2k will be available soon</span>
+                  Active <span className="text-neutral-500 font-normal">• Ongoing meal plans</span>
                 </p>
               }
             />
@@ -534,7 +560,7 @@ export default function DashboardPage() {
                 </button>
               </div>
               <div className="flex justify-center mt-2">
-                <RetentionGauge value={36.5} dark={false} />
+                <RetentionGauge value={data?.customer_retention_pct || 36.5} dark={false} />
               </div>
             </div>
           </div>
@@ -554,15 +580,15 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-white text-2xl font-bold">Profit ₹30.14 M</span>
-                      <span className="text-emerald-400 text-xs font-semibold">+4.5%</span>
+                      <span className="text-white text-2xl font-bold">Profit ₹{data ? (data.total_profit_all_time / 1000).toFixed(1) + "k" : "0"}</span>
+                      <span className="text-emerald-400 text-xs font-semibold">+{data?.profit_growth_pct || 0}%</span>
                     </div>
                   </div>
                   {/* Horizontal capsules flex layout */}
                   <div className="flex gap-1.5 mt-3">
-                    <div className="h-2 rounded-full bg-[#7c26d9] flex-1" style={{ flexGrow: 35 }} />
-                    <div className="h-2 rounded-full bg-[#a78bfa] flex-1" style={{ flexGrow: 20 }} />
-                    <div className="h-2 rounded-full bg-[#c4b5fd] flex-1" style={{ flexGrow: 25 }} />
+                    <div className="h-2 rounded-full bg-[#7c26d9] flex-1" style={{ flexGrow: data?.macro_split?.fat_loss || 35 }} />
+                    <div className="h-2 rounded-full bg-[#a78bfa] flex-1" style={{ flexGrow: data?.macro_split?.maintain || 40 }} />
+                    <div className="h-2 rounded-full bg-[#c4b5fd] flex-1" style={{ flexGrow: data?.macro_split?.muscle_gain || 25 }} />
                     <div className="h-2 rounded-full bg-neutral-800 flex-1" style={{ flexGrow: 20 }} />
                   </div>
                 </div>
@@ -614,7 +640,7 @@ export default function DashboardPage() {
                   <div className="w-4 h-4 rounded-full bg-black flex items-center justify-center text-white">
                     <span className="text-[8px]">▲</span>
                   </div>
-                  <span className="text-neutral-800 font-bold text-[10px]">₹2562.5k</span>
+                  <span className="text-neutral-800 font-bold text-[10px]">₹{data ? (data.total_income_all_time / 1000).toFixed(1) + "k" : "0"}</span>
                 </div>
               </div>
             </div>
@@ -696,27 +722,33 @@ export default function DashboardPage() {
                   </button>
                 </div>
                 <div className="flex justify-center my-1">
-                  <SalesGauge value={65.2} />
+                  <SalesGauge value={data?.sales_overview?.goal_pct || 65.2} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 border border-neutral-200/20 shadow-sm">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Number of Sales</span>
-                      <span className="text-[9px] bg-[#7c26d9] text-white font-bold px-2 py-0.5 rounded-full">4.5%</span>
+                      <span className={`text-[9px] text-white font-bold px-2 py-0.5 rounded-full ${data?.sales_overview?.count_growth < 0 ? 'bg-red-500' : 'bg-[#7c26d9]'}`}>
+                        {Math.abs(data?.sales_overview?.count_growth || 4.5).toFixed(1)}%
+                      </span>
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-neutral-800 font-bold text-lg">2,402</span>
-                      <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                      <span className="text-neutral-800 font-bold text-lg">{data?.sales_overview?.monthly_count?.toLocaleString() || '2,402'}</span>
+                      {data?.sales_overview?.count_growth < 0 ? <TrendingDown className="w-4 h-4 text-red-500" /> : <ArrowUpRight className="w-4 h-4 text-emerald-500" />}
                     </div>
                   </div>
                   <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 border border-neutral-200/20 shadow-sm">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Total Sales</span>
-                      <span className="text-[9px] bg-black text-white font-bold px-2 py-0.5 rounded-full">2.5%</span>
+                      <span className={`text-[9px] text-white font-bold px-2 py-0.5 rounded-full ${data?.sales_overview?.revenue_growth < 0 ? 'bg-red-500' : 'bg-black'}`}>
+                        {Math.abs(data?.sales_overview?.revenue_growth || 2.5).toFixed(1)}%
+                      </span>
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-neutral-800 font-bold text-lg">₹42.3K</span>
-                      <TrendingDown className="w-4 h-4 text-red-400" />
+                      <span className="text-neutral-800 font-bold text-lg">
+                        ₹{data?.sales_overview?.monthly_revenue >= 1000 ? (data.sales_overview.monthly_revenue / 1000).toFixed(1) + 'K' : data?.sales_overview?.monthly_revenue?.toFixed(1) || '42.3K'}
+                      </span>
+                      {data?.sales_overview?.revenue_growth < 0 ? <TrendingDown className="w-4 h-4 text-red-400" /> : <ArrowUpRight className="w-4 h-4 text-emerald-500" />}
                     </div>
                   </div>
                 </div>
@@ -744,7 +776,7 @@ export default function DashboardPage() {
                   <div className="w-4 h-4 rounded-full bg-black flex items-center justify-center text-white">
                     <span className="text-[8px]">▼</span>
                   </div>
-                  <span className="text-neutral-800 font-bold text-[10px]">₹3462.2k</span>
+                  <span className="text-neutral-800 font-bold text-[10px]">₹{data ? (data.total_expense_all_time / 1000).toFixed(1) + "k" : "0"}</span>
                 </div>
               </div>
             </div>
@@ -769,7 +801,7 @@ export default function DashboardPage() {
                   </div>
                   
                   <div className="flex flex-col gap-3">
-                    {mostOrderedBowls.map((bowl, index) => (
+                    {mostOrderedBowls.map((bowl: any, index: number) => (
                       <div key={index} className="flex items-center gap-3 border border-[#7c26d9]/30 bg-white rounded-2xl px-4 py-2">
                         <div className="text-black bg-neutral-100 p-1.5 rounded-full flex items-center justify-center">
                           {bowl.logo}
@@ -799,12 +831,25 @@ export default function DashboardPage() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-neutral-800 font-semibold text-sm">Revenue Overview</span>
-                    <div className="flex items-center gap-1 text-xs text-neutral-500 font-semibold cursor-pointer hover:text-neutral-700">
-                      <span>Monthly</span>
-                      <ChevronDown className="w-3.5 h-3.5" />
+                    <div className="relative group">
+                      <div className="flex items-center gap-1 text-xs text-neutral-500 font-semibold cursor-pointer hover:text-neutral-700">
+                        <span>{revenueFilter}</span>
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="absolute right-0 top-full mt-1 w-24 bg-white border border-neutral-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20">
+                        {["Today", "Weekly", "Monthly"].map(f => (
+                          <div
+                            key={f}
+                            onClick={() => setRevenueFilter(f)}
+                            className={`px-3 py-1.5 text-xs font-semibold cursor-pointer first:rounded-t-xl last:rounded-b-xl hover:bg-neutral-50 ${revenueFilter === f ? 'text-[#7c26d9]' : 'text-neutral-600'}`}
+                          >
+                            {f}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <LollipopChart />
+                  <LollipopChart data={data?.revenue_overview?.[revenueFilter]} />
                 </div>
               </div>
 
@@ -837,7 +882,7 @@ export default function DashboardPage() {
               style={{ animationDelay: "800ms" }}
             >
               <div>
-                <span className="text-neutral-500 text-sm font-semibold block">Employment Agreement Tracker</span>
+                <span className="text-neutral-500 text-sm font-semibold block">Meal Categories</span>
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-neutral-800 font-bold text-xl">Category Overview</span>
                   <button className="w-8 h-8 rounded-full bg-[#1a1a1a] flex items-center justify-center text-white hover:bg-neutral-800 shadow-sm transition-colors">
@@ -847,10 +892,10 @@ export default function DashboardPage() {
               </div>
               
               <div className="relative flex justify-center items-center my-6 min-h-[140px]">
-                <CategoryDonut />
+                <CategoryDonut p1={data?.category_overview?.breakfast_pct || 50} p2={data?.category_overview?.lunch_pct || 30} p3={data?.category_overview?.dinner_pct || 20} />
                 <div className="absolute bottom-2 flex flex-col items-center">
-                  <span className="text-neutral-800 font-bold text-4xl tracking-tight">1000</span>
-                  <span className="text-neutral-400 text-[10px] font-semibold mt-1">Total Employees</span>
+                  <span className="text-neutral-800 font-bold text-4xl tracking-tight">{data?.category_overview?.total?.toLocaleString() || '1,000'}</span>
+                  <span className="text-neutral-400 text-[10px] font-semibold mt-1">Total Bowls</span>
                 </div>
               </div>
               
@@ -858,23 +903,23 @@ export default function DashboardPage() {
                 <div className="flex flex-col items-center">
                   <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-semibold">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#5b21b6]" />
-                    Brekfast
+                    Breakfast
                   </div>
-                  <span className="text-xl font-bold text-neutral-800 mt-1">50%</span>
+                  <span className="text-xl font-bold text-neutral-800 mt-1">{data?.category_overview?.breakfast_pct || 50}%</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-semibold">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#9061d4]" />
                     Lunch
                   </div>
-                  <span className="text-xl font-bold text-neutral-800 mt-1">30%</span>
+                  <span className="text-xl font-bold text-neutral-800 mt-1">{data?.category_overview?.lunch_pct || 30}%</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-semibold">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#d1c4e9]" />
                     Dinner
                   </div>
-                  <span className="text-xl font-bold text-neutral-800 mt-1">20%</span>
+                  <span className="text-xl font-bold text-neutral-800 mt-1">{data?.category_overview?.dinner_pct || 20}%</span>
                 </div>
               </div>
             </div>
