@@ -419,15 +419,16 @@ export const endpoints = {
     setup2FA: async () => {
       return await api.post<{ secret: string; qr_code_url: string }>("/auth/setup-2fa");
     },
+    disable2FA: async () => {
+      return await api.post<{ message: string }>("/auth/disable-2fa");
+    },
     verify2FA: async (totp_code: string) => {
       return await api.post<{ success: boolean }>("/auth/verify-2fa", { code: totp_code });
     },
     requestPasswordReset: async (email: string) => {
       return await api.post<any>("/auth/forgot-password", { identifier: email });
     },
-    resetPassword: async (token: string, new_password: string) => {
-      return await api.post<any>("/auth/reset-password", { token, new_password });
-    }
+    resetPassword: async (email: string, otp: string, new_password: string) => { return await api.post<any>("/auth/reset-password", { email, otp, new_password }); }
   },
   
   users: {

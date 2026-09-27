@@ -3,6 +3,7 @@ import React, { useState, FormEvent } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { endpoints } from "@/lib/apiService";
 import { QRCodeSVG } from "qrcode.react";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { AlertCircle, Check, ShieldCheck, QrCode } from "lucide-react";
 
 export function TwoFactorSetup() {
@@ -12,8 +13,29 @@ export function TwoFactorSetup() {
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showDisableConfirm, setShowDisableConfirm] = useState(false);
+  const [isDisabling, setIsDisabling] = useState(false);
 
   if (!user) return null;
+
+
+  async function handleDisable() {
+    setIsDisabling(true);
+    setError(null);
+    try {
+      await endpoints.auth.disable2FA();
+      setShowDisableConfirm(false);
+      setSuccess(false);
+      setSetupData(null);
+      setCode("");
+      await fetchMe();
+    } catch (err: any) {
+      setError(err.message || "Failed to disable 2FA");
+      setShowDisableConfirm(false);
+    } finally {
+      setIsDisabling(false);
+    }
+  }
 
   async function handleBeginSetup() {
     setLoading(true);
@@ -61,13 +83,38 @@ export function TwoFactorSetup() {
               <p className="text-sm text-neutral-500 mt-1 leading-relaxed">
                 Two-factor authentication is active. Your account is protected with time-based verification codes.
               </p>
+              
+              {error && (
+                <div className="mt-2 text-xs text-rose-500 font-medium">
+                  {error}
+                </div>
+              )}
             </div>
           </div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Active
-          </span>
+          <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Active
+            </span>
+            <button
+              onClick={() => setShowDisableConfirm(true)}
+              className="text-xs font-semibold px-4 py-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-colors border border-rose-100"
+            >
+              Disable 2FA
+            </button>
+          </div>
         </div>
+        
+        <ConfirmationModal
+          isOpen={showDisableConfirm}
+          onClose={() => setShowDisableConfirm(false)}
+          onConfirm={handleDisable}
+          title="Disable Two-Factor Authentication?"
+          message="Are you sure you want to disable 2FA? This will remove the extra layer of security from your account."
+          type="delete"
+          confirmText="Yes, Disable 2FA"
+          isLoading={isDisabling}
+        />
       </div>
     );
   }

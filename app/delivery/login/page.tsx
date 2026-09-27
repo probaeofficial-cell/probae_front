@@ -15,7 +15,7 @@ export default function LoginPage() {
       <section
         className="relative flex-shrink-0 flex flex-col justify-center px-6 lg:px-14 w-full lg:w-[38%] z-10"
       >
-        <LoginForm />
+        <LoginForm title="Delivery Login" subtitle="Delivery personnel access" />
       </section>
 
       {/* ── Right: image grid ─────────────────────────────────────────────── */}

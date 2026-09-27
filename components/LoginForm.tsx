@@ -149,13 +149,17 @@ function LoginView({
   onChangeRememberMe,
   onForgot,
   onSuccess,
-  onRequires2FA
+  onRequires2FA,
+  title = "Admin Login",
+  subtitle = "Secure portal access"
 }: {
   rememberMe: boolean;
   onChangeRememberMe: (val: boolean) => void;
   onForgot: () => void;
   onSuccess: (token: string, role?: string) => void;
   onRequires2FA: (email: string, pass: string) => void;
+  title?: string;
+  subtitle?: string;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -187,8 +191,8 @@ function LoginView({
   return (
     <>
       <ProbaeWordmark />
-      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">Admin Login</h1>
-      <p className="text-neutral-500 text-sm mb-7 text-center w-full">Secure portal access</p>
+      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">{title}</h1>
+      <p className="text-neutral-500 text-sm mb-7 text-center w-full">{subtitle}</p>
 
       {error && (
         <p className="text-red-400 text-xs mb-4 bg-red-950/40 border border-red-800/40 rounded-xl px-3 py-2 w-full text-center">
@@ -342,23 +346,58 @@ function ForgotView({
 }: {
   onBack: () => void;
 }) {
+  const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const canSubmit = email.trim().length > 0;
+  const canSubmitEmail = email.trim().length > 0;
+  const canSubmitOtp = otp.trim().length > 0 && newPassword.trim().length > 0 && confirmPassword.trim().length > 0;
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!canSubmit) return;
+  async function handleSendOTP(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    if (!canSubmitEmail) return;
     setLoading(true);
     setError(null);
     try {
       await endpoints.auth.requestPasswordReset(email.trim());
-      setSuccess(true);
+      setStep("otp");
     } catch (err: any) {
       setError(err.message || "Failed to send reset link. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canSubmitOtp) return;
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await endpoints.auth.resetPassword(email.trim(), otp.trim(), newPassword);
+      setSuccess(true);
+      // after 3 seconds, redirect to login
+      setTimeout(() => {
+        onBack();
+      }, 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to reset password. Please check your OTP.");
     } finally {
       setLoading(false);
     }
@@ -369,19 +408,89 @@ function ForgotView({
       <div className="flex flex-col items-center text-center w-full">
         <ProbaeWordmark />
         <div className="w-14 h-14 rounded-full bg-green-900/40 border border-green-700/40 flex items-center justify-center mb-6">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth={2.5}
-            strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-        <h1 className="text-white text-[2rem] font-bold tracking-tight mb-2 w-full">Check your inbox</h1>
+        <h1 className="text-white text-[2rem] font-bold tracking-tight mb-2 w-full">Password Reset Successful!</h1>
         <p className="text-neutral-500 text-sm mb-8 w-full leading-relaxed">
-          We&apos;ve sent a recovery link to your email.
+          Your password has been changed. You can now log in with your new credentials.
         </p>
         <ProbaeButton className="w-full justify-center" type="button" onClick={onBack}>
           Back to Login
         </ProbaeButton>
       </div>
+    );
+  }
+
+  if (step === "otp") {
+    return (
+      <>
+        <ProbaeWordmark />
+        <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">Verify & Reset</h1>
+        <p className="text-neutral-500 text-sm mb-7 text-center w-full">
+          Enter the 6-digit OTP sent to <span className="text-white font-medium">{email}</span> and your new password.
+        </p>
+
+        {error && (
+          <p className="text-red-400 text-xs mb-4 bg-red-950/40 border border-red-800/40 rounded-xl px-3 py-2 w-full text-center">
+            {error}
+          </p>
+        )}
+
+        <form onSubmit={handleResetPassword} className="w-full space-y-3" noValidate>
+          <input
+            type="text"
+            placeholder="6-digit OTP"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            className={inputCls}
+            disabled={loading}
+            maxLength={6}
+          />
+          
+          <div className="relative w-full">
+            <input
+              type={showPwd ? "text" : "password"}
+              placeholder="New Password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className={`${inputCls} pr-11`}
+              disabled={loading}
+            />
+            <button type="button" onClick={() => setShowPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300">
+              {showPwd ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          </div>
+
+          <div className="relative w-full">
+            <input
+              type={showConfirmPwd ? "text" : "password"}
+              placeholder="Confirm New Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={`${inputCls} pr-11`}
+              disabled={loading}
+            />
+            <button type="button" onClick={() => setShowConfirmPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300">
+              {showConfirmPwd ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          </div>
+
+          <ProbaeButton className="w-full justify-center" type="submit" disabled={!canSubmitOtp || loading}>
+            {loading ? <span className="animate-pulse">Verifying…</span> : <>Reset Password <ChevronRightIcon /></>}
+          </ProbaeButton>
+        </form>
+
+        <div className="mt-5 flex flex-col items-center gap-3">
+          <button type="button" onClick={() => handleSendOTP()} disabled={loading} className="text-xs text-[#6A0FAD] hover:text-[#8a2be2] font-medium transition-colors">
+            Didn't receive OTP? Resend
+          </button>
+          <button type="button" onClick={onBack} className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors">
+            ← back to login
+          </button>
+        </div>
+      </>
     );
   }
 
@@ -392,7 +501,7 @@ function ForgotView({
         Reset your password
       </h1>
       <p className="text-neutral-500 text-sm mb-7 text-center w-full">
-        Enter your email to get a recovery link.
+        Enter your email to get a recovery OTP.
       </p>
 
       {error && (
@@ -401,7 +510,7 @@ function ForgotView({
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="w-full space-y-3" noValidate>
+      <form onSubmit={handleSendOTP} className="w-full space-y-3" noValidate>
         <input
           type="email"
           placeholder="Email address"
@@ -412,8 +521,8 @@ function ForgotView({
           disabled={loading}
         />
 
-        <ProbaeButton className="w-full justify-center" type="submit" disabled={!canSubmit || loading}>
-          {loading ? <span className="animate-pulse">Sending…</span> : <>Send Reset Link <ChevronRightIcon /></>}
+        <ProbaeButton className="w-full justify-center" type="submit" disabled={!canSubmitEmail || loading}>
+          {loading ? <span className="animate-pulse">Sending…</span> : <>Send OTP <ChevronRightIcon /></>}
         </ProbaeButton>
       </form>
 
@@ -424,95 +533,6 @@ function ForgotView({
       >
         ← back to login
       </button>
-    </>
-  );
-}
-
-function ResetView({
-  token,
-  onSuccess,
-}: {
-  token: string;
-  onSuccess: () => void;
-}) {
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const canSubmit = password.length > 0 && confirm.length > 0;
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!canSubmit) return;
-
-    if (password !== confirm) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      await endpoints.auth.resetPassword(token, password);
-      onSuccess();
-    } catch (err: any) {
-      setError(err.message || "Failed to update password. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <>
-      <ProbaeWordmark />
-      <h1 className="text-white text-[2rem] font-bold tracking-tight mb-1 text-center w-full">Update Password</h1>
-      <p className="text-neutral-500 text-sm mb-7 text-center w-full">Create a new, secure password.</p>
-
-      {error && (
-        <p className="text-red-400 text-xs mb-4 bg-red-950/40 border border-red-800/40 rounded-xl px-3 py-2 w-full text-center">
-          {error}
-        </p>
-      )}
-
-      <form onSubmit={handleSubmit} className="w-full space-y-3" noValidate>
-        <div className="relative w-full">
-          <input
-            type={showPwd ? "text" : "password"}
-            placeholder="New password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`${inputCls} pr-11`}
-            disabled={loading}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPwd((v) => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
-          >
-            {showPwd ? <EyeOffIcon /> : <EyeIcon />}
-          </button>
-        </div>
-        <div className="relative w-full">
-          <input
-            type={showPwd ? "text" : "password"}
-            placeholder="Confirm new password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            className={`${inputCls} pr-11`}
-            disabled={loading}
-          />
-        </div>
-
-        <ProbaeButton className="w-full justify-center" type="submit" disabled={!canSubmit || loading}>
-          {loading ? (
-            <span className="animate-pulse">Updating…</span>
-          ) : (
-            <>Update Password <ChevronRightIcon /></>
-          )}
-        </ProbaeButton>
-      </form>
     </>
   );
 }
@@ -565,7 +585,13 @@ type View =
   | "password-changed"
   | "success";
 
-export default function LoginForm() {
+export default function LoginForm({ 
+  title = "Admin Login", 
+  subtitle = "Secure portal access" 
+}: { 
+  title?: string; 
+  subtitle?: string; 
+}) {
   const [view, setView] = useState<View>("login");
   const [token, setToken] = useState("");
   const [pendingCredentials, setPendingCredentials] = useState({ email: "", password: "" });
@@ -610,6 +636,8 @@ export default function LoginForm() {
             setPendingCredentials({ email, password });
             setView("authenticator");
           }}
+          title={title}
+          subtitle={subtitle}
         />
       )}
       {view === "authenticator" && (
@@ -622,9 +650,6 @@ export default function LoginForm() {
       )}
       {view === "forgot" && (
         <ForgotView onBack={() => setView("login")} />
-      )}
-      {view === "reset" && (
-        <ResetView token={token} onSuccess={() => setView("password-changed")} />
       )}
       {view === "password-changed" && (
         <PasswordChangedSuccessView onLogin={() => setView("login")} />
