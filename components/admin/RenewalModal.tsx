@@ -138,7 +138,7 @@ export function RenewalModal({
                 <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-200 space-y-3">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-neutral-500">Base Cost (per bowl)</span>
-                    <span className="font-bold">AED {parseFloat(preview.mean_cost).toFixed(2)}</span>
+                    <span className="font-bold">₹{parseFloat(preview.mean_cost).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-neutral-500">Total Bowls</span>
@@ -146,7 +146,7 @@ export function RenewalModal({
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-neutral-500">Gross Total</span>
-                    <span className="font-bold">AED {parseFloat(preview.base_total).toFixed(2)}</span>
+                    <span className="font-bold">₹{parseFloat(preview.base_total).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm text-green-600">
                     <span>Discount</span>
@@ -154,7 +154,7 @@ export function RenewalModal({
                   </div>
                   <div className="pt-3 mt-3 border-t border-neutral-200 flex justify-between items-center">
                     <span className="font-bold text-neutral-900">Total Charge</span>
-                    <span className="text-xl font-black text-[#6A0FAD]">AED {parseFloat(preview.final_price).toFixed(2)}</span>
+                    <span className="text-xl font-black text-[#6A0FAD]">₹{parseFloat(preview.final_price).toFixed(2)}</span>
                   </div>
                 </div>
               ) : null}

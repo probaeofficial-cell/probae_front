@@ -60,7 +60,7 @@ export function CustomerHistory({ customerUlid, subscriptions = [], onRefresh }:
                     <td className="px-6 py-4 text-sm font-medium text-neutral-500">{sub.start_date || "N/A"}</td>
                     <td className="px-6 py-4 text-sm font-medium text-neutral-500">{sub.end_date || "N/A"}</td>
                     <td className="px-6 py-4 text-sm font-bold text-neutral-900">{sub.total_bowls_allocated}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-neutral-900">AED {Number(sub.total_price_paid).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-neutral-900">₹{Number(sub.total_price_paid).toFixed(2)}</td>
                   </tr>
                 ))
               )}

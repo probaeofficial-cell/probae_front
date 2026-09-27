@@ -94,7 +94,7 @@ export function LegacySubscriptionModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-neutral-700 mb-1">Total Paid (AED)</label>
+              <label className="block text-sm font-bold text-neutral-700 mb-1">Total Paid (₹)</label>
               <input 
                 type="number" min="0" step="0.01" required
                 className="w-full px-4 py-2 bg-neutral-50 text-neutral-900 border border-neutral-200 rounded-xl focus:outline-none focus:border-[#6A0FAD]"

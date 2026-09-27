@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { endpoints } from "@/lib/apiService";
 import { BowlLoader } from "./BowlLoader";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LegacyOrderModal } from "./LegacyModals";
 
 export function CustomerCalories({ customerUlid }: { customerUlid: string }) {
@@ -9,6 +10,14 @@ export function CustomerCalories({ customerUlid }: { customerUlid: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [filterDate, setFilterDate] = useState("");
   const [showLegacyOrderModal, setShowLegacyOrderModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterDate]);
+
 
   const fetchCalories = async () => {
     setIsLoading(true);
@@ -31,12 +40,18 @@ export function CustomerCalories({ customerUlid }: { customerUlid: string }) {
 
   if (isLoading && log.length === 0) {
     return (
+
       <div className="flex flex-col items-center justify-center p-12 gap-4">
         <BowlLoader className="w-8 h-8 text-[#6A0FAD]" />
         <span className="text-neutral-500 font-medium">Loading calories...</span>
       </div>
     );
   }
+
+
+  const totalPages = Math.ceil(log.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedLog = log.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
     <>
@@ -108,7 +123,7 @@ export function CustomerCalories({ customerUlid }: { customerUlid: string }) {
                     </td>
                   </tr>
                 ) : (
-                  log.map((entry, idx) => (
+                  paginatedLog.map((entry: any, idx: number) => (
                     <tr key={idx} className="hover:bg-neutral-50 transition-colors">
                       <td className="px-6 py-4 text-sm font-bold text-neutral-900">{entry.date}</td>
                       <td className="px-6 py-4 text-sm font-medium text-neutral-900">{entry.bowl_name}</td>
@@ -127,6 +142,45 @@ export function CustomerCalories({ customerUlid }: { customerUlid: string }) {
               </tbody>
             </table>
           </div>
+          
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-between bg-white">
+              <span className="text-sm text-neutral-500 font-medium">
+                Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, log.length)} of {log.length} entries
+              </span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-xl border border-neutral-200 text-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-lg text-sm font-bold flex items-center justify-center transition-colors ${
+                        currentPage === page 
+                          ? "bg-[#6A0FAD] text-white" 
+                          : "text-neutral-600 hover:bg-neutral-100"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-xl border border-neutral-200 text-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
