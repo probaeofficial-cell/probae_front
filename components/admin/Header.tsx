@@ -8,6 +8,7 @@ import { UserAvatar } from "./UserAvatar";
 import { endpoints } from "@/lib/apiService";
 import { formatTimeAgo } from "@/lib/timeUtils";
 import { MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
+import { ChangePasswordModal } from "./ChangePasswordModal";
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -34,6 +35,7 @@ export function Header() {
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
 
@@ -323,12 +325,7 @@ export function Header() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsProfileOpen(false);
-                    // Delivery settings not implemented, fallback to profile or admin settings
-                    const settingsPath = user?.role === "delivery" ? "/delivery/profile" : "/admin/settings";
-                    router.push(settingsPath);
-                  }}
+                  onClick={() => { setIsProfileOpen(false); setIsPasswordModalOpen(true); }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 hover:text-black hover:bg-neutral-100 rounded-xl transition-colors"
                 >
                   <KeyRound className="w-4 h-4" />
@@ -352,6 +349,7 @@ export function Header() {
         </div>
 
       </div>
+      <ChangePasswordModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} />
     </header>
   );
 }

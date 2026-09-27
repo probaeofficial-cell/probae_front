@@ -412,6 +412,10 @@ export const endpoints = {
         if (typeof window !== "undefined") window.location.href = "/admin/login";
       }
     },
+    
+    changePassword: async (payload: { current_password: string; new_password: string }) => {
+      return await api.post<{ message: string }>("/auth/change-password", payload);
+    },
     setup2FA: async () => {
       return await api.post<{ secret: string; qr_code_url: string }>("/auth/setup-2fa");
     },
