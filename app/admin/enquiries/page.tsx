@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, MessageSquareText, RefreshCw, X } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { BowlLoader } from "@/components/admin/BowlLoader";
@@ -60,9 +60,19 @@ export default function EnquiriesPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [previewItem, setPreviewItem] = useState<EnquiryItem | null>(null);
   const [statusFilter, setStatusFilter] = useState<"" | EnquiryStatus>("");
   const [error, setError] = useState("");
   const totalPages = Math.max(1, Math.ceil(total / 20));
+
+  useEffect(() => {
+    if (!previewItem) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreviewItem(null);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [previewItem]);
 
   const loadEnquiries = useCallback(async () => {
     setLoading(true);
@@ -130,7 +140,7 @@ export default function EnquiriesPage() {
           ) : (
             <>
               {/* Compact stacked cards on phones and tablets. */}
-              <div className="space-y-3 lg:hidden">
+              <div className="space-y-3 xl:hidden">
                 {items.map((item) => (
                   <article key={item.ulid} className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
                     <div className="flex min-w-0 items-start justify-between gap-3">
@@ -140,7 +150,15 @@ export default function EnquiriesPage() {
                       </div>
                       <span className="shrink-0 pt-0.5 text-xs text-neutral-500">{item.created_at ? new Date(item.created_at).toLocaleDateString() : "—"}</span>
                     </div>
-                    {item.message && <p className="mt-3 break-words rounded-xl bg-neutral-50 p-3 text-sm leading-relaxed text-neutral-600">{item.message}</p>}
+                    <div className="mt-3 rounded-xl bg-neutral-50 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs font-bold uppercase tracking-wide text-neutral-400">Message</span>
+                        <button type="button" onClick={() => setPreviewItem(item)} disabled={!item.message?.trim()} className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-[#6A0FAD] transition hover:text-[#4f0b82] disabled:cursor-not-allowed disabled:text-neutral-400">
+                          <MessageSquareText className="h-3.5 w-3.5" /> {item.message?.trim() ? "Preview message" : "No message"}
+                        </button>
+                      </div>
+                      <p className="mt-2 line-clamp-2 break-words text-sm leading-relaxed text-neutral-600">{item.message?.trim() || "The customer did not include a message."}</p>
+                    </div>
                     <div className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                       <a href={`tel:${item.phone}`} className="break-all text-neutral-700 hover:text-[#6A0FAD]">{item.phone}</a>
                       {item.email ? <a href={`mailto:${item.email}`} className="break-all text-neutral-700 hover:text-[#6A0FAD]">{item.email}</a> : <span className="text-neutral-400">No email provided</span>}
@@ -154,27 +172,34 @@ export default function EnquiriesPage() {
               </div>
 
               {/* Fixed column widths and centered status control keep desktop rows aligned. */}
-              <div className="hidden overflow-x-auto rounded-xl bg-white lg:block">
+              <div className="hidden overflow-x-auto rounded-xl bg-white xl:block">
                 <table className="w-full table-fixed text-left">
-                  <colgroup><col className="w-[20%]" /><col className="w-[15%]" /><col className="w-[20%]" /><col className="w-[20%]" /><col className="w-[13%]" /><col className="w-[12%]" /></colgroup>
+                  <colgroup><col className="w-[16%]" /><col className="w-[12%]" /><col className="w-[16%]" /><col className="w-[16%]" /><col className="w-[12%]" /><col className="w-[14%]" /><col className="w-[14%]" /></colgroup>
                   <thead className="sticky top-0 z-10 bg-neutral-50">
                     <tr className="border-b border-neutral-100">
-                      {["Name", "Phone", "Email", "Plan Interest", "Status", "Date"].map((label) => <th key={label} className={`px-3 py-4 text-xs font-bold uppercase tracking-wider text-neutral-500 xl:px-5 ${label === "Status" || label === "Date" ? "text-center" : "text-left"}`}>{label}</th>)}
+                      {["Name", "Phone", "Email", "Plan Interest", "Message", "Status", "Date"].map((label) => <th key={label} className={`px-3 py-4 text-xs font-bold uppercase tracking-wider text-neutral-500 xl:px-4 ${label === "Status" || label === "Date" ? "text-center" : "text-left"}`}>{label}</th>)}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
                     {items.map((item) => (
                       <tr key={item.ulid} className="align-middle transition-colors hover:bg-neutral-50/70">
-                        <td className="px-3 py-4 xl:px-5"><p className="truncate font-semibold text-neutral-900" title={item.name}>{item.name}</p>{item.message && <p title={item.message} className="mt-1 truncate text-xs text-neutral-500">{item.message}</p>}</td>
-                        <td className="px-3 py-4 xl:px-5"><a href={`tel:${item.phone}`} className="block truncate text-sm text-neutral-700 hover:text-[#6A0FAD]" title={item.phone}>{item.phone}</a></td>
-                        <td className="px-3 py-4 xl:px-5"><span className="block truncate text-sm text-neutral-600" title={item.email || "—"}>{item.email || "—"}</span></td>
-                        <td className="px-3 py-4 xl:px-5"><span className="block truncate text-sm text-neutral-700" title={item.plan_interest || "Custom bowl"}>{item.plan_interest || "Custom bowl"}</span></td>
-                        <td className="px-3 py-4 text-center align-middle xl:px-5">
+                        <td className="px-3 py-4 xl:px-4"><p className="truncate font-semibold text-neutral-900" title={item.name}>{item.name}</p></td>
+                        <td className="px-3 py-4 xl:px-4"><a href={`tel:${item.phone}`} className="block truncate text-sm text-neutral-700 hover:text-[#6A0FAD]" title={item.phone}>{item.phone}</a></td>
+                        <td className="px-3 py-4 xl:px-4"><span className="block truncate text-sm text-neutral-600" title={item.email || "—"}>{item.email || "—"}</span></td>
+                        <td className="px-3 py-4 xl:px-4"><span className="block truncate text-sm text-neutral-700" title={item.plan_interest || "Custom bowl"}>{item.plan_interest || "Custom bowl"}</span></td>
+                        <td className="px-3 py-4 xl:px-4">
+                          {item.message?.trim() ? (
+                            <button type="button" onClick={() => setPreviewItem(item)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#6A0FAD]/8 px-2.5 py-2 text-xs font-bold text-[#6A0FAD] transition hover:bg-[#6A0FAD]/15">
+                              <MessageSquareText className="h-3.5 w-3.5" /> Preview
+                            </button>
+                          ) : <span className="text-xs text-neutral-400">No message</span>}
+                        </td>
+                        <td className="px-3 py-4 text-center align-middle xl:px-4">
                           <div className="flex justify-center">
                             <EnquiryStatusSelect item={item} disabled={updating === item.ulid} onChange={(status) => void updateStatus(item.ulid, status)} />
                           </div>
                         </td>
-                        <td className="px-3 py-4 text-center align-middle text-sm text-neutral-600 xl:px-5">{item.created_at ? new Date(item.created_at).toLocaleDateString() : "—"}</td>
+                        <td className="px-3 py-4 text-center align-middle text-sm text-neutral-600 xl:px-4">{item.created_at ? new Date(item.created_at).toLocaleDateString() : "—"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -192,6 +217,27 @@ export default function EnquiriesPage() {
           </div>
         </div>
       </div>
+      {previewItem && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-neutral-950/50 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) setPreviewItem(null); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="enquiry-message-title" className="my-auto w-full max-w-xl overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl">
+            <header className="flex items-start justify-between gap-4 border-b border-neutral-100 px-5 py-4 sm:px-6">
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#6A0FAD]">Enquiry message</p>
+                <h2 id="enquiry-message-title" className="mt-1 truncate text-lg font-extrabold text-neutral-900">Message from {previewItem.name}</h2>
+                <p className="mt-1 text-sm text-neutral-500">{previewItem.plan_interest || "Custom bowl enquiry"}</p>
+              </div>
+              <button type="button" aria-label="Close message preview" onClick={() => setPreviewItem(null)} className="shrink-0 rounded-full bg-neutral-100 p-2 text-neutral-600 transition hover:bg-neutral-200"><X className="h-4 w-4" /></button>
+            </header>
+            <div className="max-h-[60vh] overflow-y-auto px-5 py-5 sm:px-6">
+              <p className="whitespace-pre-wrap break-words rounded-2xl bg-neutral-50 p-4 text-sm leading-7 text-neutral-700 sm:p-5">{previewItem.message?.trim() || "The customer did not include a message."}</p>
+              <div className="mt-4 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-neutral-500">{previewItem.created_at ? new Date(previewItem.created_at).toLocaleString() : "Date unavailable"}</span>
+                <div className="flex flex-wrap gap-3"><a href={`tel:${previewItem.phone}`} className="font-semibold text-[#6A0FAD] hover:underline">{previewItem.phone}</a>{previewItem.email && <a href={`mailto:${previewItem.email}`} className="max-w-full break-all font-semibold text-[#6A0FAD] hover:underline">{previewItem.email}</a>}</div>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
