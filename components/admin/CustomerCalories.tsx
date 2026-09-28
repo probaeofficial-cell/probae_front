@@ -16,6 +16,7 @@ export function CustomerCalories({ customerUlid, onRefresh }: { customerUlid: st
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const ITEMS_PER_PAGE = 5;
 
   // Reset page when filter changes
@@ -48,10 +49,11 @@ export function CustomerCalories({ customerUlid, onRefresh }: { customerUlid: st
   const fetchCalories = async () => {
     setIsLoading(true);
     try {
-      const res: any = await endpoints.customers.getCalories(customerUlid, filterDate);
+      const res: any = await endpoints.customers.getCalories(customerUlid, filterDate, currentPage, ITEMS_PER_PAGE);
       if (res.success) {
         setStats(res.stats);
         setLog(res.log);
+        setTotalItems(res.total || 0);
       }
     } catch (err) {
       console.error(err);
@@ -62,7 +64,7 @@ export function CustomerCalories({ customerUlid, onRefresh }: { customerUlid: st
 
   useEffect(() => {
     fetchCalories();
-  }, [customerUlid, filterDate]);
+  }, [customerUlid, filterDate, currentPage]);
 
   if (isLoading && log.length === 0) {
     return (
@@ -218,7 +220,7 @@ export function CustomerCalories({ customerUlid, onRefresh }: { customerUlid: st
           {totalPages > 1 && (
             <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-between bg-white">
               <span className="text-sm text-neutral-500 font-medium">
-                Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, log.length)} of {log.length} entries
+                Showing {totalItems === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, totalItems)} of {totalItems} entries
               </span>
               <div className="flex gap-2">
                 <button 

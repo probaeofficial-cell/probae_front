@@ -989,26 +989,28 @@ export default function CustomerDetailPage() {
                         )}
                         <div className="text-xs text-neutral-400 font-medium mt-1">Inclusive of all costs</div>
                         
-                        <div className="mt-4 w-full text-left">
-                          <label className="flex items-center gap-2 cursor-pointer mb-2">
-                            <input 
-                              type="checkbox" 
-                              checked={formData.isOverrideEnabled} 
-                              onChange={(e) => updateField("isOverrideEnabled", e.target.checked)} 
-                              className="w-4 h-4 text-[#6A0FAD] bg-gray-100 border-gray-300 rounded focus:ring-[#6A0FAD]"
-                            />
-                            <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Override Plan Price</span>
-                          </label>
-                          {formData.isOverrideEnabled && (
-                            <input 
-                              type="number" 
-                              placeholder="Custom total..."
-                              value={formData.overrideTotalPrice} 
-                              onChange={(e) => updateField("overrideTotalPrice", e.target.value)}
-                              className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 font-bold focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]"
-                            />
-                          )}
-                        </div>
+                        {isEditMode && (
+                          <div className="mt-4 w-full text-left">
+                            <label className="flex items-center gap-2 cursor-pointer mb-2">
+                              <input 
+                                type="checkbox" 
+                                checked={formData.isOverrideEnabled} 
+                                onChange={(e) => updateField("isOverrideEnabled", e.target.checked)} 
+                                className="w-4 h-4 text-[#6A0FAD] bg-gray-100 border-gray-300 rounded focus:ring-[#6A0FAD]"
+                              />
+                              <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Override Plan Price</span>
+                            </label>
+                            {formData.isOverrideEnabled && (
+                              <input 
+                                type="number" 
+                                placeholder="Custom total..."
+                                value={formData.overrideTotalPrice} 
+                                onChange={(e) => updateField("overrideTotalPrice", e.target.value)}
+                                className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 font-bold focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]"
+                              />
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 

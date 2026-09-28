@@ -779,9 +779,11 @@ export const endpoints = {
     get: async (ulid: string) => await api.get(`/customers/${ulid}`),
     create: async (data: any) => await api.post("/customers", data),
     update: async (ulid: string, data: any) => await api.patch(`/customers/${ulid}`, data),
-    getCalories: async (ulid: string, filterDate?: string) => {
+    getCalories: async (ulid: string, filterDate?: string, page: number = 1, limit: number = 5) => {
       const p = new URLSearchParams();
       if (filterDate) p.append("filter_date", filterDate);
+      p.append("page", page.toString());
+      p.append("limit", limit.toString());
       return await api.get(`/customers/${ulid}/calories?${p.toString()}`);
     },
     calculateCalories: async (data: any) => await api.post("/customers/calculate-calories", data),
