@@ -199,10 +199,13 @@ export default function MenuClientSection({
   const topPicks = bowls.slice(0, 5);
 
   // Build filter pill list: "All" + one per category from backend
+  const uniqueMealCategories = Array.from(
+    new Map(initialCategories.map((category: any) => [category.meal_type || category.slug || category.name, category])).values()
+  );
   const filterPills = [
     { label: "All", mealType: "", color: "" },
-    ...initialCategories.map((c: any) => ({
-      label: c.name,
+    ...uniqueMealCategories.map((c: any) => ({
+      label: MEAL_TYPE_META[c.meal_type]?.label || c.name,
       mealType: c.meal_type,
       color: MEAL_TYPE_META[c.meal_type]?.color || "#6A0FAD",
     })),

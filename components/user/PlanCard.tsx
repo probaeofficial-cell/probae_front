@@ -16,6 +16,14 @@ export interface PlanData {
 
 export default function PlanCard({ plan }: { plan: PlanData }) {
   const [isOpen, setIsOpen] = useState(false);
+  const mealSlots = Array.from(
+    new Map(
+      (plan.included_meal_slots || [])
+        .map((slot) => slot.trim())
+        .filter(Boolean)
+        .map((slot) => [slot.toLowerCase(), slot] as const)
+    ).values()
+  );
   const isPro = plan.category.toLowerCase().includes("pro") || plan.name.toLowerCase().includes("pro") || plan.plan_type === "CUSTOM";
   const accent = isPro ? "#6A0FAD" : "#16A34A";
 
@@ -26,9 +34,9 @@ export default function PlanCard({ plan }: { plan: PlanData }) {
         <p className="text-3xl font-black">{plan.days} Day Plan</p>
         <p className="mt-1 text-sm font-medium text-white/80">{plan.duration}</p>
         <div className="mt-4 flex min-h-7 flex-wrap gap-2">
-          {(plan.included_meal_slots || []).map((slot) => <span key={slot} className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase">{slot}</span>)}
+          {mealSlots.map((slot) => <span key={slot.toLowerCase()} className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase">{slot}</span>)}
         </div>
-        <p className="mt-4 border-t border-white/20 pt-3 text-sm font-semibold">{(plan.included_meal_slots || []).length} meal slots included</p>
+        <p className="mt-4 border-t border-white/20 pt-3 text-sm font-semibold">{mealSlots.length} meal slots included</p>
       </div>
       <h3 className="text-xl font-extrabold">{plan.name}</h3>
       <p className="mt-3 text-2xl font-black">₹— <span className="text-sm font-medium text-white/80">Contact for Pricing</span></p>

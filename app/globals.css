@@ -214,6 +214,50 @@ body.landing-page {
   70%  { transform: scale(1.15); }
   100% { transform: scale(1); }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalEnter {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes successCheckPop {
+  0% { opacity: 0; transform: scale(0.65); }
+  70% { opacity: 1; transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes successCircleDraw {
+  from { stroke-dasharray: 132; stroke-dashoffset: 132; }
+  to { stroke-dasharray: 132; stroke-dashoffset: 0; }
+}
+@keyframes successTickDraw {
+  from { stroke-dasharray: 30; stroke-dashoffset: 30; }
+  to { stroke-dasharray: 30; stroke-dashoffset: 0; }
+}
+.success-check-pop {
+  animation: successCheckPop 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.success-circle-draw {
+  stroke-dasharray: 132;
+  stroke-dashoffset: 132;
+  animation: successCircleDraw 520ms ease-out 120ms forwards;
+}
+.success-tick-draw {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: successTickDraw 360ms ease-out 480ms forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success-check-pop,
+  .success-circle-draw,
+  .success-tick-draw {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+}
 .animate-fade-in-up {
   animation: fadeInUp 0.35s ease-out forwards;
 }

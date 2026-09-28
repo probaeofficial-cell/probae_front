@@ -2,10 +2,11 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Loader2, Salad } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Salad } from "lucide-react";
 import TopPickCard from "./TopPickCard";
 import BowlListItem from "./BowlListItem";
 import BowlModal from "./BowlModal";
+import { BowlLoader } from "@/components/admin/BowlLoader";
 import { endpoints } from "@/lib/apiService";
 
 interface MenuSectionProps {
@@ -38,18 +39,25 @@ export default function MenuSection({
   const [activeMealType, setActiveMealType]      = useState(""); // "" = All
   const [selectedBowl, setSelectedBowl]          = useState<any | null>(null);
   const [loading, setLoading]       = useState(false);
+  const [filterLoading, setFilterLoading] = useState(false);
 
   const LIMIT = 10;
 
   // Build category pills: "All" + one per backend category
+  // Several database categories can map to the same meal type (for example,
+  // legacy Dinner categories). The menu filter is by meal type, so show each
+  // meal type only once.
+  const uniqueMealCategories = Array.from(
+    new Map(initialCategories.map((category: any) => [category.meal_type || category.slug || category.name, category])).values()
+  );
   const categories = [
     "All",
-    ...initialCategories.map((c: any) => MEAL_TYPE_LABEL[c.meal_type] || c.name),
+    ...uniqueMealCategories.map((c: any) => MEAL_TYPE_LABEL[c.meal_type] || c.name),
   ];
 
   // Map display label → meal_type code for API call
   const labelToMealType: Record<string, string> = { All: "" };
-  initialCategories.forEach((c: any) => {
+  uniqueMealCategories.forEach((c: any) => {
     const label = MEAL_TYPE_LABEL[c.meal_type] || c.name;
     labelToMealType[label] = c.meal_type;
   });
@@ -57,6 +65,7 @@ export default function MenuSection({
   const fetchBowls = useCallback(
     async (nextPage: number, mealType: string) => {
       setLoading(true);
+      setFilterLoading(true);
       try {
         const data = await endpoints.public.getMenu(nextPage, LIMIT, mealType);
         // Normalise field names to match what TopPickCard / BowlListItem expect
@@ -75,6 +84,7 @@ export default function MenuSection({
         console.error("Failed to fetch bowls:", err);
       } finally {
         setLoading(false);
+        setFilterLoading(false);
       }
     },
     []
@@ -135,7 +145,7 @@ export default function MenuSection({
   return (
     <section
       id="menu-section"
-      className="bg-white/70 backdrop-blur-3xl rounded-t-[40px] pt-32 md:pt-40 pb-24 md:pb-32 flex flex-col relative z-20 min-h-screen shadow-[0_-10px_40px_rgba(0,0,0,0.03)] border-t border-white/50"
+      className="animate-fade-in-up bg-white/70 backdrop-blur-3xl rounded-t-[40px] pt-32 md:pt-40 pb-24 md:pb-32 flex flex-col relative z-20 min-h-screen shadow-[0_-10px_40px_rgba(0,0,0,0.03)] border-t border-white/50"
     >
       {/* Back Button */}
       <div className="px-6 md:px-12 mb-8">
@@ -193,11 +203,11 @@ export default function MenuSection({
         </div>
 
         {/* Vertical List */}
-        <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100/50 flex-1 flex flex-col">
+        <div className="relative bg-white rounded-3xl p-4 shadow-sm border border-gray-100/50 flex-1 flex flex-col">
           {/* Loading skeleton while initial filter fetch is in progress */}
           {loading && bowls.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <BowlLoader className="w-10 h-10 text-primary" />
               <span className="text-sm text-gray-400 font-medium">Loading bowls…</span>
             </div>
           ) : bowls.length > 0 ? (
@@ -217,7 +227,7 @@ export default function MenuSection({
               {/* Infinite scroll status */}
               {hasMore || loading ? (
                 <div className="flex justify-center items-center gap-2 mt-6 pt-6 pb-4 border-t border-gray-100 text-gray-400 text-sm font-medium">
-                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  <BowlLoader className="w-5 h-5 text-primary" />
                   Loading more bowls…
                 </div>
               ) : (
@@ -243,6 +253,14 @@ export default function MenuSection({
               <p className="text-sm text-gray-500 max-w-[250px]">
                 We couldn't find any bowls in this category right now. Try selecting another one.
               </p>
+            </div>
+          )}
+          {filterLoading && bowls.length > 0 && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-3xl bg-white/75 backdrop-blur-[2px]" role="status" aria-live="polite">
+              <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-6 py-5 shadow-lg">
+                <BowlLoader className="h-10 w-10 text-primary" />
+                <span className="text-sm font-semibold text-gray-600">Updating menu…</span>
+              </div>
             </div>
           )}
         </div>
