@@ -1,5 +1,5 @@
 import { BowlLoader } from "@/components/admin/BowlLoader";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, AlertCircle } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import AsyncPlanTierSelect from "./AsyncPlanTierSelect";
@@ -17,6 +17,12 @@ export function LegacySubscriptionModal({
 }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [customer, setCustomer] = useState<any>(null);
+  const bowlRef = useRef<any>(null);
+  
+  useEffect(() => {
+    endpoints.customers.get(customerUlid).then(res => setCustomer((res as any).data || res));
+  }, [customerUlid]);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     plan_tier_ulid: "",
@@ -130,6 +136,12 @@ export function LegacyOrderModal({
   
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [customer, setCustomer] = useState<any>(null);
+  const bowlRef = useRef<any>(null);
+  
+  useEffect(() => {
+    endpoints.customers.get(customerUlid).then(res => setCustomer((res as any).data || res));
+  }, [customerUlid]);
   const [formData, setFormData] = useState({
     target_date: "",
     meal_slot: "breakfast",
@@ -142,25 +154,64 @@ export function LegacyOrderModal({
     custom_fat: "",
     custom_fiber: ""
   });
-  const [mealCategoryId, setMealCategoryId] = useState<number>(0);
   const [isPatching, setIsPatching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleBowlSelect = (bowl: any) => {
+    bowlRef.current = bowl;
     setIsPatching(true);
     setTimeout(() => {
+      let cals = bowl?.total_calories ? String(bowl.total_calories) : "";
+      if (formData.is_custom && customer?.calorie_profile?.mealCalories) {
+        const slotKey = Object.keys(customer.calorie_profile.mealCalories).find(k => k.toLowerCase() === formData.meal_slot.toLowerCase());
+        const target = slotKey ? customer.calorie_profile.mealCalories[slotKey] : null;
+        if (target) cals = String(target);
+      }
+      
+      const ratio = (bowl?.total_calories && parseFloat(cals)) ? (parseFloat(cals) / bowl.total_calories) : 1;
+      
       setFormData(prev => ({
         ...prev,
         bowl_ulid: bowl?.ulid || "",
-        custom_calories: bowl?.total_calories ? String(bowl.total_calories) : "",
-        custom_protein: bowl?.total_protein ? String(bowl.total_protein) : "",
-        custom_carbs: bowl?.total_carbs ? String(bowl.total_carbs) : "",
-        custom_fat: bowl?.total_fat ? String(bowl.total_fat) : "",
-        custom_fiber: bowl?.total_fiber ? String(bowl.total_fiber) : "",
+        custom_calories: cals,
+        custom_protein: bowl?.total_protein ? (bowl.total_protein * ratio).toFixed(1) : "",
+        custom_carbs: bowl?.total_carbs ? (bowl.total_carbs * ratio).toFixed(1) : "",
+        custom_fat: bowl?.total_fat ? (bowl.total_fat * ratio).toFixed(1) : "",
+        custom_fiber: bowl?.total_fiber ? (bowl.total_fiber * ratio).toFixed(1) : "",
+        custom_price: bowl?.total_cost ? (bowl.total_cost * ratio).toFixed(2) : ""
       }));
       setIsPatching(false);
     }, 600);
   };
+
+  const handleCalorieChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    const newCals = parseFloat(val);
+    if (!bowlRef.current || !bowlRef.current.total_calories || isNaN(newCals)) {
+      setFormData(prev => ({...prev, custom_calories: val}));
+      return;
+    }
+    const ratio = newCals / bowlRef.current.total_calories;
+    setFormData(prev => ({
+      ...prev,
+      custom_calories: val,
+      custom_protein: (bowlRef.current.total_protein * ratio).toFixed(1),
+      custom_carbs: (bowlRef.current.total_carbs * ratio).toFixed(1),
+      custom_fat: (bowlRef.current.total_fat * ratio).toFixed(1),
+      custom_fiber: (bowlRef.current.total_fiber * ratio).toFixed(1),
+      custom_price: (bowlRef.current.total_cost * ratio).toFixed(2)
+    }));
+  };
+
+  useEffect(() => {
+    if (bowlRef.current && formData.is_custom) {
+      handleBowlSelect(bowlRef.current);
+    } else if (bowlRef.current && !formData.is_custom) {
+       // Revert to original
+       handleBowlSelect(bowlRef.current);
+    }
+  }, [formData.is_custom, formData.meal_slot]);
+
 
 
   
@@ -263,20 +314,14 @@ export function LegacyOrderModal({
                 </label>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-bold text-neutral-700 mb-1">Meal Category Filter (Optional)</label>
-              <AsyncMealCategorySelect
-                value={mealCategoryId}
-                onChange={(val) => setMealCategoryId(val)}
-              />
-            </div>
+
             <div>
               <label className="block text-sm font-bold text-neutral-700 mb-1">Bowl</label>
               <AsyncBowlSelect
                 value={formData.bowl_ulid}
                 onChange={(val) => setFormData({...formData, bowl_ulid: val})}
                 onSelectBowl={handleBowlSelect}
-                mealCategoryId={mealCategoryId !== 0 ? mealCategoryId : undefined}
+                mealCategoryId={undefined}
               />
             </div>
             <div className="relative">
@@ -293,7 +338,7 @@ export function LegacyOrderModal({
                   type="number" step="0.1" min="0"
                   className="w-full px-4 py-2 bg-neutral-50 text-neutral-900 border border-neutral-200 rounded-xl focus:outline-none focus:border-[#6A0FAD]"
                   value={formData.custom_calories}
-                  onChange={(e) => setFormData({...formData, custom_calories: e.target.value})}
+                  onChange={handleCalorieChange}
                   placeholder="Optional"
                 />
               </div>
