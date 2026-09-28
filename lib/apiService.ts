@@ -369,7 +369,7 @@ export const endpoints = {
       if (params.meal_slot) searchParams.append("meal_slot", params.meal_slot);
       return api.get(`/orders?${searchParams.toString()}`);
     },
-    preview: (payload: { customer_ulid: string; bowl_ulid: string; meal_slot: string; scaling_strategy?: "PROFILE_SCALED" | "STANDARD" }) =>
+    preview: (payload: { customer_ulid: string; bowl_ulid: string; meal_slot: string; scaling_strategy?: "PROFILE_SCALED" | "STANDARD", target_calories?: number }) =>
       api.post("/orders/preview", payload),
     checkout: (payload: any) =>
       api.post("/orders/checkout", payload),

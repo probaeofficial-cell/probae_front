@@ -19,6 +19,7 @@ export function LegacySubscriptionModal({
   const [success, setSuccess] = useState(false);
   const [customer, setCustomer] = useState<any>(null);
   const bowlRef = useRef<any>(null);
+  const lastFetchedCalsRef = useRef<string | null>(null);
   
   useEffect(() => {
     endpoints.customers.get(customerUlid).then(res => {
@@ -144,6 +145,7 @@ export function LegacyOrderModal({
   const [success, setSuccess] = useState(false);
   const [customer, setCustomer] = useState<any>(null);
   const bowlRef = useRef<any>(null);
+  const lastFetchedCalsRef = useRef<string | null>(null);
   
   useEffect(() => {
     endpoints.customers.get(customerUlid).then(res => {
@@ -168,71 +170,72 @@ export function LegacyOrderModal({
   const [isPatching, setIsPatching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const recalculateMacros = async (bowlUlid: string, targetCals?: number) => {
+    if (!bowlUlid || !customerUlid) return;
+    setIsPatching(true);
+    try {
+      const data = await endpoints.orders.preview({
+        customer_ulid: customerUlid,
+        bowl_ulid: bowlUlid,
+        meal_slot: formData.meal_slot,
+        scaling_strategy: "PROFILE_SCALED",
+        target_calories: targetCals,
+      }) as any;
+
+      if (data?.success && data?.preview) {
+        const newCalsStr = data.preview.total_calories ? String(Math.round(data.preview.total_calories)) : formData.custom_calories;
+        lastFetchedCalsRef.current = newCalsStr;
+        setFormData(prev => ({
+          ...prev,
+          bowl_ulid: bowlUlid,
+          custom_calories: newCalsStr,
+          custom_protein: data.preview.total_protein ? data.preview.total_protein.toFixed(1) : prev.custom_protein,
+          custom_carbs: data.preview.total_carbs ? data.preview.total_carbs.toFixed(1) : prev.custom_carbs,
+          custom_fat: data.preview.total_fat ? data.preview.total_fat.toFixed(1) : prev.custom_fat,
+          custom_fiber: data.preview.total_fiber ? data.preview.total_fiber.toFixed(1) : prev.custom_fiber,
+          custom_price: data.preview.final_price ? data.preview.final_price.toFixed(2) : prev.custom_price,
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to recalculate", e);
+    } finally {
+      setIsPatching(false);
+    }
+  };
+
   const handleBowlSelect = (bowl: any) => {
     bowlRef.current = bowl;
-    setIsPatching(true);
-    setTimeout(() => {
-      let cals = bowl?.total_calories ? String(bowl.total_calories) : "";
-      if (formData.is_custom && customer?.calorie_profile?.mealCalories) {
-        const slotKey = Object.keys(customer.calorie_profile.mealCalories).find(k => k.toLowerCase() === formData.meal_slot.toLowerCase());
-        const target = slotKey ? customer.calorie_profile.mealCalories[slotKey] : null;
-        if (target) cals = String(target);
+    if (!bowl?.ulid) return;
+    
+    // Determine initial target cals
+    let initialCals: number | undefined = undefined;
+    if (formData.is_custom && customer?.calorie_profile?.mealCalories) {
+      const slotKey = Object.keys(customer.calorie_profile.mealCalories).find(k => k.toLowerCase() === formData.meal_slot.toLowerCase());
+      if (slotKey && customer.calorie_profile.mealCalories[slotKey]) {
+        initialCals = parseFloat(customer.calorie_profile.mealCalories[slotKey]);
       }
-      
-      const ratio = (bowl?.total_calories && parseFloat(cals)) ? (parseFloat(cals) / bowl.total_calories) : 1;
-      
-      setFormData(prev => ({
-        ...prev,
-        bowl_ulid: bowl?.ulid || "",
-        custom_calories: cals,
-        custom_protein: bowl?.total_protein ? (bowl.total_protein * ratio).toFixed(1) : "",
-        custom_carbs: bowl?.total_carbs ? (bowl.total_carbs * ratio).toFixed(1) : "",
-        custom_fat: bowl?.total_fat ? (bowl.total_fat * ratio).toFixed(1) : "",
-        custom_fiber: bowl?.total_fiber ? (bowl.total_fiber * ratio).toFixed(1) : "",
-        custom_price: bowl?.total_cost ? (bowl.total_cost * ratio).toFixed(2) : ""
-      }));
-      setIsPatching(false);
-    }, 600);
+    }
+    recalculateMacros(bowl.ulid, initialCals);
   };
 
   const handleCalorieChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    const newCals = parseFloat(val);
-    
-    let base_cals = bowlRef.current?.total_calories;
-    let base_pro = bowlRef.current?.total_protein;
-    let base_carb = bowlRef.current?.total_carbs;
-    let base_fat = bowlRef.current?.total_fat;
-    let base_fib = bowlRef.current?.total_fiber;
-    let base_price = bowlRef.current?.total_cost;
-
-    // Fallback to editData if bowl hasn't been fetched/selected manually
-    if (!base_cals && editData?.calories) {
-        base_cals = parseFloat(editData.calories);
-        base_pro = editData.macros?.protein ? parseFloat(editData.macros.protein) : 0;
-        base_carb = editData.macros?.carbs ? parseFloat(editData.macros.carbs) : 0;
-        base_fat = editData.macros?.fat ? parseFloat(editData.macros.fat) : 0;
-        base_fib = editData.macros?.fiber ? parseFloat(editData.macros.fiber) : 0;
-        // Legacy logs might not have price easily accessible, fallback to current custom_price
-        base_price = formData.custom_price ? parseFloat(formData.custom_price) : 0;
-    }
-
-    if (!base_cals || isNaN(newCals)) {
-      setFormData(prev => ({...prev, custom_calories: val}));
-      return;
-    }
-    
-    const ratio = newCals / base_cals;
-    setFormData(prev => ({
-      ...prev,
-      custom_calories: val,
-      custom_protein: base_pro ? (base_pro * ratio).toFixed(1) : "",
-      custom_carbs: base_carb ? (base_carb * ratio).toFixed(1) : "",
-      custom_fat: base_fat ? (base_fat * ratio).toFixed(1) : "",
-      custom_fiber: base_fib ? (base_fib * ratio).toFixed(1) : "",
-      custom_price: base_price ? (base_price * ratio).toFixed(2) : ""
-    }));
+    setFormData(prev => ({...prev, custom_calories: val}));
   };
+
+  // Debounce effect for calorie typing
+  useEffect(() => {
+    if (!formData.bowl_ulid || !formData.custom_calories) return;
+    if (formData.custom_calories === lastFetchedCalsRef.current) return;
+    
+    const cals = parseFloat(formData.custom_calories);
+    if (isNaN(cals) || cals <= 0) return;
+    
+    const timer = setTimeout(() => {
+      recalculateMacros(formData.bowl_ulid, cals);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [formData.custom_calories, formData.bowl_ulid]);
 
   useEffect(() => {
     if (bowlRef.current && formData.is_custom) {

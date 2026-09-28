@@ -62,7 +62,7 @@ export default function DispatchOrdersPage() {
 
       if (!data?.compiled_message) throw new Error("The WhatsApp message template produced an empty message.");
       popup.opener = null;
-      popup.location.href = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(data.compiled_message)}`;
+      popup.location.href = `https://api.whatsapp.com/send?phone=${phone.replace(/[^0-9]/g, '')}&text=${encodeURIComponent(data.compiled_message)}`;
       // Opening a WhatsApp chat does not prove that the message was sent. Save
       // the per-order sent flag only after the admin confirms sending it.
       setPendingConfirmation(order.ulid);
