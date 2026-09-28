@@ -852,4 +852,10 @@ export const endpoints = {
       return await api.del<void>(`/bowls/${ulid}`);
     },
   },
+  public: {
+    getMenu: async (): Promise<any> => {
+      return await api.get<any>("/public/menu");
+    },
+  },
 };
+
