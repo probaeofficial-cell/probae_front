@@ -21,7 +21,11 @@ export function LegacySubscriptionModal({
   const bowlRef = useRef<any>(null);
   
   useEffect(() => {
-    endpoints.customers.get(customerUlid).then(res => setCustomer((res as any).data || res));
+    endpoints.customers.get(customerUlid).then(res => {
+      const data = (res as any).data || res;
+      setCustomer(data);
+      // Removed auto-check of deduct_from_subscription
+    });
   }, [customerUlid]);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -140,7 +144,11 @@ export function LegacyOrderModal({
   const bowlRef = useRef<any>(null);
   
   useEffect(() => {
-    endpoints.customers.get(customerUlid).then(res => setCustomer((res as any).data || res));
+    endpoints.customers.get(customerUlid).then(res => {
+      const data = (res as any).data || res;
+      setCustomer(data);
+      // Removed auto-check of deduct_from_subscription
+    });
   }, [customerUlid]);
   const [formData, setFormData] = useState({
     target_date: "",
@@ -152,7 +160,8 @@ export function LegacyOrderModal({
     custom_protein: "",
     custom_carbs: "",
     custom_fat: "",
-    custom_fiber: ""
+    custom_fiber: "",
+    deduct_from_subscription: false
   });
   const [isPatching, setIsPatching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -278,6 +287,7 @@ export function LegacyOrderModal({
                 <span className="flex-1">{error}</span>
               </div>
             )}
+            
             <div>
               <label className="block text-sm font-bold text-neutral-700 mb-1">Target Date</label>
               <input 
@@ -315,6 +325,26 @@ export function LegacyOrderModal({
               </div>
             </div>
 
+
+            {customer && customer.active_subscription_id && customer.remaining_bowl_count > 0 && (
+              <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl mb-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="w-5 h-5 accent-emerald-600" 
+                    checked={formData.deduct_from_subscription}
+                    onChange={(e) => setFormData({...formData, deduct_from_subscription: e.target.checked})}
+                  />
+                  <div>
+                    <span className="block font-bold text-neutral-900 text-sm">Deduct from Active Subscription</span>
+                    <span className="block text-xs text-neutral-600 mt-1">
+                      Uses 1 remaining bowl instead of charging the wallet. (Current: {customer.remaining_bowl_count})
+                    </span>
+                  </div>
+                </label>
+              </div>
+            )}
+            
             <div>
               <label className="block text-sm font-bold text-neutral-700 mb-1">Bowl</label>
               <AsyncBowlSelect
