@@ -141,11 +141,11 @@ export default function CustomerDetailPage() {
           locationDescription: data.location_description || "",
       zone_id: data.zone_id ? String(data.zone_id) : "",
           address: data.address || "",
-          sex: data.sex || "Male",
-          age: data.age?.toString() || "25",
-          height: data.height?.toString() || "180",
-          weight: data.weight?.toString() || "75",
-          activityLevel: data.activity_level || "Lightly Active",
+          sex: data.sex || "",
+          age: data.age?.toString() || "",
+          height: data.height?.toString() || "",
+          weight: data.weight?.toString() || "",
+          activityLevel: data.activity_level || "",
           goal: data.goal || "Weight Loss",
           dietaryPreferences: data.dietary_preferences || [],
           allergies: data.allergies || [],
@@ -712,7 +712,7 @@ export default function CustomerDetailPage() {
                           ))}
                         </div>
                       ) : (
-                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.sex}</div>
+                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.sex || "N/A"}</div>
                       )}
                     </div>
                     <div className="col-span-2 sm:col-span-1">
@@ -720,7 +720,7 @@ export default function CustomerDetailPage() {
                       {isEditMode ? (
                         <input type="number" value={formData.age} onChange={e => updateField("age", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
                       ) : (
-                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.age} years</div>
+                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.age ? `${customer.age} years` : "N/A"}</div>
                       )}
                     </div>
                     <div className="col-span-1">
@@ -728,7 +728,7 @@ export default function CustomerDetailPage() {
                       {isEditMode ? (
                         <input type="number" value={formData.height} onChange={e => updateField("height", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
                       ) : (
-                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.height}</div>
+                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.height ? `${customer.height} cm` : "N/A"}</div>
                       )}
                     </div>
                     <div className="col-span-1">
@@ -736,7 +736,7 @@ export default function CustomerDetailPage() {
                       {isEditMode ? (
                         <input type="number" value={formData.weight} onChange={e => updateField("weight", e.target.value)} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
                       ) : (
-                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.weight}</div>
+                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.weight ? `${customer.weight} kg` : "N/A"}</div>
                       )}
                     </div>
                     <div className="col-span-2 sm:col-span-4">
@@ -748,7 +748,7 @@ export default function CustomerDetailPage() {
                           ))}
                         </div>
                       ) : (
-                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.activity_level}</div>
+                        <div className="px-4 py-3 bg-neutral-50 rounded-xl text-neutral-900 font-medium border border-transparent">{customer.activity_level || "N/A"}</div>
                       )}
                     </div>
                   </div>
