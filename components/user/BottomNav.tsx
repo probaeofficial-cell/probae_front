@@ -10,7 +10,7 @@ export default function BottomNav() {
 
   const navItems = [
     { name: "Home", href: "/", icon: Home },
-    { name: "Plans", href: "/onboarding", icon: Utensils },
+    { name: "Plans", href: "/plans", icon: Utensils },
   ];
 
   return (

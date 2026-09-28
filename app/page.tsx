@@ -4,6 +4,7 @@ import React from "react";
 import Header from "@/components/user/Header";
 import BottomNav from "@/components/user/BottomNav";
 import BowlCard from "@/components/user/BowlCard";
+import PlanCard from "@/components/user/PlanCard";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Utensils, Salad } from "lucide-react";
@@ -18,6 +19,7 @@ export default async function LandingPage() {
   preload("/frames/frame_001.webp", { as: "image", fetchPriority: "high" });
   // Fetch bowls from public API
   let serializedBowls: any[] = [];
+  let planPreview: any[] = [];
   try {
     const res: any = await endpoints.public.getMenu();
     if (res && res.success) {
@@ -43,6 +45,12 @@ export default async function LandingPage() {
     }
   } catch (error) {
     console.error("Failed to fetch bowls:", error);
+  }
+  try {
+    const planData: any = await endpoints.public.getPlans(1, 3);
+    planPreview = Array.isArray(planData?.plans) ? planData.plans : [];
+  } catch (error) {
+    console.error("Failed to fetch plans preview:", error);
   }
 
   return (
@@ -169,6 +177,27 @@ export default async function LandingPage() {
                   </div>
                 )}
               </div>
+            </div>
+          </section>
+
+          {/* 4. PLANS PREVIEW SECTION */}
+          <section className="bg-gray-50 py-16 md:py-24 px-6 md:px-12">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-4">Choose Your <span className="text-[#16A34A]">Plan</span></h2>
+                <p className="text-gray-500 text-base md:text-lg max-w-xl mx-auto">Structured nutrition programs designed around your lifestyle and goals.</p>
+              </div>
+              {planPreview.length > 0 ? <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">{planPreview.map((plan: any) => <PlanCard key={plan.ulid} plan={plan} />)}</div> : <div className="text-center py-12 text-gray-400">Plans coming soon...</div>}
+              <div className="flex justify-center"><Link href="/plans" className="bg-[#6A0FAD] text-white px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-2 hover:-translate-y-0.5 transition-transform shadow-lg">View All Plans <ArrowRight className="w-5 h-5" strokeWidth={2.5} /></Link></div>
+            </div>
+          </section>
+
+          {/* 5. CUSTOM BOWL CTA */}
+          <section className="py-8 px-6">
+            <div className="bg-[#F97316] rounded-[28px] p-12 md:p-20 flex flex-col items-center justify-center text-center max-w-2xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-3">Want Something Else?</h2>
+              <p className="text-white/90 text-base md:text-lg mb-8 max-w-md">Get a fully customized bowl tailored exactly to your unique needs.</p>
+              <Link href="/onboarding" className="w-full max-w-sm border-2 border-white/50 text-white font-bold py-4 rounded-2xl text-lg hover:bg-white/10 transition-colors">Order your custom bowl</Link>
             </div>
           </section>
 

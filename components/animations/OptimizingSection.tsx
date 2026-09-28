@@ -38,7 +38,7 @@ export default function OptimizingSection() {
           START OPTIMIZING.
         </h1>
         
-        <Link href="/onboarding" className="bg-[#4CAF50] text-[#222222] px-8 py-4 md:px-10 md:py-5 rounded-full font-black text-lg md:text-xl flex items-center gap-2 hover:scale-105 transition-transform duration-300 shadow-xl">
+        <Link href="/menu" className="bg-[#4CAF50] text-[#222222] px-8 py-4 md:px-10 md:py-5 rounded-full font-black text-lg md:text-xl flex items-center gap-2 hover:scale-105 transition-transform duration-300 shadow-xl">
           Explore The Menu
         </Link>
       </motion.div>

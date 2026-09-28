@@ -136,6 +136,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       transactions: { label: "Wallet & Transactions", dotColor: "bg-green-500", path: "/admin/customers/transactions" },
     },
   },
+  enquiries: { label: "Enquiries", icon: MessageSquare, path: "/admin/enquiries", roles: ["ADMIN"] },
 };
 
 export const BOTTOM_MENU: Record<string, MenuItem> = {

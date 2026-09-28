@@ -1,50 +1,53 @@
-import { endpoints } from "@/lib/apiService";
-import ThemeWrapper from "@/components/user/ThemeWrapper";
 import React from "react";
 import Header from "@/components/user/Header";
 import BottomNav from "@/components/user/BottomNav";
+import ThemeWrapper from "@/components/user/ThemeWrapper";
 import MenuSection from "@/components/user/MenuSection";
+import { endpoints } from "@/lib/apiService";
 
 export default async function MenuPage() {
-  // Fetch active bowls from public API
-  let serializedBowls = [];
+  let initialBowls: any[] = [];
+  let initialTotal = 0;
+  let initialTotalPages = 1;
+  let initialCategories: any[] = [];
+
   try {
-    const res: any = await endpoints.public.getMenu();
-    if (res && res.success) {
-      const bowls = res.bowls || [];
-      
-      serializedBowls = bowls.map((bowl: any) => ({
-        _id: bowl.ulid, // Map ulid to _id for compatibility
-        name: bowl.name,
-        baseCalories: bowl.macros.calories, // Mapped from backend macros
-        basePrice: 0, // Public API hides pricing
-        macros: bowl.macros,
-        category: bowl.category_name,
-        mealTypes: bowl.mealTypes,
-        micros: [], // Omitted from public API for now
-        ingredients: [], // Omitted from public API for now
-        imageId: bowl.image_url ? { url: bowl.image_url } : undefined,
-      }));
-    }
-  } catch (error) {
-    console.error("Failed to fetch bowls:", error);
+    const [menuData, catData] = await Promise.all([
+      endpoints.public.getMenu(1, 10, ""),
+      endpoints.public.getMealCategories(),
+    ]);
+
+    // Normalise field names to match what TopPickCard / BowlListItem expect
+    initialBowls = (menuData.bowls || []).map((b: any) => ({
+      ...b,
+      _id: b.ulid,
+      baseCalories: b.macros?.calories ?? 0,
+      basePrice: b.price || 0,
+      imageId: b.image_url ? { url: b.image_url } : undefined,
+    }));
+    initialTotal = menuData.total ?? 0;
+    initialTotalPages = menuData.total_pages ?? 1;
+    initialCategories = catData.categories || [];
+  } catch (err) {
+    console.error("Menu SSR fetch failed:", err);
   }
 
   return (
     <ThemeWrapper>
-    <div className="min-h-screen bg-transparent flex flex-col font-sans relative pb-24 md:pb-0">
-      {/* Edge-to-edge container */}
-      <div className="w-full mx-auto min-h-screen relative overflow-x-hidden flex flex-col">
-        <Header />
-
-        <main className="flex-1 flex flex-col overflow-y-auto hide-scrollbar">
-          {/* We only render the MenuSection on this page */}
-          <MenuSection bowls={serializedBowls} />
-        </main>
-
-        <BottomNav />
+      <div className="min-h-screen bg-transparent flex flex-col font-sans relative pb-24 md:pb-0">
+        <div className="w-full mx-auto min-h-screen relative overflow-x-hidden flex flex-col">
+          <Header />
+          <main className="flex-1 flex flex-col overflow-y-auto hide-scrollbar">
+            <MenuSection
+              initialBowls={initialBowls}
+              initialTotal={initialTotal}
+              initialTotalPages={initialTotalPages}
+              initialCategories={initialCategories}
+            />
+          </main>
+          <BottomNav />
+        </div>
       </div>
-    </div>
     </ThemeWrapper>
   );
 }
