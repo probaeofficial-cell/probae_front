@@ -1,15 +1,20 @@
 import { useState, useEffect } from "react";
 import { endpoints } from "@/lib/apiService";
 import { BowlLoader } from "./BowlLoader";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { LegacyOrderModal } from "./LegacyModals";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
-export function CustomerCalories({ customerUlid }: { customerUlid: string }) {
+export function CustomerCalories({ customerUlid, onRefresh }: { customerUlid: string, onRefresh?: () => void }) {
   const [stats, setStats] = useState({ total: 0, today: 0, this_week: 0, this_month: 0 });
   const [log, setLog] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterDate, setFilterDate] = useState("");
   const [showLegacyOrderModal, setShowLegacyOrderModal] = useState(false);
+  const [editLogEntry, setEditLogEntry] = useState<any>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
@@ -18,6 +23,27 @@ export function CustomerCalories({ customerUlid }: { customerUlid: string }) {
     setCurrentPage(1);
   }, [filterDate]);
 
+
+  const handleDeleteLegacy = (orderUlid: string) => {
+    setOrderToDelete(orderUlid);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteLegacy = async () => {
+    if (!orderToDelete) return;
+    setIsDeleting(true);
+    try {
+      await endpoints.customers.deleteLegacyOrder(customerUlid, orderToDelete);
+      await fetchCalories();
+      if (onRefresh) onRefresh();
+      setIsDeleteModalOpen(false);
+      setOrderToDelete(null);
+    } catch (e: any) {
+      alert("Failed to delete legacy order: " + (e?.detail || e?.message || "Unknown error"));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const fetchCalories = async () => {
     setIsLoading(true);
@@ -57,11 +83,33 @@ export function CustomerCalories({ customerUlid }: { customerUlid: string }) {
     <>
       {showLegacyOrderModal && (
         <LegacyOrderModal 
-          customerUlid={customerUlid} 
-          onClose={() => setShowLegacyOrderModal(false)}
-          onSuccess={() => { setShowLegacyOrderModal(false); fetchCalories(); }}
+          customerUlid={customerUlid}
+          editData={editLogEntry}
+          onClose={() => {
+            setShowLegacyOrderModal(false);
+            setEditLogEntry(null);
+          }}
+          onSuccess={() => {
+            setShowLegacyOrderModal(false);
+            setEditLogEntry(null);
+            fetchCalories();
+            if (onRefresh) onRefresh();
+          }}
         />
       )}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setOrderToDelete(null);
+        }}
+        onConfirm={confirmDeleteLegacy}
+        title="Delete Legacy Order"
+        message="Are you sure you want to delete this legacy order? This will refund any wallet deductions or restore subscription bowls."
+        type="delete"
+        confirmText="Delete"
+        isLoading={isDeleting}
+      />
       
       <div className="animate-in fade-in zoom-in-95 duration-300">
         {/* Stats Cards */}
@@ -90,7 +138,7 @@ export function CustomerCalories({ customerUlid }: { customerUlid: string }) {
             <h3 className="font-bold text-neutral-900 text-lg">Calorie Log</h3>
             <div className="flex gap-4">
               <button 
-                onClick={() => setShowLegacyOrderModal(true)}
+                onClick={() => { setEditLogEntry(null); setShowLegacyOrderModal(true); }}
                 className="px-4 py-2 bg-[#6A0FAD] text-white text-sm font-bold rounded-xl hover:bg-[#5b0c96] transition-colors"
               >
                 Log Past Meal
@@ -113,12 +161,13 @@ export function CustomerCalories({ customerUlid }: { customerUlid: string }) {
                   <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Slot</th>
                   <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Calories</th>
                   <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Macros (P/C/F)</th>
+                  <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {log.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-neutral-400 font-medium text-sm">
+                    <td colSpan={6} className="px-6 py-8 text-center text-neutral-400 font-medium text-sm">
                       {isLoading ? "Fetching logs..." : "No calorie logs found."}
                     </td>
                   </tr>
@@ -135,6 +184,29 @@ export function CustomerCalories({ customerUlid }: { customerUlid: string }) {
                       <td className="px-6 py-4 text-sm font-black text-[#6A0FAD]">{Math.round(entry.calories || 0)} kcal</td>
                       <td className="px-6 py-4 text-xs font-bold text-neutral-500">
                         <span className="text-red-500">{Math.round(entry.macros.protein || 0)}g</span> / <span className="text-blue-500">{Math.round(entry.macros.carbs || 0)}g</span> / <span className="text-yellow-500">{Math.round(entry.macros.fat || 0)}g</span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {entry.is_legacy && entry.order_ulid && (
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                setEditLogEntry(entry);
+                                setShowLegacyOrderModal(true);
+                              }}
+                              className="text-[#6A0FAD] hover:bg-[#6A0FAD]/10 p-2 rounded-xl transition-colors"
+                              title="Edit Legacy Order"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteLegacy(entry.order_ulid)}
+                              className="text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition-colors"
+                              title="Delete Legacy Order"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))

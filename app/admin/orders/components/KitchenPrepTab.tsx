@@ -12,6 +12,7 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
   const [mealSlots, setMealSlots] = useState<any[]>([]);
   const [activeSlot, setActiveSlot] = useState<string>("ALL");
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<"PENDING" | "PREPARED">("PENDING");
 
   useEffect(() => {
     fetchInitialData();
@@ -98,22 +99,21 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
   if (!data) return <div className="p-8 text-center text-neutral-500">Failed to load prep list.</div>;
 
   return (
-    <div className="space-y-6">
-      {/* Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
+    <div className="flex flex-col gap-6">
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
         <button
           onClick={() => setActiveSlot("ALL")}
-          className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
-            activeSlot === "ALL" ? "bg-[#6A0FAD] text-white" : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50"
+          className={`shrink-0 px-6 py-2.5 rounded-full text-sm font-black transition-all ${
+            activeSlot === "ALL" ? "bg-[#6A0FAD] text-white shadow-md shadow-purple-900/20" : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50"
           }`}
         >
           All Slots
         </button>
-        {mealSlots.map(slot => (
+        {mealSlots.map((slot: any) => (
           <button
-            key={slot.id}
+            key={slot.slug}
             onClick={() => setActiveSlot(slot.slug)}
-            className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
+            className={`shrink-0 flex items-center px-6 py-2.5 rounded-full text-sm font-black transition-all ${
               activeSlot === slot.slug ? "bg-[#6A0FAD] text-white" : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50"
             }`}
           >
@@ -135,87 +135,107 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
         <div className="text-3xl font-black text-[#ff751f]">{data.total_bowls}</div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden">
-        <div className="p-4 border-b bg-neutral-50 font-bold text-neutral-700">Components to Prep</div>
+      <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden mt-6">
+        <div className="p-4 border-b bg-neutral-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="font-bold text-neutral-700">Components to Prep</div>
+          <div className="flex bg-neutral-200/50 p-1 rounded-xl w-fit">
+            <button
+              onClick={() => setFilterStatus("PENDING")}
+              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${filterStatus === "PENDING" ? "bg-white text-[#6A0FAD] shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}
+            >
+              Pending (Uncooked / Preparing)
+            </button>
+            <button
+              onClick={() => setFilterStatus("PREPARED")}
+              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${filterStatus === "PREPARED" ? "bg-white text-green-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}
+            >
+              Prepared
+            </button>
+          </div>
+        </div>
         <div className="divide-y divide-neutral-100">
           {data.components?.length === 0 ? (
             <div className="p-8 text-center text-neutral-500">No components needed for today's orders.</div>
           ) : (
-            data.components.map((comp: any) => (
-              <div key={comp.ingredient_id} className="p-6 transition-colors hover:bg-neutral-50/50">
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-extrabold text-xl text-neutral-900">{comp.name}</h3>
-                      <div className="px-3 py-1 bg-orange-50 border border-orange-100 rounded-lg flex items-center gap-1.5">
-                        <Scale className="w-4 h-4 text-orange-500" />
-                        <span className="text-sm font-bold text-orange-600">{Number(comp.total_weight_needed).toFixed(1)}g</span>
+            data.components.filter((comp: any) => filterStatus === "PENDING" ? (comp.status === "UNCOOKED" || comp.status === "PREPARING") : comp.status === "PREPARED").length === 0 ? (
+                <div className="p-8 text-center text-neutral-500">No {filterStatus.toLowerCase()} components found.</div>
+            ) : (
+                data.components.filter((comp: any) => filterStatus === "PENDING" ? (comp.status === "UNCOOKED" || comp.status === "PREPARING") : comp.status === "PREPARED").map((comp: any) => (
+                  <div key={comp.ingredient_id} className="p-6 transition-colors hover:bg-neutral-50/50">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-extrabold text-xl text-neutral-900">{comp.name}</h3>
+                          <div className="px-3 py-1 bg-orange-50 border border-orange-100 rounded-lg flex items-center gap-1.5">
+                            <Scale className="w-4 h-4 text-orange-500" />
+                            <span className="text-sm font-bold text-orange-600">{Number(comp.total_weight_needed).toFixed(1)}g</span>
+                          </div>
+                        </div>
+                        
+                        {comp.raw_materials?.length > 0 && (
+                          <div className="mt-5 max-w-lg">
+                            <div className="flex items-center gap-2 mb-3">
+                              <ChefHat className="w-4 h-4 text-neutral-400" />
+                              <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Raw Materials Breakdown</h4>
+                            </div>
+                            <div className="bg-[#FCFAFF] border border-neutral-200 rounded-xl overflow-hidden">
+                              <ul className="divide-y divide-neutral-200/60">
+                                {comp.raw_materials.map((rm: any) => (
+                                  <li key={rm.raw_material_id} className="flex justify-between items-center p-3 text-sm hover:bg-white transition-colors">
+                                    <span className="font-semibold text-neutral-700">{rm.name}</span>
+                                    <span className="font-mono font-bold text-[#6A0FAD] bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                                      {Number(rm.total_weight_needed).toFixed(1)}g
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center bg-neutral-100 p-1.5 rounded-2xl border border-neutral-200 shadow-sm shrink-0">
+                        <button
+                          disabled={true}
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                            comp.status === "UNCOOKED" 
+                              ? "bg-white text-red-600 shadow-sm border border-neutral-200/60 cursor-default" 
+                              : "text-neutral-400 opacity-60 hidden"
+                          }`}
+                        >
+                          <Circle className="w-4 h-4" /> Uncooked
+                        </button>
+                        
+                        {(comp.status === "UNCOOKED" || comp.status === "PREPARING") && (
+                          <button
+                            disabled={comp.status === "PREPARING"}
+                            onClick={() => requestUpdateStatus(comp.ingredient_id, "PREPARING", comp.total_weight_needed)}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                              comp.status === "PREPARING" 
+                                ? "bg-white text-yellow-600 shadow-sm border border-neutral-200/60 cursor-default" 
+                                : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/50"
+                            }`}
+                          >
+                            <Clock className="w-4 h-4" /> Preparing
+                          </button>
+                        )}
+                        
+                        <button
+                          disabled={comp.status === "PREPARED"}
+                          onClick={() => requestUpdateStatus(comp.ingredient_id, "PREPARED", comp.total_weight_needed)}
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                            comp.status === "PREPARED" 
+                              ? "bg-white text-green-600 shadow-sm border border-neutral-200/60 cursor-default" 
+                              : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/50"
+                          }`}
+                        >
+                          <CheckCircle2 className="w-4 h-4" /> Prepared
+                        </button>
                       </div>
                     </div>
-                    
-                    {comp.raw_materials?.length > 0 && (
-                      <div className="mt-5 max-w-lg">
-                        <div className="flex items-center gap-2 mb-3">
-                          <ChefHat className="w-4 h-4 text-neutral-400" />
-                          <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Raw Materials Breakdown</h4>
-                        </div>
-                        <div className="bg-[#FCFAFF] border border-neutral-200 rounded-xl overflow-hidden">
-                          <ul className="divide-y divide-neutral-200/60">
-                            {comp.raw_materials.map((rm: any) => (
-                              <li key={rm.raw_material_id} className="flex justify-between items-center p-3 text-sm hover:bg-white transition-colors">
-                                <span className="font-semibold text-neutral-700">{rm.name}</span>
-                                <span className="font-mono font-bold text-[#6A0FAD] bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
-                                  {Number(rm.total_weight_needed).toFixed(1)}g
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
                   </div>
-                  
-                  <div className="flex items-center bg-neutral-100 p-1.5 rounded-2xl border border-neutral-200 shadow-sm shrink-0">
-                    <button
-                      disabled={true}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                        comp.status === "UNCOOKED" 
-                          ? "bg-white text-red-600 shadow-sm border border-neutral-200/60 cursor-default" 
-                          : "text-neutral-400 opacity-60 hidden"
-                      }`}
-                    >
-                      <Circle className="w-4 h-4" /> Uncooked
-                    </button>
-                    
-                    {(comp.status === "UNCOOKED" || comp.status === "PREPARING") && (
-                      <button
-                        disabled={comp.status === "PREPARING"}
-                        onClick={() => requestUpdateStatus(comp.ingredient_id, "PREPARING", comp.total_weight_needed)}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                          comp.status === "PREPARING" 
-                            ? "bg-white text-yellow-600 shadow-sm border border-neutral-200/60 cursor-default" 
-                            : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/50"
-                        }`}
-                      >
-                        <Clock className="w-4 h-4" /> Preparing
-                      </button>
-                    )}
-                    
-                    <button
-                      disabled={comp.status === "PREPARED"}
-                      onClick={() => requestUpdateStatus(comp.ingredient_id, "PREPARED", comp.total_weight_needed)}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                        comp.status === "PREPARED" 
-                          ? "bg-white text-green-600 shadow-sm border border-neutral-200/60 cursor-default" 
-                          : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/50"
-                      }`}
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> Prepared
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
+                ))
+            )
           )}
         </div>
       </div>

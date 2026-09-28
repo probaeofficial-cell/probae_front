@@ -500,7 +500,7 @@ export default function CustomerDetailPage() {
                 onBalanceChange={(newBal) => setCustomer((prev: any) => ({ ...prev, wallet_balance: newBal }))}
               />
             ) : activeTab === "CALORIES" ? (
-              <CustomerCalories customerUlid={customer.ulid} />
+              <CustomerCalories customerUlid={customer.ulid} onRefresh={fetchCustomer} />
             ) : activeTab === "HISTORY" ? (
               <CustomerHistory customerUlid={customer.ulid} subscriptions={customer.subscriptions || []} onRefresh={fetchCustomer} />
             ) : (

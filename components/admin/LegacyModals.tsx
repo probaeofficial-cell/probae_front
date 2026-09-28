@@ -130,10 +130,12 @@ export function LegacySubscriptionModal({
 
 export function LegacyOrderModal({
   customerUlid,
+  editData,
   onClose,
   onSuccess
 }: {
   customerUlid: string;
+  editData?: any;
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -151,16 +153,16 @@ export function LegacyOrderModal({
     });
   }, [customerUlid]);
   const [formData, setFormData] = useState({
-    target_date: "",
-    meal_slot: "breakfast",
-    bowl_ulid: "",
-    is_custom: false,
-    custom_calories: "",
+    target_date: editData?.date || "",
+    meal_slot: editData?.meal_slot?.toLowerCase() || "breakfast",
+    bowl_ulid: editData?.bowl_ulid || "", // Pre-select the exact bowl
+    is_custom: !!editData,
+    custom_calories: editData?.calories ? String(editData.calories) : "",
     custom_price: "",
-    custom_protein: "",
-    custom_carbs: "",
-    custom_fat: "",
-    custom_fiber: "",
+    custom_protein: editData?.macros?.protein ? String(editData.macros.protein) : "",
+    custom_carbs: editData?.macros?.carbs ? String(editData.macros.carbs) : "",
+    custom_fat: editData?.macros?.fat ? String(editData.macros.fat) : "",
+    custom_fiber: editData?.macros?.fiber ? String(editData.macros.fiber) : "",
     deduct_from_subscription: false
   });
   const [isPatching, setIsPatching] = useState(false);
@@ -196,19 +198,39 @@ export function LegacyOrderModal({
   const handleCalorieChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     const newCals = parseFloat(val);
-    if (!bowlRef.current || !bowlRef.current.total_calories || isNaN(newCals)) {
+    
+    let base_cals = bowlRef.current?.total_calories;
+    let base_pro = bowlRef.current?.total_protein;
+    let base_carb = bowlRef.current?.total_carbs;
+    let base_fat = bowlRef.current?.total_fat;
+    let base_fib = bowlRef.current?.total_fiber;
+    let base_price = bowlRef.current?.total_cost;
+
+    // Fallback to editData if bowl hasn't been fetched/selected manually
+    if (!base_cals && editData?.calories) {
+        base_cals = parseFloat(editData.calories);
+        base_pro = editData.macros?.protein ? parseFloat(editData.macros.protein) : 0;
+        base_carb = editData.macros?.carbs ? parseFloat(editData.macros.carbs) : 0;
+        base_fat = editData.macros?.fat ? parseFloat(editData.macros.fat) : 0;
+        base_fib = editData.macros?.fiber ? parseFloat(editData.macros.fiber) : 0;
+        // Legacy logs might not have price easily accessible, fallback to current custom_price
+        base_price = formData.custom_price ? parseFloat(formData.custom_price) : 0;
+    }
+
+    if (!base_cals || isNaN(newCals)) {
       setFormData(prev => ({...prev, custom_calories: val}));
       return;
     }
-    const ratio = newCals / bowlRef.current.total_calories;
+    
+    const ratio = newCals / base_cals;
     setFormData(prev => ({
       ...prev,
       custom_calories: val,
-      custom_protein: (bowlRef.current.total_protein * ratio).toFixed(1),
-      custom_carbs: (bowlRef.current.total_carbs * ratio).toFixed(1),
-      custom_fat: (bowlRef.current.total_fat * ratio).toFixed(1),
-      custom_fiber: (bowlRef.current.total_fiber * ratio).toFixed(1),
-      custom_price: (bowlRef.current.total_cost * ratio).toFixed(2)
+      custom_protein: base_pro ? (base_pro * ratio).toFixed(1) : "",
+      custom_carbs: base_carb ? (base_carb * ratio).toFixed(1) : "",
+      custom_fat: base_fat ? (base_fat * ratio).toFixed(1) : "",
+      custom_fiber: base_fib ? (base_fib * ratio).toFixed(1) : "",
+      custom_price: base_price ? (base_price * ratio).toFixed(2) : ""
     }));
   };
 
@@ -249,7 +271,11 @@ export function LegacyOrderModal({
     else delete payload.custom_fiber;
     
     try {
-      await endpoints.customers.legacyOrder(customerUlid, payload);
+      if (editData && editData.order_ulid) {
+        await endpoints.customers.updateLegacyOrder(customerUlid, editData.order_ulid, payload);
+      } else {
+        await endpoints.customers.legacyOrder(customerUlid, payload);
+      }
       setSuccess(true);
       setTimeout(() => {
         onSuccess();
@@ -265,7 +291,7 @@ export function LegacyOrderModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-3xl w-full max-w-xl overflow-hidden flex flex-col">
         <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-neutral-900">Log Past Meal</h2>
+          <h2 className="text-xl font-bold text-neutral-900">{editData ? "Edit Past Meal" : "Log Past Meal"}</h2>
           <button onClick={onClose} className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
             <X className="w-5 h-5 text-neutral-500" />
           </button>
@@ -352,6 +378,7 @@ export function LegacyOrderModal({
                 onChange={(val) => setFormData({...formData, bowl_ulid: val})}
                 onSelectBowl={handleBowlSelect}
                 mealCategoryId={undefined}
+                selectedBowl={editData && editData.bowl_ulid === formData.bowl_ulid ? { ulid: editData.bowl_ulid, name: editData.bowl_name } : undefined}
               />
             </div>
             <div className="relative">
@@ -430,7 +457,7 @@ export function LegacyOrderModal({
                 Cancel
               </button>
               <button type="submit" disabled={loading} className="flex-1 py-3 px-4 bg-[#6A0FAD] text-white font-bold rounded-xl hover:bg-[#5b0c96] flex justify-center items-center">
-                {loading ? <BowlLoader className="w-5 h-5"  /> : "Log Past Meal"}
+                {loading ? <BowlLoader className="w-5 h-5"  /> : (editData ? "Save Changes" : "Log Past Meal")}
               </button>
             </div>
           </form>
