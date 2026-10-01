@@ -90,10 +90,11 @@ export default function CustomerDetailPage() {
     mealCalories: {} as Record<string, number>,
     lockedMeals: {} as Record<string, boolean>,
     image_filename: null as string | null,
-    include_delivery: true
+    include_delivery: true,
+    plan_start_date: ""
   });
 
-    const fetchPreview = async (planUlid: string, goal: string, mealCalories: any, overrideIncludeDelivery?: boolean) => {
+    const fetchPreview = async (planUlid: string, goal: string, mealCalories: any, overrideIncludeDelivery?: boolean, initialPricePaid?: number) => {
     setIsPreviewLoading(true);
     try {
       const isDeliveryIncluded = overrideIncludeDelivery !== undefined ? overrideIncludeDelivery : formData.include_delivery;
@@ -107,6 +108,15 @@ export default function CustomerDetailPage() {
       });
       if (resData && resData.success) {
         setPreviewData(resData);
+        if (initialPricePaid !== undefined && initialPricePaid !== null) {
+          if (Math.abs(initialPricePaid - resData.final_discounted_price) > 0.01) {
+            setFormData(prev => ({
+              ...prev,
+              isOverrideEnabled: true,
+              overrideTotalPrice: initialPricePaid.toString()
+            }));
+          }
+        }
       }
     } catch (e) {
       console.error("Preview fetch error:", e);
@@ -129,7 +139,8 @@ export default function CustomerDetailPage() {
       if (data) {
         setCustomer(data);
         if (data.selected_plan_id) {
-          fetchPreview(data.selected_plan_id, data.goal || "MAINTENANCE", data.calorie_profile?.mealCalories || {});
+          const activeSub = data.subscriptions?.find((s: any) => s.status === "ACTIVE");
+          fetchPreview(data.selected_plan_id, data.goal || "MAINTENANCE", data.calorie_profile?.mealCalories || {}, undefined, activeSub ? activeSub.total_price_paid : undefined);
         }
         const profile = data.calorie_profile || {};
         setFormData({
@@ -161,7 +172,8 @@ export default function CustomerDetailPage() {
           image_filename: data.image_filename || null,
           include_delivery: data.include_delivery ?? true,
           isOverrideEnabled: false,
-          overrideTotalPrice: ""
+          overrideTotalPrice: "",
+          plan_start_date: ""
         });
       }
     } catch (err) {
@@ -406,6 +418,7 @@ export default function CustomerDetailPage() {
         allergies: formData.allergies,
         chef_instructions: formData.comments,
         selected_plan_id: formData.selectedPlanId,
+        plan_start_date: !formData.plan_start_date ? null : new Date(formData.plan_start_date).toISOString(),
         status: finalStatus,
         image_filename: formData.image_filename,
         include_delivery: formData.include_delivery,
@@ -907,6 +920,17 @@ export default function CustomerDetailPage() {
                               </div>
                             ))}
                           </div>
+                          <div className="mb-6 mt-6">
+                            <label className="block text-sm font-bold text-neutral-900 mb-2">Plan Start Date</label>
+                            <input
+                              type="date"
+                              value={formData.plan_start_date || ""}
+                              onChange={(e) => updateField("plan_start_date", e.target.value)}
+                              className="w-full bg-white border border-neutral-300 rounded-xl px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-[#6A0FAD]"
+                            />
+                            <p className="text-xs text-neutral-500 font-medium mt-1">Leave empty to start immediately.</p>
+                          </div>
+
                         </div>
                       )}
                     </div>
@@ -944,75 +968,119 @@ export default function CustomerDetailPage() {
 
                 {!isPreviewLoading && previewData && (
                   <div className="space-y-6">
-                    <div className="bg-white rounded-2xl border border-neutral-200 p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 shadow-sm">
-                      <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start w-full">
-                        <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Cost Breakdown</div>
-                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
-                           <span className="w-36 text-left">Raw Materials:</span> 
-                           <span className="font-bold w-20 text-right">₹{previewData.total_raw_cost ?? 0}</span>
-                        </div>
-                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
-                           <span className="w-36 text-left">Packaging:</span> 
-                           <span className="font-bold w-20 text-right">₹{previewData.total_packaging_cost ?? 0}</span>
-                        </div>
-                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
-                           <span className="w-36 text-left flex items-center gap-1">
-                             Delivery:
-                             {previewData.delivery_distance_km > 0 && (
-                               <span className="text-[10px] bg-neutral-100 px-1 py-0.5 rounded text-neutral-500 leading-none">{previewData.delivery_distance_km} km</span>
-                             )}
-                           </span> 
-                           <span className="font-bold w-20 text-right">₹{previewData.total_delivery_cost ?? 0}</span>
-                        </div>
-                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-700 w-full">
-                           <span className="w-36 text-left">Fixed Cost (Margin):</span> 
-                           <span className="font-bold w-20 text-right">₹{previewData.total_fixed_cost ?? 0}</span>
-                        </div>
-                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-900 mt-2 border-t border-neutral-100 pt-2 w-full">
-                           <span className="w-36 text-left font-bold">Calculated Total:</span> 
-                           <span className="font-black text-lg w-20 text-right">₹{previewData.gross_price}</span>
-                        </div>
-                      </div>
-                      <div className="w-full h-px md:w-px md:h-20 bg-neutral-200"></div>
-                      <div className="flex-1 text-center w-full">
-                        <div className="text-sm font-bold text-red-500 uppercase tracking-wider">Plan Discount ({previewData.discount_percentage}%)</div>
-                        <div className="text-2xl font-bold text-red-600">- ₹{previewData.discount_amount}</div>
-                      </div>
-                      <div className="w-full h-px md:w-px md:h-20 bg-neutral-200"></div>
-                      <div className="flex-1 text-center md:text-right w-full flex flex-col items-center md:items-end">
-                        <div className="text-sm font-bold text-[#6A0FAD] uppercase tracking-wider">Final Billed Amount</div>
-                        <div className={`text-3xl font-black ${formData.isOverrideEnabled ? "text-neutral-400 line-through text-2xl" : "text-[#6A0FAD]"}`}>
-                          ₹{previewData.final_discounted_price}
-                        </div>
-                        {formData.isOverrideEnabled && formData.overrideTotalPrice && (
-                          <div className="text-3xl font-black text-[#6A0FAD] mt-1">₹{formData.overrideTotalPrice}</div>
-                        )}
-                        <div className="text-xs text-neutral-400 font-medium mt-1">Inclusive of all costs</div>
-                        
-                        {isEditMode && (
-                          <div className="mt-4 w-full text-left">
-                            <label className="flex items-center gap-2 cursor-pointer mb-2">
-                              <input 
-                                type="checkbox" 
-                                checked={formData.isOverrideEnabled} 
-                                onChange={(e) => updateField("isOverrideEnabled", e.target.checked)} 
-                                className="w-4 h-4 text-[#6A0FAD] bg-gray-100 border-gray-300 rounded focus:ring-[#6A0FAD]"
-                              />
-                              <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Override Plan Price</span>
-                            </label>
-                            {formData.isOverrideEnabled && (
-                              <input 
-                                type="number" 
-                                placeholder="Custom total..."
-                                value={formData.overrideTotalPrice} 
-                                onChange={(e) => updateField("overrideTotalPrice", e.target.value)}
-                                className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 font-bold focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]"
-                              />
-                            )}
+                                                            {/* Financial Summary */}
+                    {(() => {
+                      const totalBowls = previewData.scaled_matrix?.length || 1;
+                      const grossPrice = previewData.gross_price || 0;
+                      const defaultFinal = previewData.final_discounted_price || 0;
+                      const isOverride = formData.isOverrideEnabled;
+                      const overrideVal = parseFloat(formData.overrideTotalPrice) || 0;
+                      
+                      const actualFinal = (isOverride && formData.overrideTotalPrice !== "") ? overrideVal : defaultFinal;
+                      const totalDiscount = grossPrice - actualFinal;
+                      const discountPct = grossPrice > 0 ? ((totalDiscount / grossPrice) * 100).toFixed(1) : "0";
+                      
+                      const overrideDiff = defaultFinal - actualFinal;
+
+                      return (
+                        <div className="bg-white rounded-3xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
+                          <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-neutral-200">
+                            
+                            {/* LEFT COLUMN: Cost Breakdown */}
+                            <div className="p-6 md:p-8 flex-1 flex flex-col gap-4">
+                              <div className="text-xs font-black text-neutral-400 uppercase tracking-widest mb-1">Total Cost Breakdown</div>
+                              
+                              <div className="flex flex-col gap-3">
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="text-neutral-500 font-medium">Raw Materials</span> 
+                                  <span className="font-bold text-neutral-900">₹{previewData.total_raw_cost ?? 0}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="text-neutral-500 font-medium">Packaging</span> 
+                                  <span className="font-bold text-neutral-900">₹{previewData.total_packaging_cost ?? 0}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="text-neutral-500 font-medium flex items-center gap-2">
+                                    Delivery
+                                    {previewData.delivery_distance_km > 0 && (
+                                      <span className="text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded-md text-neutral-500 font-bold leading-none">{previewData.delivery_distance_km} km</span>
+                                    )}
+                                  </span> 
+                                  <span className="font-bold text-neutral-900">₹{previewData.total_delivery_cost ?? 0}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="text-neutral-500 font-medium">Fixed Cost (Margin)</span> 
+                                  <span className="font-bold text-neutral-900">₹{previewData.total_fixed_cost ?? 0}</span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex justify-between items-center text-sm mt-2 pt-4 border-t border-dashed border-neutral-200">
+                                <span className="font-bold text-neutral-900">Calculated Gross</span> 
+                                <span className="font-black text-lg text-neutral-900">₹{grossPrice}</span>
+                              </div>
+                            </div>
+
+                            {/* RIGHT COLUMN: Final Billing */}
+                            <div className="p-6 md:p-8 flex-1 flex flex-col gap-4 bg-neutral-50/50">
+                              <div className="text-xs font-black text-[#6A0FAD] uppercase tracking-widest mb-1">Final Billed Amount</div>
+                              
+                              <div className="flex flex-col gap-3">
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="text-neutral-500 font-medium">Base Discount ({previewData.discount_percentage}%)</span> 
+                                  <span className="font-bold text-red-500">- ₹{previewData.discount_amount}</span>
+                                </div>
+                                
+                                {(isOverride && formData.overrideTotalPrice !== "") && (
+                                  <div className="flex justify-between items-center text-sm">
+                                    <span className="text-neutral-500 font-medium">Override Adj</span> 
+                                    <span className={`font-bold ${overrideDiff > 0 ? "text-red-500" : "text-amber-500"}`}>
+                                      {overrideDiff > 0 ? `- ₹${overrideDiff.toFixed(2)}` : `+ ₹${Math.abs(overrideDiff).toFixed(2)}`}
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                <div className="flex justify-between items-center text-sm mt-1">
+                                  <span className="font-bold text-red-600">Total Discount</span> 
+                                  <span className="font-black text-red-600">- ₹{totalDiscount.toFixed(2)} ({discountPct}%)</span>
+                                </div>
+                              </div>
+
+                              <div className="text-5xl font-black text-[#6A0FAD] tracking-tight mt-2 mb-2">₹{actualFinal}</div>
+                              
+                              {isEditMode && (
+                                <div className="mt-auto w-full bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
+                                  <label className="flex items-center gap-3 cursor-pointer mb-2">
+                                    <div className="relative flex items-center justify-center">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={formData.isOverrideEnabled} 
+                                        onChange={(e) => updateField("isOverrideEnabled", e.target.checked)} 
+                                        className="w-5 h-5 text-[#6A0FAD] bg-gray-50 border-gray-300 rounded cursor-pointer focus:ring-[#6A0FAD] focus:ring-offset-0"
+                                      />
+                                    </div>
+                                    <span className="text-xs font-black text-neutral-700 uppercase tracking-widest mt-0.5">Override Price</span>
+                                  </label>
+                                  {formData.isOverrideEnabled && (
+                                    <div className="mt-3 relative">
+                                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="text-neutral-500 font-bold">₹</span>
+                                      </div>
+                                      <input 
+                                        type="number" 
+                                        placeholder="Custom total..."
+                                        value={formData.overrideTotalPrice} 
+                                        onChange={(e) => updateField("overrideTotalPrice", e.target.value)}
+                                        className="w-full bg-neutral-50 border border-neutral-200 rounded-xl pl-8 pr-4 py-3 text-neutral-900 font-black focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] transition-all"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
+                        </div>
+                      );
+                    })()}
 
                     <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
                       <div className="px-6 py-4 bg-neutral-50 border-b border-neutral-200 flex justify-between items-center">
@@ -1035,9 +1103,29 @@ export default function CustomerDetailPage() {
                                 <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-1">{item.meal_type}</div>
                                 <div className="text-sm font-bold text-neutral-900 flex items-center gap-2">
                                   {item.bowl_name}
-                                  <span className="text-[10px] font-bold text-[#6A0FAD] bg-[#6A0FAD]/10 px-2 py-0.5 rounded-full">
-                                    ₹{item.scaled_price?.toFixed(2)}
-                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[10px] font-bold text-neutral-400 line-through">
+                                      ₹{item.scaled_price?.toFixed(2)}
+                                    </span>
+                                    {(() => {
+                                      const defaultFinal = previewData.final_discounted_price || 0;
+                                      const isOverride = formData.isOverrideEnabled;
+                                      const overrideVal = parseFloat(formData.overrideTotalPrice) || 0;
+                                      const actualFinal = (isOverride && formData.overrideTotalPrice !== "") ? overrideVal : defaultFinal;
+                                      const finalAvg = actualFinal / (previewData.scaled_matrix.length || 1);
+                                      const diff = (item.scaled_price || 0) - finalAvg;
+                                      return (
+                                        <>
+                                          <span className="text-[9px] font-bold text-red-500">
+                                            -{diff > 0 ? '₹' + diff.toFixed(2) : '+₹' + Math.abs(diff).toFixed(2)}
+                                          </span>
+                                          <span className="text-[10px] font-bold text-[#16A34A] bg-[#16A34A]/10 px-2 py-0.5 rounded-full">
+                                            ₹{finalAvg.toFixed(2)}
+                                          </span>
+                                        </>
+                                      )
+                                    })()}
+                                  </div>
                                 </div>
                               </div>
                             </div>

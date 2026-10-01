@@ -232,9 +232,9 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
                 <button type="button" onClick={() => setShowModal(false)} className="px-6 py-2 rounded-xl text-neutral-500 font-bold hover:bg-neutral-100">
                   Cancel
                 </button>
-                <button type="submit" disabled={isSubmitting} className="px-6 py-2 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 disabled:opacity-50">
+                <ProbaeButton type="submit" disabled={isSubmitting}>
                   {isSubmitting ? "Saving..." : "Log Payment"}
-                </button>
+                </ProbaeButton>
               </div>
             </form>
           </div>
