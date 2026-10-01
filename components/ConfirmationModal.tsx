@@ -99,7 +99,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-300 ${
         isVisible ? "opacity-100" : "opacity-0"
       }`}
     >

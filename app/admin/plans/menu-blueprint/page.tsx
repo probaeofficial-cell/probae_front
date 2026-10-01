@@ -11,7 +11,8 @@ import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function MenuBlueprintPage() {
   const [durationType, setDurationType] = useState("WEEKLY");
-  const [mealSlot, setMealSlot] = useState("LUNCH");
+  const [mealSlot, setMealSlot] = useState("lunch");
+  const [planCategory, setPlanCategory] = useState("Core");
   
   const [availableBowls, setAvailableBowls] = useState<any[]>([]);
   const [mealCategories, setMealCategories] = useState<any[]>([]);
@@ -46,7 +47,7 @@ export default function MenuBlueprintPage() {
       fetchBowls(activeCat?.ulid);
     }
     fetchBlueprint();
-  }, [durationType, mealSlot, mealCategories]);
+  }, [durationType, mealSlot, mealCategories, planCategory]);
 
   useEffect(() => {
     if (needsAutoFill && durationType === "MONTHLY" && availableBowls.length > 0 && selectedBowls.length === 0) {
@@ -66,7 +67,11 @@ export default function MenuBlueprintPage() {
       const categories = catRes.items || [];
       setMealCategories(categories);
       
-      const activeCat = categories.find((c: any) => (c.slug || c.name) === mealSlot);
+      let activeCat = categories.find((c: any) => (c.slug || c.name) === mealSlot);
+      if (!activeCat && categories.length > 0) {
+        setMealSlot(categories[0].slug || categories[0].name);
+        activeCat = categories[0];
+      }
       fetchBowls(activeCat?.ulid);
     } catch (err) {
       console.error(err);
@@ -86,7 +91,7 @@ export default function MenuBlueprintPage() {
     setIsLoading(true);
     setNeedsAutoFill(false);
     try {
-      const res: any = await endpoints.menuBlueprints.get(durationType, mealSlot);
+      const res: any = await endpoints.menuBlueprints.get(durationType, mealSlot, planCategory);
       if (res.success && res.blueprints && res.blueprints.length > 0) {
         setSelectedBowls(res.blueprints.map((bp: any) => ({
           ulid: bp.bowl.ulid,
@@ -112,6 +117,7 @@ export default function MenuBlueprintPage() {
       await endpoints.menuBlueprints.sync({
         duration_type: durationType,
         meal_slot: mealSlot,
+        plan_category: planCategory,
         bowl_ulids: selectedBowls.map(b => b.ulid)
       });
       setModalState({
@@ -211,8 +217,25 @@ export default function MenuBlueprintPage() {
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 flex-1 min-h-0">
             {/* Left: Configuration & Drag Area */}
             <div className="flex-1 flex flex-col bg-neutral-50/50 border border-neutral-200 rounded-3xl p-4 sm:p-6 min-h-[500px] lg:min-h-0 shrink-0 lg:shrink">
-              <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 shrink-0">
-                <div className="flex-1 w-full sm:min-w-[200px]">
+              <div className="flex flex-col gap-6 mb-8 shrink-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <div className="w-full">
+                  <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Plan Type</label>
+                  <div className="flex gap-2">
+                    {["Core", "Pro", "Performance"].map(p => (
+                      <button 
+                        key={p}
+                        onClick={() => setPlanCategory(p)}
+                        className={`flex-1 py-3 rounded-xl text-sm font-bold transition-colors ${planCategory === p ? 'bg-[#6A0FAD] text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:border-[#6A0FAD]/30'}`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="w-full">
                   <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Duration</label>
                   <div className="flex gap-2">
                     {["WEEKLY", "MONTHLY"].map(d => (
@@ -226,14 +249,16 @@ export default function MenuBlueprintPage() {
                     ))}
                   </div>
                 </div>
-                <div className="flex-1 min-w-[200px]">
+                </div>
+
+                <div className="w-full">
                   <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Meal Slot</label>
-                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                  <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar scrollbar-none">
                     {dynamicMealSlots.map(slot => (
                       <button 
                         key={slot}
                         onClick={() => setMealSlot(slot)}
-                        className={`px-4 py-3 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${mealSlot === slot ? 'bg-[#6A0FAD] text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:border-[#6A0FAD]/30'}`}
+                        className={`px-6 py-3 rounded-xl text-sm font-bold transition-colors whitespace-nowrap shrink-0 ${mealSlot === slot ? 'bg-[#6A0FAD] text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:border-[#6A0FAD]/30'}`}
                       >
                         {mealCategories.find(c => (c.slug || c.name) === slot)?.name || slot}
                       </button>

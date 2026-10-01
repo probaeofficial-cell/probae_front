@@ -22,6 +22,7 @@ interface Transaction {
   payment_method: string | null;
   reference_id: string | null;
   created_at: string;
+  transaction_date: string;
 }
 
 export default function AccountsDashboardPage() {
@@ -163,7 +164,7 @@ export default function AccountsDashboardPage() {
                         return (
                           <tr key={tx.ulid} className="hover:bg-neutral-50 transition-colors">
                             <td className="px-6 py-4 whitespace-nowrap text-neutral-500">
-                              {new Date(tx.created_at).toLocaleString('en-IN', {
+                              {new Date(tx.transaction_date).toLocaleString('en-IN', {
                                 day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
                               })}
                             </td>

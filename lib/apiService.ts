@@ -166,6 +166,7 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
 
   // Ensure credentials are included to send and receive HttpOnly cookies (e.g. refresh_token)
   const config: RequestInit = {
+    cache: "no-store",
     ...options,
     headers,
     body,
@@ -739,7 +740,7 @@ export const endpoints = {
   },
 
     transactions: {
-    logPayment: (customerUlid: string, payload: { amount: number, method: string, description: string }) => 
+    logPayment: (customerUlid: string, payload: { amount: number, method: string, description: string, transaction_date?: string }) => 
       api.post(`/customers/${customerUlid}/transactions`, payload),
     list: (customerUlid: string, page: number = 1) => 
       api.get(`/customers/${customerUlid}/transactions?page=${page}`),
@@ -817,8 +818,8 @@ export const endpoints = {
     triggerDailyOrders: async () => await api.post('/plans/trigger-daily-orders', {}),
   },
   menuBlueprints: {
-    get: async (durationType: string, mealSlot: string) => await api.get(`/plans/blueprints?duration_type=${durationType}&meal_slot=${mealSlot}`),
-    sync: async (data: {duration_type: string, meal_slot: string, bowl_ulids: string[]}) => await api.post("/plans/blueprints/sync", data)
+    get: async (durationType: string, mealSlot: string, planCategory: string = 'Core') => await api.get(`/plans/blueprints?duration_type=${durationType}&meal_slot=${mealSlot}&plan_category=${planCategory}`),
+    sync: async (data: {duration_type: string, meal_slot: string, plan_category: string, bowl_ulids: string[]}) => await api.post("/plans/blueprints/sync", data)
   },
   notifications: {
     get: () => api.get<{ notifications: any[]; unread_count: number }>("/notifications"),

@@ -4,6 +4,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 import { endpoints } from "@/lib/apiService";
 import { Plus, ArrowDown, ArrowUp, RotateCcw } from "lucide-react";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }: { customerUlid: string; initialBalance: number; onBalanceChange?: (newBalance: number) => void }) {
   const [balance, setBalance] = useState(initialBalance);
@@ -16,7 +17,9 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("UPI");
   const [description, setDescription] = useState("");
+  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
@@ -37,18 +40,29 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
 
   const handleAddPayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!transactionDate) {
+      alert("Please select a date");
+      return;
+    }
+    const val = parseFloat(amount);
+    if (isNaN(val) || val <= 0) {
+      alert("Enter a valid positive amount");
+      return;
+    }
+    setShowConfirm(true);
+  };
+
+  const confirmLogPayment = async () => {
     setIsSubmitting(true);
     try {
       const val = parseFloat(amount);
-      if (isNaN(val) || val <= 0) {
-        alert("Enter a valid positive amount");
-        return;
-      }
       await endpoints.transactions.logPayment(customerUlid, {
         amount: val,
         method,
-        description
+        description,
+        transaction_date: transactionDate ? new Date(transactionDate).toISOString() : undefined,
       });
+      setShowConfirm(false);
       setShowModal(false);
       setAmount("");
       setDescription("");
@@ -116,7 +130,7 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
                 transactions.map((tx: any) => (
                   <tr key={tx.ulid} className="border-b border-neutral-50 hover:bg-neutral-50/50">
                     <td className="px-6 py-4 text-sm text-neutral-600 whitespace-nowrap">
-                      {new Date(tx.created_at).toLocaleString()}
+                      {new Date(tx.transaction_date).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${
@@ -170,7 +184,17 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
             <div className="p-6 border-b border-neutral-100 bg-neutral-50">
               <h2 className="text-xl font-black text-neutral-900">Log Payment</h2>
             </div>
-            <form onSubmit={handleAddPayment} className="p-6 space-y-4">
+            <form onSubmit={handleAddPayment} className="p-6 space-y-4" noValidate>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Date</label>
+                <input 
+                  type="date"
+                  required
+                  value={transactionDate}
+                  onChange={e => setTransactionDate(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-neutral-900 bg-white focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none font-medium mb-4"
+                />
+              </div>
               <div>
                 <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Amount (₹)</label>
                 <input 
@@ -216,6 +240,17 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
           </div>
         </div>
       )}
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={confirmLogPayment}
+        title="Confirm Payment"
+        message={`Are you sure you want to log a payment of ₹${amount} using ${method}?`}
+        type="info"
+        confirmText="Log Payment"
+        isLoading={isSubmitting}
+      />
     </div>
   );
 }

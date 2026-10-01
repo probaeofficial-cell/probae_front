@@ -7,6 +7,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 import { Header } from "@/components/admin/Header";
 import { CheckCircle2, AlertTriangle, ArrowDown, ArrowUp, RotateCcw, Trash2, Search, Plus, RefreshCw } from "lucide-react";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 // -- Types
 type Summary = {
@@ -27,6 +28,7 @@ type Transaction = {
   reference_id: string | null;
   description: string | null;
   created_at: string;
+  transaction_date: string;
 };
 
 // -- Helpers
@@ -63,7 +65,9 @@ export default function WalletAndTransactionsPage() {
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("UPI");
   const [description, setDescription] = useState("");
+  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // State: Ledger Table
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -152,26 +156,31 @@ export default function WalletAndTransactionsPage() {
     if (!selectedCustomer) {
       return showToast("Please select a customer", "error");
     }
+    if (!transactionDate) {
+      return showToast("Please select a date", "error");
+    }
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
       return showToast("Amount must be a positive number", "error");
     }
+    setShowConfirm(true);
+  };
 
+  const confirmLogPayment = async () => {
     setIsSubmitting(true);
     try {
-      await endpoints.transactions.logPayment(selectedCustomer.ulid, {
+      await endpoints.transactions.logPayment(selectedCustomer!.ulid, {
         amount: Number(amount),
         method,
-        description
+        description,
+        transaction_date: transactionDate ? new Date(transactionDate).toISOString() : undefined,
       });
       showToast("Payment logged successfully!", "success");
       setAmount("");
       setDescription("");
       setSelectedCustomer(null);
+      setShowConfirm(false);
       setShowModal(false);
-      
-      // Refresh data
       fetchSummary();
-      setPage(1);
       fetchTransactions();
     } catch (err: any) {
       showToast(err.response?.data?.detail || "Failed to log payment", "error");
@@ -323,7 +332,7 @@ export default function WalletAndTransactionsPage() {
                     transactions.map((tx) => (
                       <tr key={tx.ulid} className="border-b border-neutral-50 hover:bg-neutral-50/50 group">
                         <td className="px-6 py-4 text-sm text-neutral-500 whitespace-nowrap">
-                          {new Date(tx.created_at).toLocaleString()}
+                          {new Date(tx.transaction_date).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 font-bold text-sm text-neutral-900">
                           <a href={`/admin/customers/${tx.customer_ulid}`} className="hover:text-[#6A0FAD] hover:underline">
@@ -399,7 +408,7 @@ export default function WalletAndTransactionsPage() {
               <h2 className="text-xl font-black text-neutral-900">Log Payment</h2>
               <button onClick={() => setShowModal(false)} className="text-neutral-400 hover:text-black">✕</button>
             </div>
-            <form onSubmit={handleLogPayment} className="p-6 space-y-4">
+            <form onSubmit={handleLogPayment} className="p-6 space-y-4" noValidate>
               <div className="relative">
                 <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Customer</label>
                 <div className="relative">
@@ -448,6 +457,16 @@ export default function WalletAndTransactionsPage() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Date</label>
+                <input 
+                  type="date"
+                  required
+                  value={transactionDate}
+                  onChange={e => setTransactionDate(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-neutral-900 bg-white focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD] outline-none font-medium mb-4"
+                />
+              </div>
               <div>
                 <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Amount (₹)</label>
                 <input 
@@ -509,6 +528,17 @@ export default function WalletAndTransactionsPage() {
           </div>
         </div>
       )}
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={confirmLogPayment}
+        title="Confirm Payment"
+        message={`Are you sure you want to log a payment of ₹${amount} using ${method} for ${selectedCustomer?.name}?`}
+        type="info"
+        confirmText="Log Payment"
+        isLoading={isSubmitting}
+      />
     </div>
   );
 }
