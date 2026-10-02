@@ -11,7 +11,7 @@ import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints, api } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
-import { Edit2, Check, ArrowLeft, Trash2, Camera, Upload, Lock, Unlock, Hourglass } from "lucide-react";
+import { Edit2, Check, ArrowLeft, Trash2, Camera, Upload, Lock, Unlock, Hourglass, ChevronDown } from "lucide-react";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { CustomerLedger } from "../components/CustomerLedger";
 import { CustomerCalories } from "@/components/admin/CustomerCalories";
@@ -57,6 +57,7 @@ export default function CustomerDetailPage() {
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
   const [activeTab, setActiveTab] = useState<"PROFILE" | "LEDGER" | "CALORIES" | "HISTORY">("PROFILE");
   const [showRenewalModal, setShowRenewalModal] = useState(false);
+  const [showMenuRotation, setShowMenuRotation] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -1052,7 +1053,14 @@ export default function CustomerDetailPage() {
 
                             {customer?.custom_schedule && customer.custom_schedule.length > 0 && (
                               <div className="mt-2">
-                                <h5 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">Menu Rotation</h5>
+                                <div 
+                                  className="flex items-center justify-between mb-3 cursor-pointer group p-2 -mx-2 rounded-lg hover:bg-neutral-50 transition-colors"
+                                  onClick={() => setShowMenuRotation(!showMenuRotation)}
+                                >
+                                  <h5 className="text-xs font-bold text-neutral-500 uppercase tracking-wider group-hover:text-[#6A0FAD] transition-colors">Menu Rotation</h5>
+                                  <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${showMenuRotation ? "rotate-180" : ""}`} />
+                                </div>
+                                {showMenuRotation && (
                                 <div className="space-y-3">
                                   {Array.from(new Set(customer.custom_schedule.map((s: any) => s.day_index))).sort((a: any, b: any) => a - b).map((day: any) => {
                                     const dayMeals = customer.custom_schedule.filter((s: any) => s.day_index === day);
@@ -1080,6 +1088,7 @@ export default function CustomerDetailPage() {
                                     );
                                   })}
                                 </div>
+                                )}
                               </div>
                             )}
                           </div>

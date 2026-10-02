@@ -51,18 +51,29 @@ export default function AsyncBowlSelect({ value, onChange, mealCategoryId, selec
       const looksLikeCode = searchTerm.length > 0 && !searchTerm.includes(' ');
       const nameRes = await endpoints.bowls.getBowls(pageNum, 10, searchTerm, undefined, undefined, undefined, undefined, undefined, undefined, mealCategoryId === 0 ? undefined : mealCategoryId) as any;
       let codeItems: any[] = [];
-      if (looksLikeCode) {
+      if (looksLikeCode && pageNum === 1) {
         const codeRes = await endpoints.bowls.getBowls(1, 10, undefined, undefined, undefined, undefined, undefined, searchTerm, undefined, mealCategoryId === 0 ? undefined : mealCategoryId) as any;
         // Merge, dedup by ulid
         const seen = new Set((nameRes.items || []).map((i: any) => i.ulid));
         codeItems = (codeRes.items || []).filter((i: any) => !seen.has(i.ulid));
       }
       const combined = [...(nameRes.items || []), ...codeItems];
-      const newItems = combined;
+      
       if (isNewSearch) {
-        setOptions(newItems);
+        setOptions(combined);
       } else {
-        setOptions(prev => [...prev, ...newItems]);
+        setOptions(prev => {
+          const all = [...prev, ...combined];
+          const unique = [];
+          const seenIds = new Set();
+          for (const item of all) {
+            if (!seenIds.has(item.ulid)) {
+              seenIds.add(item.ulid);
+              unique.push(item);
+            }
+          }
+          return unique;
+        });
       }
       setHasMore((nameRes.items || []).length === 10);
     } catch (err) {
