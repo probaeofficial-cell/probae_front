@@ -293,6 +293,7 @@ export const endpoints = {
       return api.get(`/expenses?${q.toString()}`);
     },
     create: (payload: any) => api.post('/expenses', payload),
+    bulkCreate: (payload: any) => api.post('/expenses/bulk', payload),
     update: (ulid: string, payload: any) => api.put(`/expenses/${ulid}`, payload),
     del: (ulid: string) => api.del(`/expenses/${ulid}`)
   },

@@ -8,6 +8,8 @@ import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
 import AsyncExpenseCategorySelect from "@/components/admin/AsyncExpenseCategorySelect";
+import { BulkExpenseModal } from "@/components/admin/BulkExpenseModal";
+import { FileSpreadsheet } from "lucide-react";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function ExpenseLogsPage() {
@@ -27,6 +29,7 @@ export default function ExpenseLogsPage() {
   const [formData, setFormData] = useState({ category_ulid: "", amount: "", expense_date: new Date().toISOString().slice(0, 10), notes: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   
   const [deleteUlid, setDeleteUlid] = useState<string | null>(null);
   const [editUlid, setEditUlid] = useState<string | null>(null);
@@ -111,7 +114,7 @@ export default function ExpenseLogsPage() {
           </div>
           
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-            <div className="relative w-full sm:w-48">
+            {/* <div className="relative w-full sm:w-48">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
                 type="text"
@@ -120,7 +123,7 @@ export default function ExpenseLogsPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full h-[48px] pl-9 pr-4 bg-white border border-neutral-200 rounded-xl outline-none text-sm font-medium text-neutral-800 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD]"
               />
-            </div>
+            </div> */}
             <div className="w-full sm:w-48 relative">
               <AsyncExpenseCategorySelect 
                 value={filterCategoryUlid} 
@@ -143,18 +146,23 @@ export default function ExpenseLogsPage() {
               onChange={e => setMonth(e.target.value)}
               className="bg-white border border-neutral-200 rounded-xl px-4 py-2 h-[48px] text-sm font-bold text-neutral-700 outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 w-full sm:w-auto"
             />
-            <ProbaeButton onClick={() => {
-              setEditUlid(null);
-              setFormData({
-                expense_date: new Date().toISOString().slice(0, 10),
-                category_ulid: "",
-                amount: "",
-                notes: ""
-              });
-              setIsModalOpen(true);
-            }} className="!w-auto flex items-center justify-center gap-2 h-[48px]">
-              <Plus className="w-5 h-5" /> Add Expense
-            </ProbaeButton>
+            <div className="flex gap-3 shrink-0">
+              <ProbaeButton onClick={() => setIsBulkModalOpen(true)} className="!w-auto flex items-center justify-center gap-2 h-[48px] !bg-neutral-800 !text-white hover:!bg-neutral-900 border-none whitespace-nowrap px-4">
+                <FileSpreadsheet className="w-4 h-4 shrink-0" /> Bulk Upload
+              </ProbaeButton>
+              <ProbaeButton onClick={() => {
+                setEditUlid(null);
+                setFormData({
+                  expense_date: new Date().toISOString().slice(0, 10),
+                  category_ulid: "",
+                  amount: "",
+                  notes: ""
+                });
+                setIsModalOpen(true);
+              }} className="!w-auto flex items-center justify-center gap-2 h-[48px] whitespace-nowrap px-4">
+                <Plus className="w-4 h-4 shrink-0" /> Add Expense
+              </ProbaeButton>
+            </div>
           </div>
         </div>
         
@@ -228,6 +236,14 @@ export default function ExpenseLogsPage() {
         )}
       </div>
       
+      <BulkExpenseModal 
+        isOpen={isBulkModalOpen} 
+        onClose={() => setIsBulkModalOpen(false)} 
+        onSuccess={() => {
+          setIsBulkModalOpen(false);
+          fetchData();
+        }} 
+      />
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
