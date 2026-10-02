@@ -1,3 +1,4 @@
+"use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect, useRef } from "react";
 import { X, AlertCircle } from "lucide-react";

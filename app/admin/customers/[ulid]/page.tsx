@@ -1,5 +1,6 @@
-
 "use client";
+import { CustomScheduleBuilder } from "@/components/admin/CustomScheduleBuilder";
+
 import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect } from "react";
@@ -52,6 +53,7 @@ export default function CustomerDetailPage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [mealCategories, setMealCategories] = useState<any[]>([]);
   const [allPlans, setAllPlans] = useState<any[]>([]);
+  const [customSchedule, setCustomSchedule] = useState<any[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
   const [activeTab, setActiveTab] = useState<"PROFILE" | "LEDGER" | "CALORIES" | "HISTORY">("PROFILE");
   const [showRenewalModal, setShowRenewalModal] = useState(false);
@@ -91,21 +93,38 @@ export default function CustomerDetailPage() {
     lockedMeals: {} as Record<string, boolean>,
     image_filename: null as string | null,
     include_delivery: true,
-    plan_start_date: ""
+    plan_start_date: "",
+    customDiscountPct: "0"
   });
 
-    const fetchPreview = async (planUlid: string, goal: string, mealCalories: any, overrideIncludeDelivery?: boolean, initialPricePaid?: number) => {
+    const fetchPreview = async (planUlid: string, goal: string, mealCalories: any, overrideIncludeDelivery?: boolean, initialPricePaid?: number, customSched?: any[]) => {
     setIsPreviewLoading(true);
     try {
       const isDeliveryIncluded = overrideIncludeDelivery !== undefined ? overrideIncludeDelivery : formData.include_delivery;
-      const resData: any = await endpoints.customers.previewPlanPrice({
-        plan_tier_ulid: planUlid,
-        goal: goal,
-        calorie_profile: { mealCalories: mealCalories || {} },
-        include_delivery: isDeliveryIncluded,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : undefined
-      });
+      let resData: any = null;
+      if (planUlid === "CUSTOM_BUILDER") {
+        if (customSched && customSched.length > 0) {
+          resData = await endpoints.customers.previewCustomPlanPrice({
+            plan_duration_days: parseInt(formData.planFrequency.split(" ")[0]) || 5,
+            custom_schedule: customSched,
+            goal: goal,
+            calorie_profile: { mealCalories: mealCalories || {} },
+            include_delivery: isDeliveryIncluded,
+            latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+            longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
+            discount_percentage: parseFloat(formData.customDiscountPct) || 0
+          });
+        }
+      } else {
+        resData = await endpoints.customers.previewPlanPrice({
+          plan_tier_ulid: planUlid,
+          goal: goal,
+          calorie_profile: { mealCalories: mealCalories || {} },
+          include_delivery: isDeliveryIncluded,
+          latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+          longitude: formData.longitude ? parseFloat(formData.longitude) : undefined
+        });
+      }
       if (resData && resData.success) {
         setPreviewData(resData);
         if (initialPricePaid !== undefined && initialPricePaid !== null) {
@@ -134,13 +153,23 @@ export default function CustomerDetailPage() {
       ]);
       const data: any = custData;
       if (planData && (planData as any).success) {
-        setAllPlans((planData as any).tiers || []);
+        setAllPlans(((planData as any).tiers || []).filter((p: any) => p.name !== "Bespoke Custom Plan"));
       }
       if (data) {
         setCustomer(data);
-        if (data.selected_plan_id) {
+        
+        let initialPlanId = data.selected_plan_id;
+        const allPlansFiltered = ((planData as any).tiers || []).filter((p: any) => p.name !== "Bespoke Custom Plan");
+        const isBespokeSystemPlan = data.selected_plan_id && !allPlansFiltered.find((p: any) => p._id === data.selected_plan_id);
+        
+        if (isBespokeSystemPlan && data.custom_schedule && data.custom_schedule.length > 0) {
+          initialPlanId = "CUSTOM_BUILDER";
+          setCustomSchedule(data.custom_schedule);
+        }
+        
+        if (initialPlanId) {
           const activeSub = data.subscriptions?.find((s: any) => s.status === "ACTIVE");
-          fetchPreview(data.selected_plan_id, data.goal || "MAINTENANCE", data.calorie_profile?.mealCalories || {}, undefined, activeSub ? activeSub.total_price_paid : undefined);
+          fetchPreview(initialPlanId, data.goal || "MAINTENANCE", data.calorie_profile?.mealCalories || {}, undefined, activeSub ? activeSub.total_price_paid : undefined, data.custom_schedule);
         }
         const profile = data.calorie_profile || {};
         setFormData({
@@ -162,7 +191,7 @@ export default function CustomerDetailPage() {
           allergies: data.allergies || [],
           comments: data.chef_instructions || "",
           status: data.status || "ACTIVE",
-          selectedPlanId: data.selected_plan_id || null,
+          selectedPlanId: (data.custom_schedule && data.custom_schedule.length > 0) ? "CUSTOM_BUILDER" : (data.selected_plan_id || null),
           planDuration: "WEEKLY",
           planFrequency: "5 DAYS",
           mealSlots: profile.mealSlots || [],
@@ -173,6 +202,7 @@ export default function CustomerDetailPage() {
           include_delivery: data.include_delivery ?? true,
           isOverrideEnabled: false,
           overrideTotalPrice: "",
+          customDiscountPct: "0",
           plan_start_date: ""
         });
       }
@@ -190,11 +220,11 @@ export default function CustomerDetailPage() {
   useEffect(() => {
     if (formData.selectedPlanId && formData.mealCalories && Object.keys(formData.mealCalories).length > 0) {
       const timer = setTimeout(() => {
-        fetchPreview(formData.selectedPlanId as string, formData.goal, formData.mealCalories);
+        fetchPreview(formData.selectedPlanId as string, formData.goal, formData.mealCalories, undefined, undefined, customSchedule);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [formData.mealCalories, formData.selectedPlanId, formData.goal]);
+  }, [formData.selectedPlanId, formData.goal, formData.mealCalories, customSchedule]);
 
 
   
@@ -423,6 +453,7 @@ export default function CustomerDetailPage() {
         image_filename: formData.image_filename,
         include_delivery: formData.include_delivery,
         override_total_price: formData.isOverrideEnabled && formData.overrideTotalPrice ? parseFloat(formData.overrideTotalPrice) : null,
+        custom_schedule: formData.selectedPlanId === "CUSTOM_BUILDER" ? customSchedule : null,
         calorie_profile: customer.calorie_profile ? {
           ...customer.calorie_profile,
           probaeTarget: formData.probaeTarget,
@@ -850,7 +881,21 @@ export default function CustomerDetailPage() {
                       </div>
                       
                       
-                      {formData.selectedPlanId && allPlans.find(p => p._id === formData.selectedPlanId) && (
+                      {formData.selectedPlanId === "CUSTOM_BUILDER" ? (
+                        <div className="mt-4 p-4 rounded-2xl border border-orange-500/30 bg-orange-500/5">
+                          <div className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-2">Currently Assigned Plan</div>
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h4 className="font-bold text-neutral-900">Bespoke Custom Plan</h4>
+                              <div className="text-xs text-neutral-500 font-bold uppercase mt-1">{formData.planDuration} • {formData.planFrequency}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xs font-bold text-neutral-500 uppercase">Meals</div>
+                              <div className="text-sm font-black text-orange-600">{formData.mealSlots?.join(', ')}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : formData.selectedPlanId && allPlans.find(p => p._id === formData.selectedPlanId) && (
                         <div className="mt-4 p-4 rounded-2xl border border-[#6A0FAD]/30 bg-[#6A0FAD]/5">
                           <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-2">Currently Assigned Plan</div>
                           {(() => {
@@ -901,7 +946,7 @@ export default function CustomerDetailPage() {
                             {plans.map(p => (
                               <div 
                                 key={p._id} 
-                                onClick={() => { updateField("selectedPlanId", p._id); fetchPreview(p._id, formData.goal, customer?.calorie_profile?.mealCalories || {}); }}
+                                onClick={() => { updateField("selectedPlanId", p._id); fetchPreview(p._id, formData.goal, customer?.calorie_profile?.mealCalories || {}, undefined, undefined, customSchedule); }}
                                 className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.selectedPlanId === p._id ? "border-[#6A0FAD] bg-[#6A0FAD]/5" : "border-neutral-200 hover:border-[#6A0FAD]/30"}`}
                               >
                                 <div className="flex justify-between items-start mb-2">
@@ -919,7 +964,40 @@ export default function CustomerDetailPage() {
                                 </div>
                               </div>
                             ))}
+                            {/* Custom Builder Card */}
+                            <div 
+                              onClick={() => { updateField("selectedPlanId", "CUSTOM_BUILDER"); fetchPreview("CUSTOM_BUILDER", formData.goal, customer?.calorie_profile?.mealCalories || {}, undefined, undefined, customSchedule); }}
+                              className={`p-4 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${formData.selectedPlanId === "CUSTOM_BUILDER" ? "border-orange-500 bg-orange-50" : "border-neutral-300 bg-neutral-50 hover:border-orange-500 hover:bg-orange-50/50"}`}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-bold text-orange-600">{customSchedule.length > 0 ? "✨ Your Custom Plan" : "✨ Create Custom Plan"}</h4>
+                                {formData.selectedPlanId === "CUSTOM_BUILDER" && <Check className="w-5 h-5 text-orange-500" />}
+                              </div>
+                              <div className="text-sm font-black text-orange-600 mb-1">
+                                {customSchedule.length > 0 ? "Edit your bespoke layout" : "Bespoke Blueprint Builder"}
+                              </div>
+                              <div className="text-xs text-neutral-500 font-bold uppercase mb-2">
+                                {formData.planDuration} • {formData.planFrequency}
+                              </div>
+                              <div className="text-xs text-orange-600 font-bold">
+                                {customSchedule.length > 0 ? `${customSchedule.length} bowls mapped` : "Build your exact rotation"}
+                              </div>
+                            </div>
                           </div>
+
+                          {formData.selectedPlanId === "CUSTOM_BUILDER" && formData.mealSlots.length > 0 && (
+                            <div className="mt-6">
+                              <CustomScheduleBuilder
+                                days={parseInt(formData.planFrequency.split(" ")[0]) || 5}
+                                mealSlots={formData.mealSlots}
+                                initialSchedule={customSchedule}
+                                onChange={(sched) => {
+                                  setCustomSchedule(sched);
+                                }}
+                              />
+                            </div>
+                          )}
+
                           <div className="mb-6 mt-6">
                             <label className="block text-sm font-bold text-neutral-900 mb-2">Plan Start Date</label>
                             <input
@@ -938,19 +1016,72 @@ export default function CustomerDetailPage() {
                     <div>
                       {(() => {
                         const currentPlan = allPlans.find(p => p._id === customer.selected_plan_id);
-                        if (!currentPlan) return <div className="text-sm text-neutral-500 italic">No plan assigned</div>;
+                        const isBespokeSystemPlan = !currentPlan && customer?.custom_schedule && customer.custom_schedule.length > 0;
+                        
+                        if (!currentPlan && !isBespokeSystemPlan) return <div className="text-sm text-neutral-500 italic">No plan assigned</div>;
+
                         return (
-                          <div className="p-4 rounded-2xl border border-[#6A0FAD]/20 bg-[#6A0FAD]/5 flex justify-between items-center">
-                            <div>
-                              <h4 className="font-bold text-lg text-[#6A0FAD] mb-1">{currentPlan.name}</h4>
-                              <div className="text-xs text-neutral-600 font-bold uppercase">
-                                {currentPlan.duration} • {currentPlan.days} Days
+                          <div className="flex flex-col gap-4">
+                            {isBespokeSystemPlan ? (
+                              <div className="p-4 rounded-2xl border border-orange-500/20 bg-orange-500/5 flex justify-between items-center">
+                                <div>
+                                  <h4 className="font-bold text-lg text-orange-600 mb-1">Bespoke Custom Plan</h4>
+                                  <div className="text-xs text-neutral-600 font-bold uppercase">
+                                    {customer.calorie_profile?.mealSlots?.length || 3} Meals • Bespoke Matrix
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-xs font-bold text-neutral-500 uppercase mb-1">Custom Schedule</div>
+                                  <div className="text-sm font-black text-neutral-900">{customer.custom_schedule.length} Bowls Mapped</div>
+                                </div>
                               </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-xs font-bold text-neutral-500 uppercase mb-1">Included Meals</div>
-                              <div className="text-sm font-black text-neutral-900">{currentPlan.included_meal_slots?.join(', ')}</div>
-                            </div>
+                            ) : (
+                              <div className="p-4 rounded-2xl border border-[#6A0FAD]/20 bg-[#6A0FAD]/5 flex justify-between items-center">
+                                <div>
+                                  <h4 className="font-bold text-lg text-[#6A0FAD] mb-1">{currentPlan?.name}</h4>
+                                  <div className="text-xs text-neutral-600 font-bold uppercase">
+                                    {currentPlan?.duration} • {currentPlan?.days} Days
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-xs font-bold text-neutral-500 uppercase mb-1">Included Meals</div>
+                                  <div className="text-sm font-black text-neutral-900">{currentPlan?.included_meal_slots?.join(', ')}</div>
+                                </div>
+                              </div>
+                            )}
+
+                            {customer?.custom_schedule && customer.custom_schedule.length > 0 && (
+                              <div className="mt-2">
+                                <h5 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">Menu Rotation</h5>
+                                <div className="space-y-3">
+                                  {Array.from(new Set(customer.custom_schedule.map((s: any) => s.day_index))).sort((a: any, b: any) => a - b).map((day: any) => {
+                                    const dayMeals = customer.custom_schedule.filter((s: any) => s.day_index === day);
+                                    if (dayMeals.length === 0) return null;
+                                    
+                                    // sort meals by slot roughly
+                                    const slotOrder = ['breakfast', 'lunch', 'dinner', 'snack'];
+                                    dayMeals.sort((a: any, b: any) => slotOrder.indexOf(a.meal_slot) - slotOrder.indexOf(b.meal_slot));
+                                    
+                                    return (
+                                      <div key={day} className="flex flex-col sm:flex-row gap-3 sm:items-center p-3 rounded-xl border border-neutral-100 bg-neutral-50">
+                                        <div className="w-16 shrink-0 flex flex-col items-center justify-center bg-white rounded-lg p-2 border border-neutral-100">
+                                          <span className="text-[10px] font-bold text-neutral-500 uppercase">Day</span>
+                                          <span className="text-sm font-black text-neutral-900">{day}</span>
+                                        </div>
+                                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                          {dayMeals.map((meal: any, idx: number) => (
+                                            <div key={idx} className="bg-white p-2 rounded-lg border border-neutral-100 flex flex-col justify-center">
+                                              <div className="text-[10px] font-bold text-orange-500 uppercase mb-0.5">{meal.meal_slot}</div>
+                                              <div className="text-xs font-bold text-neutral-900 line-clamp-2 leading-tight">{meal.bowl_name || "Unknown Bowl"}</div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })()}
@@ -965,6 +1096,8 @@ export default function CustomerDetailPage() {
                     <span className="ml-3 text-neutral-600 font-bold">Calculating personalized macros & pricing...</span>
                   </div>
                 )}
+
+
 
                 {!isPreviewLoading && previewData && (
                   <div className="space-y-6">
@@ -1048,8 +1181,22 @@ export default function CustomerDetailPage() {
                               <div className="text-5xl font-black text-[#6A0FAD] tracking-tight mt-2 mb-2">₹{actualFinal}</div>
                               
                               {isEditMode && (
-                                <div className="mt-auto w-full bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
-                                  <label className="flex items-center gap-3 cursor-pointer mb-2">
+                                <div className="mt-auto w-full flex flex-col gap-3">
+                                  {formData.selectedPlanId === "CUSTOM_BUILDER" && (
+                                    <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
+                                      <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2 block">Custom Plan Discount (%)</label>
+                                      <input 
+                                        type="number"
+                                        placeholder="e.g. 10"
+                                        value={formData.customDiscountPct}
+                                        onChange={(e) => updateField("customDiscountPct", e.target.value)}
+                                        onBlur={() => fetchPreview(formData.selectedPlanId || "", formData.goal, customer?.calorie_profile?.mealCalories || {}, undefined, undefined, customSchedule)}
+                                        className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm text-neutral-900 font-bold focus:outline-none focus:border-[#6A0FAD]"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
+                                    <label className="flex items-center gap-3 cursor-pointer mb-2">
                                     <div className="relative flex items-center justify-center">
                                       <input 
                                         type="checkbox" 
@@ -1074,6 +1221,7 @@ export default function CustomerDetailPage() {
                                       />
                                     </div>
                                   )}
+                                  </div>
                                 </div>
                               )}
                             </div>

@@ -135,10 +135,19 @@ export default function PlansPage() {
                 <tr><td colSpan={6} className="text-center py-10 text-neutral-400">No Plan Tiers found</td></tr>
               ) : (
                 tiers.map((tier) => (
-                  <tr key={tier.ulid || tier._id} className="hover:bg-neutral-50/50 transition-colors">
-                    <td className="px-6 py-4 font-semibold text-neutral-900">{tier.name}</td>
+                  <tr key={tier.ulid || tier._id} className={`hover:bg-neutral-50/50 transition-colors ${tier.name === "Bespoke Custom Plan" ? "bg-orange-50/50 border-l-4 border-orange-500" : "border-l-4 border-transparent"}`}>
+                    <td className="px-6 py-4 font-semibold text-neutral-900">
+                      <div className="flex items-center gap-2">
+                        {tier.name}
+                        {tier.name === "Bespoke Custom Plan" && (
+                          <span className="px-2 py-0.5 bg-orange-100 text-orange-600 rounded text-[10px] font-bold uppercase whitespace-nowrap">
+                            SYSTEM TIER
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
-                      <span className="px-3 py-1 text-xs font-bold rounded-full bg-[#f8f5fb] text-[#6b21a8]">
+                      <span className={`px-3 py-1 text-xs font-bold rounded-full ${tier.name === "Bespoke Custom Plan" ? "bg-orange-100 text-orange-700" : "bg-[#f8f5fb] text-[#6b21a8]"}`}>
                         {tier.category}
                       </span>
                     </td>

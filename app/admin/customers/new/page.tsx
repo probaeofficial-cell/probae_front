@@ -9,6 +9,7 @@ import { ArrowRight, ArrowLeft, Check, Plus, Lock, Unlock, Camera, Upload } from
 import { endpoints, api } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { CustomScheduleBuilder } from "@/components/admin/CustomScheduleBuilder";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { LocationPicker } from "@/components/admin/LocationPicker";
 
@@ -43,6 +44,7 @@ export default function NewCustomerPage() {
   const [customAllergy, setCustomAllergy] = useState("");
   const [calorieProfile, setCalorieProfile] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
+  const [customSchedule, setCustomSchedule] = useState<any[]>([]);
   const [mealCategories, setMealCategories] = useState<any[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
@@ -72,6 +74,7 @@ export default function NewCustomerPage() {
     isOverrideEnabled: false,
     plan_start_date: "",
     overrideTotalPrice: "",
+    customDiscountPct: "0",
     dietaryPreferences: [] as string[],
     allergies: [] as string[],
     comments: "",
@@ -302,6 +305,7 @@ export default function NewCustomerPage() {
       if (listRes.success) {
         const days = parseInt(formData.planFrequency.split(" ")[0]);
         const matched = listRes.tiers.filter((t: any) => {
+          if (t.name === "Bespoke Custom Plan") return false;
           const durationMatch = t.duration.toUpperCase() === formData.planDuration && t.days === days;
           if (!durationMatch) return false;
           
@@ -323,20 +327,38 @@ export default function NewCustomerPage() {
     }
   };
 
-    const handlePlanSelect = async (planUlid: string, overrideIncludeDelivery?: boolean) => {
+    const handlePlanSelect = async (planUlid: string, overrideIncludeDelivery?: boolean, customSched?: any[]) => {
     updateField("selectedPlanId", planUlid);
     setIsPreviewLoading(true);
     setPreviewData(null);
     try {
       const isDeliveryIncluded = overrideIncludeDelivery !== undefined ? overrideIncludeDelivery : formData.include_delivery;
-      const data: any = await endpoints.customers.previewPlanPrice({
-        plan_tier_ulid: planUlid,
-        goal: formData.goal,
-        calorie_profile: { mealCalories: formData.mealCalories || {} },
-        include_delivery: isDeliveryIncluded,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : undefined
-      });
+      
+      let data: any = null;
+      if (planUlid === "CUSTOM_BUILDER") {
+        if (customSched && customSched.length > 0) {
+          data = await endpoints.customers.previewCustomPlanPrice({
+            plan_duration_days: parseInt(formData.planFrequency.split(" ")[0]) || 5,
+            custom_schedule: customSched,
+            goal: formData.goal,
+            calorie_profile: { mealCalories: formData.mealCalories || {} },
+            include_delivery: isDeliveryIncluded,
+            latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+            longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
+            discount_percentage: parseFloat(formData.customDiscountPct) || 0
+          });
+        }
+      } else {
+        data = await endpoints.customers.previewPlanPrice({
+          plan_tier_ulid: planUlid,
+          goal: formData.goal,
+          calorie_profile: { mealCalories: formData.mealCalories || {} },
+          include_delivery: isDeliveryIncluded,
+          latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+          longitude: formData.longitude ? parseFloat(formData.longitude) : undefined
+        });
+      }
+      
       if (data && data.success) {
         setPreviewData(data);
       }
@@ -346,6 +368,13 @@ export default function NewCustomerPage() {
       setIsPreviewLoading(false);
     }
   };
+  
+  useEffect(() => {
+    if (formData.selectedPlanId === "CUSTOM_BUILDER" && customSchedule.length > 0) {
+      handlePlanSelect("CUSTOM_BUILDER", undefined, customSchedule);
+    }
+  }, [customSchedule]);
+
 
   const handleSaveCustomer = async (skipPlan = false) => {
     setIsSubmitting(true);
@@ -375,7 +404,8 @@ export default function NewCustomerPage() {
         plan_start_date: skipPlan || !formData.plan_start_date ? null : new Date(formData.plan_start_date).toISOString(),
         status: skipPlan ? "PENDING_PLAN" : "ACTIVE",
         include_delivery: formData.include_delivery,
-        override_total_price: formData.isOverrideEnabled && formData.overrideTotalPrice ? parseFloat(formData.overrideTotalPrice) : null
+        override_total_price: formData.isOverrideEnabled && formData.overrideTotalPrice ? parseFloat(formData.overrideTotalPrice) : null,
+        custom_schedule: (!skipPlan && formData.selectedPlanId === "CUSTOM_BUILDER") ? customSchedule : null
       };
 
       await endpoints.customers.create(payload);
@@ -409,7 +439,10 @@ export default function NewCustomerPage() {
 
             {step === 1 && (
               <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-6">
-                <h2 className="text-2xl font-bold text-neutral-900 mb-6">Biological Profile</h2>
+                <div className="flex items-center gap-4 mb-6">
+                  <button type="button" onClick={() => router.push('/admin/customers')} className="p-2 hover:bg-neutral-200 rounded-full"><ArrowLeft className="w-5 h-5 text-neutral-600" /></button>
+                  <h2 className="text-2xl font-bold text-neutral-900">Biological Profile</h2>
+                </div>
                 
                 <div className="flex justify-center mb-8">
                   <div className="relative">
@@ -754,9 +787,31 @@ export default function NewCustomerPage() {
                       </div>
                     ))
                   )}
+                  {/* Custom Builder Card */}
+                  <div onClick={() => handlePlanSelect("CUSTOM_BUILDER")} className={`cursor-pointer p-6 rounded-2xl border-2 border-dashed transition-all ${formData.selectedPlanId === "CUSTOM_BUILDER" ? "border-orange-500 bg-orange-50" : "border-neutral-300 bg-neutral-50 hover:border-orange-500 hover:bg-orange-50/50"}`}>
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-xl font-bold text-orange-600">✨ Create Custom Plan</h3>
+                      {formData.selectedPlanId === "CUSTOM_BUILDER" && <Check className="text-orange-500 w-5 h-5" />}
+                    </div>
+                    <p className="text-sm text-neutral-600 mb-4">Bespoke • {formData.planDuration} • {formData.planFrequency}</p>
+                    <p className="text-xs text-orange-600 font-bold mb-2">Build your exact rotation</p>
+                    <p className="text-2xl font-bold text-orange-600">
+                      Bespoke
+                    </p>
+                  </div>
                 </div>
 
-                                <div className="mb-6 mt-6">
+                                {formData.selectedPlanId === "CUSTOM_BUILDER" && formData.mealSlots.length > 0 && (
+                  <CustomScheduleBuilder
+                                days={parseInt(formData.planFrequency.split(" ")[0]) || 5}
+                    mealSlots={formData.mealSlots}
+                    onChange={(sched) => {
+                      setCustomSchedule(sched);
+                    }}
+                  />
+                )}
+
+                <div className="mb-6 mt-6">
                   <label className="block text-sm font-bold text-neutral-900 mb-2">Plan Start Date</label>
                   <input
                     type="date"
@@ -773,6 +828,8 @@ export default function NewCustomerPage() {
                     <span className="ml-3 text-neutral-600 font-bold">Scaling recipe macros & calculating dynamic pricing...</span>
                   </div>
                 )}
+
+
 
                 {!isPreviewLoading && previewData && (
                   <div className="space-y-6">
@@ -855,8 +912,22 @@ export default function NewCustomerPage() {
 
                               <div className="text-5xl font-black text-[#6A0FAD] tracking-tight mt-2 mb-2">₹{actualFinal}</div>
                               
-                              <div className="mt-auto w-full bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
-                                <label className="flex items-center gap-3 cursor-pointer mb-2">
+                              <div className="mt-auto w-full flex flex-col gap-3">
+                                {formData.selectedPlanId === "CUSTOM_BUILDER" && (
+                                  <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
+                                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2 block">Custom Plan Discount (%)</label>
+                                    <input 
+                                      type="number"
+                                      placeholder="e.g. 10"
+                                      value={formData.customDiscountPct}
+                                      onChange={(e) => updateField("customDiscountPct", e.target.value)}
+                                      onBlur={() => handlePlanSelect(formData.selectedPlanId || "", formData.include_delivery, customSchedule)}
+                                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm text-neutral-900 font-bold focus:outline-none focus:border-[#6A0FAD]"
+                                    />
+                                  </div>
+                                )}
+                                <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
+                                  <label className="flex items-center gap-3 cursor-pointer mb-2">
                                   <div className="relative flex items-center justify-center">
                                     <input 
                                       type="checkbox" 
@@ -881,6 +952,7 @@ export default function NewCustomerPage() {
                                     />
                                   </div>
                                 )}
+                                </div>
                               </div>
                             </div>
                           </div>
