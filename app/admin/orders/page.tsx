@@ -205,13 +205,12 @@ export default function OrdersPage() {
               <button 
                 onClick={() => {
                   setTempSearch(search);
-                  setTempTargetDate(targetDate);
                   setTempCustomerId(customerId);
                   setTempStatus(status);
                   setIsFilterModalOpen(true);
                 }}
                 className={`flex items-center justify-center w-full sm:w-11 h-11 rounded-2xl border transition-all ${
-                  (search || targetDate || customerId || status) 
+                  (search || customerId || status) 
                     ? "bg-[#6A0FAD]/10 border-[#6A0FAD]/30 text-[#6A0FAD]" 
                     : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50"
                 }`}
@@ -276,7 +275,16 @@ export default function OrdersPage() {
               </button>
             </div>
 
-            <div className="flex justify-end mb-4 -mt-3">
+            <div className="flex justify-end gap-3 mb-4 -mt-3">
+              <input 
+                type="date"
+                value={targetDate}
+                onChange={(e) => {
+                  setTargetDate(e.target.value);
+                  setPage(1);
+                }}
+                className="py-2 px-4 rounded-xl border border-neutral-200 bg-white text-neutral-700 font-bold text-sm focus:border-[#6A0FAD] focus:ring-2 focus:ring-[#6A0FAD]/20 outline-none shadow-sm w-full sm:w-auto"
+              />
               <label className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-2 shadow-sm">
                 <span className="text-xs font-bold uppercase tracking-wide text-neutral-500">Meal Slot</span>
                 <select
@@ -505,22 +513,13 @@ export default function OrdersPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-neutral-700 mb-1.5 uppercase tracking-wide">Target Date</label>
-                <input 
-                  type="date" 
-                  value={tempTargetDate}
-                  onChange={(e) => setTempTargetDate(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none focus:border-[#6A0FAD] focus:ring-2 focus:ring-[#6A0FAD]/20 transition-all"
-                />
-              </div>
+
             </div>
             
             <div className="p-4 border-t border-neutral-100 flex gap-3 bg-neutral-50/50">
               <button 
                 onClick={() => {
                   setSearch("");
-                  setTargetDate("");
                   setCustomerId(0);
                   setStatus("");
                   setPage(1);
@@ -539,7 +538,6 @@ export default function OrdersPage() {
               <button 
                 onClick={() => {
                   setSearch(tempSearch);
-                  setTargetDate(tempTargetDate);
                   setCustomerId(tempCustomerId);
                   setStatus(tempStatus);
                   setPage(1);

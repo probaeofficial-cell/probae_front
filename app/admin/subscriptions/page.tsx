@@ -218,6 +218,7 @@ export default function SubscriptionsDashboard() {
                       <th className="p-4 font-bold">Customer</th>
                       <th className="p-4 font-bold">Plan & Tiers</th>
                       <th className="p-4 font-bold">Meal Slot</th>
+                      <th className="p-4 font-bold">Start Date</th>
                       <th className="p-4 font-bold">Plan Progress</th>
                       <th className="p-4 font-bold text-center">Rem.</th>
                       <th className="p-4 font-bold text-center">Hold</th>
@@ -259,6 +260,9 @@ export default function SubscriptionsDashboard() {
                             <span className="bg-neutral-100 text-neutral-700 px-3 py-1 rounded-full text-xs font-bold">
                               {sub.plan.included_meal_slots.map((s:string)=>s.charAt(0).toUpperCase()+s.slice(1)).join(' + ')}
                             </span>
+                          </td>
+                          <td className="p-4 font-bold text-neutral-600">
+                            {sub.plan.start_date ? new Date(sub.plan.start_date).toISOString().split('T')[0] : 'N/A'}
                           </td>
                           <td className="p-4 w-48">
                             <div className="flex justify-between text-xs mb-1 font-bold">

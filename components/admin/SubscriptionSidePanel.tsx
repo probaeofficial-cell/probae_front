@@ -94,7 +94,11 @@ export function SubscriptionSidePanel({ subscription, onClose }: { subscription:
                 </span>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100">
+                  <p className="text-xs text-neutral-400 font-bold mb-1">Start Date</p>
+                  <p className="text-sm font-black text-black">{s.plan.start_date ? new Date(s.plan.start_date).toISOString().split('T')[0] : 'N/A'}</p>
+                </div>
                 <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100">
                   <p className="text-xs text-neutral-400 font-bold mb-1">Meal Slots</p>
                   <p className="text-sm font-black text-black">{s.plan.included_meal_slots.map((m:string)=>m.charAt(0).toUpperCase()+m.slice(1)).join(' + ')}</p>

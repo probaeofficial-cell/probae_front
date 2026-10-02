@@ -10,7 +10,7 @@ import { Phone, MapPin, Printer, Sun, Moon, UtensilsCrossed } from "lucide-react
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
-import { endpoints } from "@/lib/apiService";
+import { endpoints, api } from "@/lib/apiService";
 
 const STATUS_ORDER = ["CREATED", "PREPARED", "DISPATCHED", "DELIVERED", "CANCELLED"];
 
@@ -143,7 +143,7 @@ export default function OrderDetailPage() {
   const handleDelete = async () => {
     setDeleteLoading(true);
     try {
-      await endpoints.orders.delete(ulid);
+      await api.del(`/orders/${ulid}?force=true`);
       router.push("/admin/orders");
     } catch (e: any) {
       setShowDeleteModal(false);
@@ -195,7 +195,7 @@ export default function OrderDetailPage() {
   };
 
   const canEdit   = order?.status === "CREATED";
-  const canDelete = order?.status === "CREATED";
+  const canDelete = true; // Always allow hard delete
 
   if (isLoading) return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
@@ -293,7 +293,7 @@ export default function OrderDetailPage() {
             </div>
           </div>
           <div className="flex gap-3">
-            {order.status === "CREATED" && (
+            {canDelete && (
               <button 
                 onClick={() => setShowDeleteModal(true)} 
                 className="px-6 py-2.5 rounded-full border border-red-200 text-red-600 bg-white hover:bg-red-50 flex items-center gap-2 shadow-sm transition-colors font-bold"
@@ -599,9 +599,9 @@ export default function OrderDetailPage() {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDelete}
-        title="Delete Order"
-        message={`Are you sure you want to delete order ${order?.order_number || order?.ulid}? This action cannot be undone.`}
-        confirmText={deleteLoading ? "Deleting..." : "Delete Order"}
+        title="Wipe Order Completely"
+        message="Are you sure you want to completely delete this order? This will wipe calorie logs, revert wallet deductions, and add back any consumed plan bowls."
+        confirmText={deleteLoading ? "Wiping..." : "Wipe Order"}
         type="delete"
       />
       
