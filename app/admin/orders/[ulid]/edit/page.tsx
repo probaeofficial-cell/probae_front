@@ -123,16 +123,33 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
             bowlName: item.bowl_name,
             mealSlot: item.meal_slot,
             quantity: item.quantity,
+            // Store saved adjusted_price so we can detect if it was overridden
+            savedAdjustedPrice: item.adjusted_price,
             previewData: {
               new_raw_material_cost: item.raw_material_cost,
               packaging_cost: item.packaging_cost,
               fixed_cost: item.fixed_cost,
-              ingredients: JSON.parse(JSON.stringify(item.adjusted_ingredients)) // reference original
+              ingredients: JSON.parse(JSON.stringify(item.adjusted_ingredients))
             },
             workingIngredients: JSON.parse(JSON.stringify(item.adjusted_ingredients))
          };
       });
       setOrderItems(mappedItems);
+
+      // Pre-populate override state: if adjusted_price differs from computed (raw+pkg+fixed), it was overridden
+      const detectedOverrides: Record<string, { enabled: boolean; price: string }> = {};
+      data.items.forEach((item: any) => {
+        const computedRetail = (item.raw_material_cost || 0) + (item.packaging_cost || 0) + (item.fixed_cost || 0);
+        const savedPrice = item.adjusted_price || 0;
+        // If the saved price differs meaningfully from the computed retail price, treat it as overridden
+        if (computedRetail > 0 && Math.abs(savedPrice - computedRetail) > 0.01) {
+          detectedOverrides[item.ulid] = { enabled: true, price: String(savedPrice) };
+        }
+      });
+      if (Object.keys(detectedOverrides).length > 0) {
+        setPriceOverrides(detectedOverrides);
+      }
+
     }).catch(console.error);
   }, [ulid, router]);
 

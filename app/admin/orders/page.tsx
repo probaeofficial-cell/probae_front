@@ -411,11 +411,26 @@ export default function OrdersPage() {
                             </select>
                           </td>
                           <td className="px-6 py-4 text-right whitespace-nowrap">
-                            <div className="flex flex-col items-end">
-                              {(order.gross_price && order.gross_price > order.total_order_price) && (
-                                <span className="text-xs text-neutral-400 line-through">₹{order.gross_price.toFixed(2)}</span>
-                              )}
-                              <div className="font-black text-neutral-900">₹{order.total_order_price.toFixed(2)}</div>
+                            <div className="flex items-center justify-end gap-2">
+                              {(() => {
+                                const gross = Number(order.gross_price) || 0;
+                                const total = Number(order.total_order_price) || 0;
+                                return gross > 0 && gross > total ? (
+                                  <>
+                                    <span className="text-xs font-bold text-neutral-400 line-through">
+                                      ₹{gross.toFixed(2)}
+                                    </span>
+                                    <span className="text-xs font-bold text-red-500">
+                                      -₹{(gross - total).toFixed(2)}
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-sm font-bold">
+                                      ₹{total.toFixed(2)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <div className="font-black text-neutral-900">₹{total.toFixed(2)}</div>
+                                );
+                              })()}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">

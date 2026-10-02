@@ -382,10 +382,25 @@ export default function OrderDetailPage() {
               <div className="flex justify-between items-center">
                 <span className="font-bold text-neutral-500 text-sm">Total Amount</span>
                 <div className="flex items-center gap-2">
-                  {(order.gross_price && order.gross_price > order.total_order_price) && (
-                    <span className="text-sm text-neutral-400 line-through">₹{order.gross_price.toFixed(2)}</span>
-                  )}
-                  <span className="text-xl font-black text-neutral-900">₹{order.total_order_price.toFixed(2)}</span>
+                  {(() => {
+                    const gross = Number(order.gross_price) || 0;
+                    const total = Number(order.total_order_price) || 0;
+                    return gross > 0 && gross > total ? (
+                      <>
+                        <span className="text-sm font-bold text-neutral-400 line-through">
+                          ₹{gross.toFixed(2)}
+                        </span>
+                        <span className="text-sm font-bold text-red-500">
+                          -₹{(gross - total).toFixed(2)}
+                        </span>
+                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-base font-black">
+                          ₹{total.toFixed(2)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xl font-black text-neutral-900">₹{total.toFixed(2)}</span>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="h-px bg-neutral-200/50" />
