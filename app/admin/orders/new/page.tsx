@@ -750,11 +750,16 @@ export default function NewOrderPage() {
                       <div className="mt-3 pt-3 border-t border-neutral-200 flex justify-between items-center">
                         <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Final Unit Price</span>
                         <div className="text-right">
+                          {liveTotals.isOverridden && (
+                            <div className="text-sm font-bold text-neutral-400 line-through mb-0.5">
+                              ₹{liveTotals.computedPrice.toFixed(2)}
+                            </div>
+                          )}
                           <div className={`text-xl font-black leading-none ${liveTotals.isOverridden ? "text-[#6A0FAD]" : "text-neutral-900"}`}>
                             ₹{liveTotals.finalPrice.toFixed(2)}
                           </div>
                           {liveTotals.isOverridden && (
-                            <div className="text-[10px] text-[#6A0FAD] font-medium">Admin override</div>
+                            <div className="text-[10px] text-[#6A0FAD] font-medium mt-1">Admin override</div>
                           )}
                         </div>
                       </div>

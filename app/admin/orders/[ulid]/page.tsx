@@ -381,7 +381,12 @@ export default function OrderDetailPage() {
               <div className="h-px bg-neutral-200/50" />
               <div className="flex justify-between items-center">
                 <span className="font-bold text-neutral-500 text-sm">Total Amount</span>
-                <span className="text-xl font-black text-neutral-900">₹{order.total_order_price.toFixed(2)}</span>
+                <div className="flex items-center gap-2">
+                  {(order.gross_price && order.gross_price > order.total_order_price) && (
+                    <span className="text-sm text-neutral-400 line-through">₹{order.gross_price.toFixed(2)}</span>
+                  )}
+                  <span className="text-xl font-black text-neutral-900">₹{order.total_order_price.toFixed(2)}</span>
+                </div>
               </div>
               <div className="h-px bg-neutral-200/50" />
               <div className="flex justify-between items-center">

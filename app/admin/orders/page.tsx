@@ -411,7 +411,12 @@ export default function OrdersPage() {
                             </select>
                           </td>
                           <td className="px-6 py-4 text-right whitespace-nowrap">
-                            <div className="font-black text-neutral-900">₹{order.total_order_price.toFixed(2)}</div>
+                            <div className="flex flex-col items-end">
+                              {(order.gross_price && order.gross_price > order.total_order_price) && (
+                                <span className="text-xs text-neutral-400 line-through">₹{order.gross_price.toFixed(2)}</span>
+                              )}
+                              <div className="font-black text-neutral-900">₹{order.total_order_price.toFixed(2)}</div>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2">
