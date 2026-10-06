@@ -5,7 +5,7 @@ import { Filter, SlidersHorizontal, X } from "lucide-react";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Coffee, AlertTriangle, CheckCircle2, Pencil, Trash2, Copy, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Coffee, AlertTriangle, CheckCircle2, Pencil, Trash2, Eye, Copy, Plus } from "lucide-react";
 import AsyncMealCategorySelect from "@/components/admin/AsyncMealCategorySelect";
 import AsyncBowlCategorySelect from "@/components/admin/AsyncBowlCategorySelect";
 import { useAuth } from "@/lib/AuthContext";
@@ -241,7 +241,7 @@ export default function BowlsListPage() {
                 {bowls.map((item) => (
                   <div
                     key={item.id}
-                    onClick={() => router.push(`/admin/bowls/builder/${item.ulid}`)}
+                    onClick={() => router.push(`/admin/bowls/preview/${item.ulid}`)}
                     className="bg-white rounded-[24px] overflow-hidden shadow-sm border border-neutral-100/50 flex flex-col relative group cursor-pointer hover:shadow-md transition-shadow"
                   >
                     {/* Header Image Area */}
