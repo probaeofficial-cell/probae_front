@@ -18,6 +18,9 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
   const [method, setMethod] = useState("UPI");
   const [description, setDescription] = useState("");
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0]);
+  const [paymentRecipients, setPaymentRecipients] = useState<string[]>([]);
+  const [paymentTo, setPaymentTo] = useState('');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -31,6 +34,10 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
       const res = await endpoints.transactions.list(customerUlid, page) as any;
       setTransactions(res.transactions || []);
       setTotalCount(res.total_count || 0);
+      try {
+        const pData = await endpoints.settings.getPaymentRecipients();
+        setPaymentRecipients(pData.recipients || []);
+      } catch(e) {}
     } catch (err) {
       console.error(err);
     } finally {
@@ -61,6 +68,7 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
         method,
         description,
         transaction_date: transactionDate ? new Date(transactionDate).toISOString() : undefined,
+        payment_to: paymentTo || undefined,
       });
       setShowConfirm(false);
       setShowModal(false);
@@ -144,7 +152,12 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
                         {tx.transaction_type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-neutral-900">{tx.description}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-neutral-900">
+                      {tx.description}
+                      {tx.payment_to && (
+                        <span className="ml-2 text-xs text-neutral-500">→ {tx.payment_to}</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-xs text-neutral-500 font-mono">{tx.reference_id || '-'}</td>
                     <td className={`px-6 py-4 text-right font-black ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)}
@@ -216,6 +229,19 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
                   <option value="UPI">UPI / Scan</option>
                   <option value="CASH">Cash</option>
                   <option value="BANK">Bank Transfer</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Payment To</label>
+                <select
+                  value={paymentTo}
+                  onChange={e => setPaymentTo(e.target.value)}
+                  className="w-full border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20"
+                >
+                  <option value="">— Select recipient —</option>
+                  {paymentRecipients.map((name, i) => (
+                    <option key={i} value={name}>{name}</option>
+                  ))}
                 </select>
               </div>
               <div>

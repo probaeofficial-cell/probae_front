@@ -30,6 +30,25 @@ export default function SettingsPage() {
   });
   const [deliverySaveStatus, setDeliverySaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
+  const [recipients, setRecipients] = useState<string[]>([]);
+  const [newRecipient, setNewRecipient] = useState('');
+
+  const saveRecipients = async (list: string[]) => {
+    await endpoints.settings.updateSystemSettings({ PAYMENT_RECIPIENTS: JSON.stringify(list) });
+  };
+  const addRecipient = () => {
+    if (!newRecipient.trim()) return;
+    const updated = [...recipients, newRecipient.trim()];
+    setRecipients(updated);
+    setNewRecipient('');
+    saveRecipients(updated);
+  };
+  const removeRecipient = (i: number) => {
+    const updated = recipients.filter((_, idx) => idx !== i);
+    setRecipients(updated);
+    saveRecipients(updated);
+  };
+
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/admin/login");
@@ -49,6 +68,9 @@ export default function SettingsPage() {
           FREE_DELIVERY_KM: data.FREE_DELIVERY_KM || "",
           DELIVERY_CHARGE_PER_KM: data.DELIVERY_CHARGE_PER_KM || "",
         });
+        if (data.PAYMENT_RECIPIENTS) {
+          try { setRecipients(JSON.parse(data.PAYMENT_RECIPIENTS)); } catch {}
+        }
       } catch (error) {
         console.error("Error fetching system settings:", error);
       }
@@ -292,6 +314,36 @@ export default function SettingsPage() {
                   {deliverySaveStatus === "saved" && <Check className="w-4 h-4 mr-2" />}
                   {deliverySaveStatus === "saving" ? "Saving..." : deliverySaveStatus === "saved" ? "Saved!" : "Save Delivery Config"}
                 </ProbaeButton>
+              </div>
+            </div>
+
+            {/* ── Payment Recipients Card ──────────────────── */}
+            <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 p-6">
+              <h3 className="text-lg font-black text-neutral-900 mb-4">Payment Recipients</h3>
+              <p className="text-sm text-neutral-500 mb-4">These names appear in the payment log dropdown when recording customer payments.</p>
+              
+              {/* Current list */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {recipients.map((name, i) => (
+                  <span key={i} className="flex items-center gap-1 bg-neutral-100 text-neutral-700 text-sm font-medium px-3 py-1 rounded-full">
+                    {name}
+                    <button onClick={() => removeRecipient(i)} className="text-neutral-400 hover:text-red-500 ml-1">×</button>
+                  </span>
+                ))}
+                {recipients.length === 0 && <p className="text-sm text-neutral-400">No recipients added yet.</p>}
+              </div>
+              
+              {/* Add new */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Recipient name..."
+                  value={newRecipient}
+                  onChange={e => setNewRecipient(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addRecipient()}
+                  className="flex-1 border border-neutral-200 rounded-xl px-4 py-2 text-neutral-900 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20"
+                />
+                <button onClick={addRecipient} className="bg-[#6A0FAD] text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#5a0d93] transition-colors">Add</button>
               </div>
             </div>
 

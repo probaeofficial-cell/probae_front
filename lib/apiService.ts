@@ -577,6 +577,9 @@ export const endpoints = {
     updateSystemSettings: async (payload: Record<string, string>): Promise<Record<string, string>> => {
       return await api.put<Record<string, string>>("/settings/", payload);
     },
+    getPaymentRecipients: async (): Promise<any> => {
+      return await api.get<any>('/settings/payment-recipients');
+    },
     calculateDeliveryCharge: async (customerUlid: string): Promise<{
       distance_km: number | null;
       delivery_charge: number;
@@ -741,7 +744,7 @@ export const endpoints = {
   },
 
     transactions: {
-    logPayment: (customerUlid: string, payload: { amount: number, method: string, description: string, transaction_date?: string }) => 
+    logPayment: (customerUlid: string, payload: { amount: number, method: string, description: string, transaction_date?: string, payment_to?: string }) => 
       api.post(`/customers/${customerUlid}/transactions`, payload),
     list: (customerUlid: string, page: number = 1) => 
       api.get(`/customers/${customerUlid}/transactions?page=${page}`),

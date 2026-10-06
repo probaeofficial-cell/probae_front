@@ -25,6 +25,7 @@ type Transaction = {
   transaction_type: "DEPOSIT" | "DEBIT" | "REFUND";
   amount: number;
   payment_method: string | null;
+  payment_to?: string | null;
   reference_id: string | null;
   description: string | null;
   created_at: string;
@@ -66,6 +67,9 @@ export default function WalletAndTransactionsPage() {
   const [method, setMethod] = useState("UPI");
   const [description, setDescription] = useState("");
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0]);
+  const [paymentRecipients, setPaymentRecipients] = useState<string[]>([]);
+  const [paymentTo, setPaymentTo] = useState('');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -93,6 +97,9 @@ export default function WalletAndTransactionsPage() {
   const fetchTransactions = useCallback(async () => {
     setIsLoading(true);
     try {
+      const pData = await endpoints.settings.getPaymentRecipients().catch(()=>({recipients:[]}));
+      setPaymentRecipients(pData.recipients || []);
+      
       const data = await endpoints.transactions.listGlobal({
         page,
         limit,
@@ -173,6 +180,7 @@ export default function WalletAndTransactionsPage() {
         method,
         description,
         transaction_date: transactionDate ? new Date(transactionDate).toISOString() : undefined,
+        payment_to: paymentTo || undefined,
       });
       showToast("Payment logged successfully!", "success");
       setAmount("");
@@ -315,6 +323,7 @@ export default function WalletAndTransactionsPage() {
                     <th className="px-6 py-4">Type</th>
                     <th className="px-6 py-4 text-right">Amount</th>
                     <th className="px-6 py-4">Method / Ref</th>
+                    <th className="px-6 py-4">Paid To</th>
                     <th className="px-6 py-4">Description</th>
                     <th className="px-6 py-4 text-center">Actions</th>
                   </tr>
@@ -322,11 +331,11 @@ export default function WalletAndTransactionsPage() {
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center"><BowlLoader className="mx-auto h-8 w-8 text-[#6A0FAD]" /></td>
+                      <td colSpan={8} className="px-6 py-8 text-center"><BowlLoader className="mx-auto h-8 w-8 text-[#6A0FAD]" /></td>
                     </tr>
                   ) : transactions.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-neutral-500">No transactions found</td>
+                      <td colSpan={8} className="px-6 py-8 text-center text-neutral-500">No transactions found</td>
                     </tr>
                   ) : (
                     transactions.map((tx) => (
@@ -357,6 +366,9 @@ export default function WalletAndTransactionsPage() {
                         <td className="px-6 py-4 text-sm">
                           <div className="font-bold text-neutral-900">{tx.payment_method || '-'}</div>
                           <div className="text-xs text-neutral-400 font-mono">{tx.reference_id}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-neutral-900 whitespace-nowrap">
+                          {tx.payment_to || '-'}
                         </td>
                         <td className="px-6 py-4 text-sm text-neutral-600 max-w-[200px] truncate" title={tx.description || ""}>
                           {tx.description || '-'}
@@ -490,6 +502,20 @@ export default function WalletAndTransactionsPage() {
                   <option value="UPI">UPI</option>
                   <option value="CASH">Cash</option>
                   <option value="BANK">Bank</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Payment To</label>
+                <select
+                  value={paymentTo}
+                  onChange={e => setPaymentTo(e.target.value)}
+                  className="w-full border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20"
+                >
+                  <option value="">— Select recipient —</option>
+                  {paymentRecipients.map((name, i) => (
+                    <option key={i} value={name}>{name}</option>
+                  ))}
                 </select>
               </div>
 
