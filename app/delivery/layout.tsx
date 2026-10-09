@@ -39,9 +39,14 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
     );
   }
 
-  // Prevent UI flashing before redirect occurs
-  if (isLoginPage && user) return null;
-  if (!isLoginPage && !user) return null;
+  // Prevent UI flashing before redirect occurs, and avoid returning null which hangs Next.js App Router
+  if ((isLoginPage && user) || (!isLoginPage && !user)) {
+    return (
+      <div className="flex h-screen w-full bg-[#141414] text-white items-center justify-center">
+        <BowlLoader className="h-8 w-8 text-[#6A0FAD]" />
+      </div>
+    );
+  }
 
   if (isLoginPage) {
     return <>{children}</>;

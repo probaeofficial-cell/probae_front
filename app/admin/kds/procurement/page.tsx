@@ -24,12 +24,16 @@ export default function ProcurementDashboardPage() {
   
   // Filters
   const [showAll, setShowAll] = useState<boolean>(false);
+  
+  // Format today's date in YYYY-MM-DD for the default date
+  const todayStr = new Date().toLocaleDateString('en-CA'); 
+  const [targetDate, setTargetDate] = useState<string>(todayStr);
 
   const fetchShortfall = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiService.get<ProcurementItem[]>('/kds/procurement-shortfall');
+      const response = await apiService.get<ProcurementItem[]>(`/kds/procurement-shortfall?target_date=${targetDate}`);
       setItems(response);
     } catch (err: any) {
       setError(err.message || "Failed to load procurement data.");
@@ -40,7 +44,7 @@ export default function ProcurementDashboardPage() {
 
   useEffect(() => {
     fetchShortfall();
-  }, []);
+  }, [targetDate]);
 
   const formatGrams = (grams: number) => {
     if (grams >= 1000) {
@@ -79,6 +83,12 @@ export default function ProcurementDashboardPage() {
             </div>
             
             <div className="flex items-center gap-3">
+              <input
+                type="date"
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
+                className="bg-white border border-neutral-200 rounded-xl px-4 py-2 text-sm font-bold text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20"
+              />
               <div className="flex items-center bg-neutral-100 p-1 rounded-xl">
                 <button
                   onClick={() => setShowAll(false)}
