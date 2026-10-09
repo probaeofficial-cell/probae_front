@@ -7,6 +7,7 @@ import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { api } from "@/lib/apiService";
+import { getMediaUrl } from "@/lib/utils";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { SubscriptionSidePanel } from "@/components/admin/SubscriptionSidePanel";
 import { MoreVertical, X, CheckCircle2, Hourglass, PauseCircle, ChevronLeft, ChevronRight } from "lucide-react";
@@ -15,6 +16,12 @@ export default function SubscriptionsDashboard() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+  useEffect(() => {
+    api.get("/settings").then((res: any) => {
+      if (res && res.R2_BASE_URL) setSystemSettings({ R2_BASE_URL: res.R2_BASE_URL });
+    }).catch(() => {});
+  }, []);
   
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -240,7 +247,7 @@ export default function SubscriptionsDashboard() {
                           <td className="p-4 flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-neutral-200 overflow-hidden relative">
                               {sub.customer.image ? (
-                                <Image src={`/uploads/${sub.customer.image}`} alt="" fill className="object-cover" />
+                                <img src={getMediaUrl(systemSettings.R2_BASE_URL, sub.customer.image) || undefined} alt="" className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-[#6A0FAD] font-bold bg-[#6A0FAD]/10">
                                   {sub.customer.name.charAt(0)}

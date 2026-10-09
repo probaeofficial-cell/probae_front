@@ -5,12 +5,19 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { X, Calendar, Edit3, PauseCircle, RefreshCw, CheckCircle2, Clock } from "lucide-react";
 import { api } from "@/lib/apiService";
+import { getMediaUrl } from "@/lib/utils";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 
 export function SubscriptionSidePanel({ subscription, onClose, onUpdate }: { subscription: any, onClose: () => void, onUpdate?: () => void }) {
   const [activeTab, setActiveTab] = useState<"overview" | "schedule">("overview");
   const [schedule, setSchedule] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+  useEffect(() => {
+    api.get("/settings").then((res: any) => {
+      if (res && res.R2_BASE_URL) setSystemSettings({ R2_BASE_URL: res.R2_BASE_URL });
+    }).catch(() => {});
+  }, []);
   
   const s = subscription;
   const progressPct = s.progress.total > 0 ? Math.round((s.progress.done / s.progress.total) * 100) : 0;
@@ -40,7 +47,7 @@ export function SubscriptionSidePanel({ subscription, onClose, onUpdate }: { sub
         <div className="flex gap-4 items-center">
           <div className="w-12 h-12 rounded-full bg-neutral-200 overflow-hidden relative">
             {s.customer.image ? (
-              <Image src={`/uploads/${s.customer.image}`} alt="" fill className="object-cover" />
+              <img src={getMediaUrl(systemSettings.R2_BASE_URL, s.customer.image) || undefined} alt="" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-[#6A0FAD] font-bold text-lg bg-[#6A0FAD]/10">
                 {s.customer.name.charAt(0)}
@@ -202,7 +209,7 @@ export function SubscriptionSidePanel({ subscription, onClose, onUpdate }: { sub
                     {item.bowls.map((bowl: any, j: number) => (
                       <div key={j} className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-neutral-100 relative overflow-hidden flex-shrink-0">
-                          {bowl.image && <Image src={`/uploads/${bowl.image}`} alt="" fill className="object-cover" />}
+                          {bowl.image && <img src={getMediaUrl(systemSettings.R2_BASE_URL, bowl.image) || undefined} alt="" className="w-full h-full object-cover" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-black truncate">{bowl.name}</p>
