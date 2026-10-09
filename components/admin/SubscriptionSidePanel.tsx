@@ -7,7 +7,7 @@ import { X, Calendar, Edit3, PauseCircle, RefreshCw, CheckCircle2, Clock } from 
 import { api } from "@/lib/apiService";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 
-export function SubscriptionSidePanel({ subscription, onClose }: { subscription: any, onClose: () => void }) {
+export function SubscriptionSidePanel({ subscription, onClose, onUpdate }: { subscription: any, onClose: () => void, onUpdate?: () => void }) {
   const [activeTab, setActiveTab] = useState<"overview" | "schedule">("overview");
   const [schedule, setSchedule] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -97,7 +97,13 @@ export function SubscriptionSidePanel({ subscription, onClose }: { subscription:
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100">
                   <p className="text-xs text-neutral-400 font-bold mb-1">Start Date</p>
-                  <p className="text-sm font-black text-black">{s.plan.start_date ? new Date(s.plan.start_date).toISOString().split('T')[0] : 'N/A'}</p>
+                  <p className="text-sm font-black text-black">
+                    {(() => {
+                      if (!s.plan?.start_date) return 'N/A';
+                      const d = new Date(s.plan.start_date);
+                      return isNaN(d.getTime()) ? String(s.plan.start_date).split('T')[0] : d.toISOString().split('T')[0];
+                    })()}
+                  </p>
                 </div>
                 <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100">
                   <p className="text-xs text-neutral-400 font-bold mb-1">Meal Slots</p>
@@ -146,9 +152,31 @@ export function SubscriptionSidePanel({ subscription, onClose }: { subscription:
               <button className="flex items-center justify-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold text-xs py-3 rounded-xl transition-colors">
                 <Edit3 className="w-4 h-4" /> Manage Plan
               </button>
-              <button className="flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs py-3 rounded-xl transition-colors">
-                <PauseCircle className="w-4 h-4" /> Pause Plan
-              </button>
+              {s.status === 'Paused' ? (
+                <button 
+                  onClick={async () => {
+                    try {
+                      await api.patch(`/customers/${s.customer.ulid}/delivery-status`, { status: "ACTIVE" });
+                      if (onUpdate) onUpdate();
+                    } catch (e) { alert("Failed to resume plan"); }
+                  }}
+                  className="flex items-center justify-center gap-2 bg-green-50 hover:bg-green-100 text-green-600 font-bold text-xs py-3 rounded-xl transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" /> Resume Plan
+                </button>
+              ) : (
+                <button 
+                  onClick={async () => {
+                    try {
+                      await api.patch(`/customers/${s.customer.ulid}/delivery-status`, { status: "PAUSED" });
+                      if (onUpdate) onUpdate();
+                    } catch (e) { alert("Failed to pause plan"); }
+                  }}
+                  className="flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs py-3 rounded-xl transition-colors"
+                >
+                  <PauseCircle className="w-4 h-4" /> Pause Plan
+                </button>
+              )}
             </div>
             <button disabled={s.status !== "Ending Soon" && s.progress.left > 0} className="w-full flex items-center justify-center gap-2 bg-[#6A0FAD] hover:bg-[#5a0c96] text-white font-bold text-sm py-3.5 rounded-xl transition-colors shadow-lg shadow-[#6A0FAD]/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <RefreshCw className="w-4 h-4" /> Renew Subscription Plan

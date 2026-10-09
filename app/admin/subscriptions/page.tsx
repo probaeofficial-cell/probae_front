@@ -328,12 +328,15 @@ export default function SubscriptionsDashboard() {
               </div>
             </div>
 
-            {/* Side Panel */}
             {selectedSub && (
               <div className="w-full lg:w-96 flex-shrink-0 transition-all duration-300">
                 <SubscriptionSidePanel 
                   subscription={selectedSub} 
                   onClose={() => setSelectedSub(null)} 
+                  onUpdate={() => {
+                    loadDashboard();
+                    setSelectedSub(null);
+                  }}
                 />
               </div>
             )}
