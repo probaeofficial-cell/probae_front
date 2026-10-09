@@ -262,7 +262,11 @@ export default function SubscriptionsDashboard() {
                             </span>
                           </td>
                           <td className="p-4 font-bold text-neutral-600">
-                            {sub.plan.start_date ? new Date(sub.plan.start_date).toISOString().split('T')[0] : 'N/A'}
+                            {(() => {
+                              if (!sub.plan?.start_date) return 'N/A';
+                              const d = new Date(sub.plan.start_date);
+                              return isNaN(d.getTime()) ? String(sub.plan.start_date).split('T')[0] : d.toISOString().split('T')[0];
+                            })()}
                           </td>
                           <td className="p-4 w-48">
                             <div className="flex justify-between text-xs mb-1 font-bold">
