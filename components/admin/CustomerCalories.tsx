@@ -53,7 +53,7 @@ export function CustomerCalories({ customerUlid, onRefresh }: { customerUlid: st
       if (res.success) {
         setStats(res.stats);
         setLog(res.log);
-        setTotalItems(res.total || 0);
+        setTotalItems(res.log ? res.log.length : 0);
       }
     } catch (err) {
       console.error(err);
