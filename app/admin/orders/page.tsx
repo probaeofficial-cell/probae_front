@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap, CheckCircle2 } from "lucide-react";
+import { Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap, CheckCircle2, Bot } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -44,23 +44,23 @@ export default function OrdersPage() {
   const [cronToast, setCronToast] = useState<{type: "success"|"error", msg: string} | null>(null);
   const [showGenerateConfirm, setShowGenerateConfirm] = useState(false);
 
-  const handleRunCron = async () => {
+  const handleRunCron = async (targetDay: string) => {
     setIsCronRunning(true);
     setCronToast(null);
     try {
-      const res = await endpoints.planTiers.triggerDailyOrders() as any;
-      const count = res?.orders_created ?? 0;
-      const day = res?.day_of_week ?? "";
-      const msg = count > 0
-        ? `✓ Generated ${count} plan order${count !== 1 ? "s" : ""} for today (${day})`
-        : `No orders generated — today is ${day}. Customers on 5-day plans don't have schedules for this day.`;
-      setCronToast({ type: count > 0 ? "success" : "error", msg });
-      fetchOrders(activeTab, page, targetDate, search, customerId, status, selectedMealSlot);
+      const res = await endpoints.planTiers.triggerDailyOrders(targetDay) as any;
+      setCronToast({ type: "success", msg: res?.message || `Order generation started in the background for ${targetDay}.` });
+      
+      // We don't fetch orders immediately since it takes time in the background.
+      // But we can trigger a fetch after a small delay.
+      setTimeout(() => {
+        fetchOrders(activeTab, page, targetDate, search, customerId, status, selectedMealSlot);
+      }, 5000);
     } catch {
       setCronToast({ type: "error", msg: "Failed to run daily generation. Check backend logs." });
     } finally {
       setIsCronRunning(false);
-      setTimeout(() => setCronToast(null), 5000);
+      setTimeout(() => setCronToast(null), 8000);
     }
   };
 
@@ -594,19 +594,46 @@ export default function OrdersPage() {
       isLoading={isUpdatingStatus}
     />
 
-    <ConfirmationModal
-      isOpen={showGenerateConfirm}
-      onClose={() => setShowGenerateConfirm(false)}
-      onConfirm={() => {
-        setShowGenerateConfirm(false);
-        handleRunCron();
-      }}
-      title="Generate Plan Orders"
-      message="Are you sure you want to run the plan order queue for tomorrow? This will generate daily orders for all active plans scheduled for tomorrow. This action is safe to run multiple times, as it skips existing orders."
-      type="info"
-      confirmText="Yes, Generate Orders"
-      cancelText="Cancel"
-    />
+    {showGenerateConfirm && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+        <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center shrink-0">
+              <Bot className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-neutral-900">Generate Plan Orders</h3>
+              <p className="text-sm text-neutral-500 font-medium">Select the target date</p>
+            </div>
+          </div>
+          
+          <p className="text-sm text-neutral-600 mb-6 font-medium leading-relaxed">
+            When do you want to generate automated plan orders for? This action is safe to run multiple times, as it skips existing orders.
+          </p>
+
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={() => { setShowGenerateConfirm(false); handleRunCron("today"); }}
+              className="w-full bg-[#6A0FAD] hover:bg-[#580b91] text-white font-bold py-3.5 rounded-xl transition-colors"
+            >
+              Generate for Today
+            </button>
+            <button 
+              onClick={() => { setShowGenerateConfirm(false); handleRunCron("tomorrow"); }}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition-colors"
+            >
+              Generate for Tomorrow
+            </button>
+            <button 
+              onClick={() => setShowGenerateConfirm(false)}
+              className="w-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold py-3.5 rounded-xl transition-colors mt-2"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     <OrderWindowModal 
       isOpen={isWindowModalOpen} 

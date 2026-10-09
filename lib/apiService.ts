@@ -820,7 +820,7 @@ export const endpoints = {
     create: async (data: any) => await api.post("/plans/tiers", data),
     update: async (ulid: string, data: any) => await api.patch(`/plans/tiers/${ulid}`, data),
     delete: async (ulid: string) => await api.del(`/plans/tiers/${ulid}`),
-    triggerDailyOrders: async () => await api.post('/plans/trigger-daily-orders', {}),
+    triggerDailyOrders: async (targetDay: string = 'tomorrow') => await api.post(`/plans/trigger-daily-orders?target_day=${targetDay}`, {}),
   },
   menuBlueprints: {
     get: async (durationType: string, mealSlot: string, planCategory: string = 'Core') => await api.get(`/plans/blueprints?duration_type=${durationType}&meal_slot=${mealSlot}&plan_category=${planCategory}`),
