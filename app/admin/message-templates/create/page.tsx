@@ -91,6 +91,12 @@ function CreateTemplatePageInner() {
       "total_calories_week": "8450",
       "total_calories_month": "24000",
       "expiration_date": "2026-10-01",
+      "bowls_delivered": "5",
+      "total_bowls": "24",
+      "bowls_remaining": "19",
+      "bowls_pending": "19",
+      "bowl_progress": "5 of 24",
+      "bowl_count": "5/24",
     };
 
     for (const [key, val] of Object.entries(dummyData)) {

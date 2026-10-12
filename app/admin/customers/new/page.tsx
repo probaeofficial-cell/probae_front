@@ -780,7 +780,7 @@ export default function NewCustomerPage() {
                     </div>
                   ) : (
                     plans.map(p => {
-                      const isStandard = p.plan_type !== 'CUSTOM';
+                      const isStandard = p.plan_type !== 'CUSTOM' || (p.category && p.category.toLowerCase() === 'core');
                       const isSelected = formData.selectedPlanId === p._id;
                       return (
                         <div 
@@ -866,9 +866,13 @@ export default function NewCustomerPage() {
                   <div className="flex items-center justify-center p-8 bg-white rounded-2xl border border-neutral-200">
                     <BowlLoader className="w-8 h-8 text-[#6A0FAD]" />
                     <span className="ml-3 text-neutral-600 font-bold">
-                      {plans.find(p => p._id === formData.selectedPlanId)?.plan_type === 'STANDARD'
-                        ? "Loading standard recipe blueprint and pricing..."
-                        : "Scaling recipe macros & calculating dynamic pricing..."}
+                      {(() => {
+                        const selPlan = plans.find(p => p._id === formData.selectedPlanId);
+                        const isStd = selPlan?.plan_type !== 'CUSTOM' || (selPlan?.category && selPlan.category.toLowerCase() === 'core');
+                        return isStd
+                          ? "Loading standard recipe blueprint and pricing..."
+                          : "Scaling recipe macros & calculating dynamic pricing...";
+                      })()}
                     </span>
                   </div>
                 )}
@@ -1006,7 +1010,8 @@ export default function NewCustomerPage() {
 
                     {/* Matrix Preview */}
                     {(() => {
-                      const isStandardPlan = plans.find(p => p._id === formData.selectedPlanId)?.plan_type === 'STANDARD';
+                      const selPlan = plans.find(p => p._id === formData.selectedPlanId);
+                      const isStandardPlan = (selPlan?.plan_type !== 'CUSTOM' || (selPlan?.category && selPlan.category.toLowerCase() === 'core')) && formData.selectedPlanId !== "CUSTOM_BUILDER";
                       return (
                         <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
                           <div className="px-6 py-4 bg-neutral-50 border-b border-neutral-200 flex justify-between items-center">
