@@ -797,6 +797,7 @@ export const endpoints = {
     del: async (ulid: string) => await api.del(`/customers/${ulid}`),
     migrateActivePlan: async (ulid: string, data: any) => await api.post(`/customers/${ulid}/migrate-active-plan`, data),
     legacySubscription: async (ulid: string, data: any) => await api.post(`/customers/${ulid}/legacy-subscription`, data),
+    cancelPlan: async (ulid: string, data: { remove_transaction: boolean; remove_remaining_bowls: boolean; delete_future_orders: boolean; reason?: string }) => await api.post(`/customers/${ulid}/cancel-plan`, data),
     updateDeliveryStatus: async (ulid: string, data: any) => await api.patch(`/customers/${ulid}/delivery-status`, data),
     legacyOrder: async (ulid: string, data: any) => await api.post(`/orders/customers/${ulid}/legacy-order`, data),
     updateLegacyOrder: async (ulid: string, orderUlid: string, data: any) => await api.put(`/orders/customers/${ulid}/legacy-order/${orderUlid}`, data),

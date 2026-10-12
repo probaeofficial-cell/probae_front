@@ -58,6 +58,14 @@ export default function CustomerDetailPage() {
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
   const [activeTab, setActiveTab] = useState<"PROFILE" | "LEDGER" | "CALORIES" | "HISTORY">("PROFILE");
   const [showRenewalModal, setShowRenewalModal] = useState(false);
+  const [showCancelPlanModal, setShowCancelPlanModal] = useState(false);
+  const [isCancellingPlan, setIsCancellingPlan] = useState(false);
+  const [cancelPlanConfig, setCancelPlanConfig] = useState({
+    removeTransaction: true,
+    removeRemainingBowls: true,
+    deleteFutureOrders: true,
+    reason: ""
+  });
   const [showMenuRotation, setShowMenuRotation] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -237,6 +245,26 @@ export default function CustomerDetailPage() {
       fetchCustomer(); // re-fetch to get updated state
     } catch (err: any) {
       alert("Failed to update delivery status: " + (err?.detail || err?.message || "Unknown error"));
+    }
+  };
+
+  const handleCancelPlan = async () => {
+    setIsCancellingPlan(true);
+    try {
+      const res: any = await endpoints.customers.cancelPlan(ulid, {
+        remove_transaction: cancelPlanConfig.removeTransaction,
+        remove_remaining_bowls: cancelPlanConfig.removeRemainingBowls,
+        delete_future_orders: cancelPlanConfig.deleteFutureOrders,
+        reason: cancelPlanConfig.reason || undefined
+      });
+      setShowCancelPlanModal(false);
+      await fetchCustomer();
+      alert(res?.message || "Plan successfully removed.");
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err?.detail || err?.message || "Failed to cancel plan");
+    } finally {
+      setIsCancellingPlan(false);
     }
   };
 
@@ -549,7 +577,12 @@ export default function CustomerDetailPage() {
             ) : activeTab === "CALORIES" ? (
               <CustomerCalories customerUlid={customer.ulid} onRefresh={fetchCustomer} />
             ) : activeTab === "HISTORY" ? (
-              <CustomerHistory customerUlid={customer.ulid} subscriptions={customer.subscriptions || []} onRefresh={fetchCustomer} />
+              <CustomerHistory 
+                customerUlid={customer.ulid} 
+                subscriptions={customer.subscriptions || []} 
+                cancellationLogs={customer.cancellation_logs || []} 
+                onRefresh={fetchCustomer} 
+              />
             ) : (
             <div className="animate-in fade-in zoom-in duration-300">
             
@@ -886,7 +919,16 @@ export default function CustomerDetailPage() {
                       
                       {formData.selectedPlanId === "CUSTOM_BUILDER" ? (
                         <div className="mt-4 p-4 rounded-2xl border border-orange-500/30 bg-orange-500/5">
-                          <div className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-2">Currently Assigned Plan</div>
+                          <div className="flex justify-between items-center mb-2">
+                            <div className="text-xs font-bold text-orange-600 uppercase tracking-wider">Currently Assigned Plan</div>
+                            <button
+                              type="button"
+                              onClick={() => setShowCancelPlanModal(true)}
+                              className="px-2.5 py-1 text-xs font-bold text-red-600 hover:bg-red-100/80 rounded-lg transition-colors flex items-center gap-1 border border-red-200 bg-white"
+                            >
+                              <Trash2 className="w-3 h-3" /> Cancel / Remove Plan
+                            </button>
+                          </div>
                           <div className="flex justify-between items-center">
                             <div>
                               <h4 className="font-bold text-neutral-900">Bespoke Custom Plan</h4>
@@ -900,7 +942,16 @@ export default function CustomerDetailPage() {
                         </div>
                       ) : formData.selectedPlanId && allPlans.find(p => p._id === formData.selectedPlanId) && (
                         <div className="mt-4 p-4 rounded-2xl border border-[#6A0FAD]/30 bg-[#6A0FAD]/5">
-                          <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-2">Currently Assigned Plan</div>
+                          <div className="flex justify-between items-center mb-2">
+                            <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider">Currently Assigned Plan</div>
+                            <button
+                              type="button"
+                              onClick={() => setShowCancelPlanModal(true)}
+                              className="px-2.5 py-1 text-xs font-bold text-red-600 hover:bg-red-100/80 rounded-lg transition-colors flex items-center gap-1 border border-red-200 bg-white"
+                            >
+                              <Trash2 className="w-3 h-3" /> Cancel / Remove Plan
+                            </button>
+                          </div>
                           {(() => {
                             const p = allPlans.find(p => p._id === formData.selectedPlanId);
                             const isStandard = p?.plan_type !== 'CUSTOM';
@@ -1564,6 +1615,139 @@ export default function CustomerDetailPage() {
         type="error"
         cancelText="Close"
       />
+
+      {/* Delete / Cancel Plan Modal */}
+      {showCancelPlanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-neutral-100 space-y-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full uppercase tracking-wider">
+                  Destructive Action
+                </span>
+                <h3 className="text-xl font-black text-neutral-900 mt-2">
+                  Cancel & Remove Plan
+                </h3>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Remove currently assigned plan and choose financial and quota reversal options.
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowCancelPlanModal(false)}
+                className="text-neutral-400 hover:text-neutral-600 p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Current Status Highlights */}
+            <div className="bg-neutral-50 rounded-2xl p-4 border border-neutral-200/80 space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="font-bold text-neutral-500">Currently Assigned:</span>
+                <span className="font-black text-neutral-900">
+                  {allPlans.find(p => p._id === formData.selectedPlanId)?.name || (formData.selectedPlanId === "CUSTOM_BUILDER" ? "Bespoke Custom Plan" : "Assigned Plan")}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="font-bold text-neutral-500">Wallet Balance:</span>
+                <span className="font-black text-[#6A0FAD]">₹{(Number(customer?.wallet_balance) || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="font-bold text-neutral-500">Remaining Bowls:</span>
+                <span className="font-black text-orange-600">{customer?.remaining_bowl_count || 0} Bowls</span>
+              </div>
+            </div>
+
+            {/* Config Options */}
+            <div className="space-y-4">
+              <label className="flex items-start gap-3 p-3.5 rounded-2xl border border-neutral-200 bg-white hover:bg-neutral-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={cancelPlanConfig.removeTransaction}
+                  onChange={(e) => setCancelPlanConfig(prev => ({ ...prev, removeTransaction: e.target.checked }))}
+                  className="mt-1 w-4 h-4 text-red-600 rounded border-neutral-300 focus:ring-red-500"
+                />
+                <div className="text-xs">
+                  <div className="font-bold text-neutral-900">
+                    Reverse Plan Transaction & Refund Wallet
+                  </div>
+                  <div className="text-neutral-500 mt-0.5">
+                    Deletes the subscription charge transaction and refunds the paid amount back into the customer wallet.
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3.5 rounded-2xl border border-neutral-200 bg-white hover:bg-neutral-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={cancelPlanConfig.removeRemainingBowls}
+                  onChange={(e) => setCancelPlanConfig(prev => ({ ...prev, removeRemainingBowls: e.target.checked }))}
+                  className="mt-1 w-4 h-4 text-red-600 rounded border-neutral-300 focus:ring-red-500"
+                />
+                <div className="text-xs">
+                  <div className="font-bold text-neutral-900">
+                    Clear Remaining Bowls Quota
+                  </div>
+                  <div className="text-neutral-500 mt-0.5">
+                    Resets the remaining bowls quota to 0 so no automated orders can consume it.
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3.5 rounded-2xl border border-neutral-200 bg-white hover:bg-neutral-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={cancelPlanConfig.deleteFutureOrders}
+                  onChange={(e) => setCancelPlanConfig(prev => ({ ...prev, deleteFutureOrders: e.target.checked }))}
+                  className="mt-1 w-4 h-4 text-red-600 rounded border-neutral-300 focus:ring-red-500"
+                />
+                <div className="text-xs">
+                  <div className="font-bold text-neutral-900">
+                    Cancel Upcoming Unfulfilled Orders
+                  </div>
+                  <div className="text-neutral-500 mt-0.5">
+                    Cancels any upcoming scheduled orders created for this plan starting today onwards.
+                  </div>
+                </div>
+              </label>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-600 uppercase tracking-wider mb-1.5">
+                  Reason / Notes (Logged for Audit)
+                </label>
+                <textarea
+                  value={cancelPlanConfig.reason}
+                  onChange={(e) => setCancelPlanConfig(prev => ({ ...prev, reason: e.target.value }))}
+                  placeholder="e.g. Customer cancelled subscription, switched diet, etc."
+                  rows={2}
+                  className="w-full text-sm text-neutral-900 font-medium bg-white border border-neutral-300 rounded-xl p-3 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 shadow-sm"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowCancelPlanModal(false)}
+                disabled={isCancellingPlan}
+                className="flex-1 px-4 py-3 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:bg-neutral-50 transition-colors"
+              >
+                Keep Plan
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelPlan}
+                disabled={isCancellingPlan}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isCancellingPlan ? <BowlLoader className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                Confirm & Cancel Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
