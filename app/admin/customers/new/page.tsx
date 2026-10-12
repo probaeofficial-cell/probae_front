@@ -301,7 +301,7 @@ export default function NewCustomerPage() {
     setStep(4);
     
     try {
-      const listRes = await endpoints.planTiers.list({ limit: 100 }) as any;
+      const listRes = await endpoints.planTiers.list({ limit: 200 }) as any;
       if (listRes.success) {
         const days = parseInt(formData.planFrequency.split(" ")[0]);
         const matched = listRes.tiers.filter((t: any) => {
@@ -769,35 +769,75 @@ export default function NewCustomerPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {plans.length === 0 ? (
-                    <div className="col-span-2 p-8 bg-white rounded-2xl text-center text-neutral-500 border border-neutral-200">
-                      No matching plans found for this configuration.
+                    <div className="col-span-2 p-8 bg-white rounded-2xl text-center border border-neutral-200">
+                      <p className="text-base font-bold text-neutral-800 mb-1">No pre-configured plans found for this configuration.</p>
+                      <p className="text-xs text-neutral-500 max-w-md mx-auto">
+                        Showing plans matching <strong>{formData.planDuration}</strong> duration, <strong>{formData.planFrequency}</strong>, and meal slots: <strong>{formData.mealSlots.join(', ') || 'None selected'}</strong>.
+                      </p>
+                      <p className="text-xs text-[#6A0FAD] font-bold mt-3">
+                        You can select &quot;Create Custom Plan&quot; below to build a bespoke bowl rotation, or verify plan meal slots in Admin &gt; Plans.
+                      </p>
                     </div>
                   ) : (
-                    plans.map(p => (
-                      <div key={p._id} onClick={() => handlePlanSelect(p._id)} className={`cursor-pointer p-6 rounded-2xl border-2 transition-all ${formData.selectedPlanId === p._id ? "border-[#6A0FAD] bg-[#6A0FAD]/5" : "border-neutral-200 bg-white"}`}>
-                        <div className="flex justify-between items-start mb-4">
-                          <h3 className="text-xl font-bold text-neutral-900">{p.name}</h3>
-                          {formData.selectedPlanId === p._id && <Check className="text-[#6A0FAD] w-5 h-5" />}
+                    plans.map(p => {
+                      const isStandard = p.plan_type !== 'CUSTOM';
+                      const isSelected = formData.selectedPlanId === p._id;
+                      return (
+                        <div 
+                          key={p._id} 
+                          onClick={() => handlePlanSelect(p._id)} 
+                          className={`cursor-pointer p-6 rounded-2xl border-2 transition-all ${
+                            isSelected 
+                              ? isStandard 
+                                ? "border-blue-600 bg-blue-50/20 shadow-sm" 
+                                : "border-[#6A0FAD] bg-[#6A0FAD]/5 shadow-sm" 
+                              : "border-neutral-200 bg-white hover:border-neutral-300"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <h3 className="text-xl font-bold text-neutral-900">{p.name}</h3>
+                              <span className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${
+                                isStandard ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-[#6A0FAD]"
+                              }`}>
+                                {isStandard ? "Standard • Fixed Recipe (As-Is)" : "Custom • Dynamic Scaled"}
+                              </span>
+                            </div>
+                            {isSelected && (
+                              <Check className={`w-5 h-5 ${isStandard ? "text-blue-600" : "text-[#6A0FAD]"}`} />
+                            )}
+                          </div>
+                          <p className="text-sm text-neutral-600 mb-2">{p.category} • {p.duration} • {p.days} Days</p>
+                          <p className="text-xs text-neutral-500 font-medium mb-3">
+                            {isStandard 
+                              ? "Bowls served exactly as crafted by chef without calorie scaling." 
+                              : "Bowls dynamically scaled to match customer's target calories and macros."}
+                          </p>
+                          <div className="flex justify-between items-center pt-3 border-t border-neutral-100">
+                            <p className="text-xs text-[#6A0FAD] font-bold">Meals: {p.included_meal_slots.map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}</p>
+                            <span className="text-xs font-black text-neutral-700 uppercase">{isStandard ? "As-Is Portion" : "Custom Scaled"}</span>
+                          </div>
                         </div>
-                        <p className="text-sm text-neutral-600 mb-4">{p.category} • {p.duration} • {p.days} Days</p>
-                        <p className="text-xs text-[#6A0FAD] font-bold mb-2">Meals: {p.included_meal_slots.map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}</p>
-                        <p className="text-2xl font-bold text-neutral-900">
-                          {p.plan_type === 'CUSTOM' ? 'Dynamic' : 'Standard'}
-                        </p>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                   {/* Custom Builder Card */}
-                  <div onClick={() => handlePlanSelect("CUSTOM_BUILDER")} className={`cursor-pointer p-6 rounded-2xl border-2 border-dashed transition-all ${formData.selectedPlanId === "CUSTOM_BUILDER" ? "border-orange-500 bg-orange-50" : "border-neutral-300 bg-neutral-50 hover:border-orange-500 hover:bg-orange-50/50"}`}>
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-xl font-bold text-orange-600">✨ Create Custom Plan</h3>
+                  <div onClick={() => handlePlanSelect("CUSTOM_BUILDER")} className={`cursor-pointer p-6 rounded-2xl border-2 border-dashed transition-all ${formData.selectedPlanId === "CUSTOM_BUILDER" ? "border-orange-500 bg-orange-50 shadow-sm" : "border-neutral-300 bg-neutral-50 hover:border-orange-500 hover:bg-orange-50/50"}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="text-xl font-bold text-orange-600">✨ Create Custom Plan</h3>
+                        <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-orange-100 text-orange-700">
+                          Bespoke • Slot-by-Slot
+                        </span>
+                      </div>
                       {formData.selectedPlanId === "CUSTOM_BUILDER" && <Check className="text-orange-500 w-5 h-5" />}
                     </div>
-                    <p className="text-sm text-neutral-600 mb-4">Bespoke • {formData.planDuration} • {formData.planFrequency}</p>
-                    <p className="text-xs text-orange-600 font-bold mb-2">Build your exact rotation</p>
-                    <p className="text-2xl font-bold text-orange-600">
-                      Bespoke
-                    </p>
+                    <p className="text-sm text-neutral-600 mb-2">{formData.planDuration} • {formData.planFrequency}</p>
+                    <p className="text-xs text-neutral-500 font-medium mb-3">Build your exact daily bowl rotation manually with custom scaling.</p>
+                    <div className="flex justify-between items-center pt-3 border-t border-orange-100">
+                      <p className="text-xs text-orange-600 font-bold">{customSchedule.length > 0 ? `${customSchedule.length} bowls mapped` : "Build rotation"}</p>
+                      <span className="text-xs font-black text-orange-700 uppercase">Custom Rotation</span>
+                    </div>
                   </div>
                 </div>
 
@@ -825,7 +865,11 @@ export default function NewCustomerPage() {
                 {isPreviewLoading && (
                   <div className="flex items-center justify-center p-8 bg-white rounded-2xl border border-neutral-200">
                     <BowlLoader className="w-8 h-8 text-[#6A0FAD]" />
-                    <span className="ml-3 text-neutral-600 font-bold">Scaling recipe macros & calculating dynamic pricing...</span>
+                    <span className="ml-3 text-neutral-600 font-bold">
+                      {plans.find(p => p._id === formData.selectedPlanId)?.plan_type === 'STANDARD'
+                        ? "Loading standard recipe blueprint and pricing..."
+                        : "Scaling recipe macros & calculating dynamic pricing..."}
+                    </span>
                   </div>
                 )}
 
@@ -961,64 +1005,85 @@ export default function NewCustomerPage() {
                     })()}
 
                     {/* Matrix Preview */}
-                    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
-                      <div className="px-6 py-4 bg-neutral-50 border-b border-neutral-200">
-                        <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">Customized Meal Schedule</h3>
-                      </div>
-                      <div className="divide-y divide-neutral-100 max-h-96 overflow-y-auto">
-                        {previewData.scaled_matrix.map((item: any, idx: number) => (
-                          <div key={idx} className="p-4 hover:bg-neutral-50 transition-colors flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-neutral-100 rounded-xl flex flex-col items-center justify-center shrink-0">
-                                <span className="text-[10px] font-bold text-neutral-500 uppercase">Day</span>
-                                <span className="text-sm font-black text-neutral-900">{item.day_index + 1}</span>
-                              </div>
-                              <div>
-                                <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-1">{item.meal_type}</div>
-                                <div className="text-sm font-bold text-neutral-900 flex items-center gap-2">
-                                  {item.bowl_name}
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-[10px] font-bold text-neutral-400 line-through">
-                                      ₹{item.scaled_price?.toFixed(2)}
-                                    </span>
-                                    {(() => {
-                                      const defaultFinal = previewData.final_discounted_price || 0;
-                                      const isOverride = formData.isOverrideEnabled;
-                                      const overrideVal = parseFloat(formData.overrideTotalPrice) || 0;
-                                      const actualFinal = (isOverride && formData.overrideTotalPrice !== "") ? overrideVal : defaultFinal;
-                                      const finalAvg = actualFinal / (previewData.scaled_matrix.length || 1);
-                                      const diff = (item.scaled_price || 0) - finalAvg;
-                                      return (
-                                        <>
-                                          <span className="text-[9px] font-bold text-red-500">
-                                            -{diff > 0 ? '₹' + diff.toFixed(2) : '+₹' + Math.abs(diff).toFixed(2)}
-                                          </span>
-                                          <span className="text-[10px] font-bold text-[#16A34A] bg-[#16A34A]/10 px-2 py-0.5 rounded-full">
-                                            ₹{finalAvg.toFixed(2)}
-                                          </span>
-                                        </>
-                                      )
-                                    })()}
+                    {(() => {
+                      const isStandardPlan = plans.find(p => p._id === formData.selectedPlanId)?.plan_type === 'STANDARD';
+                      return (
+                        <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+                          <div className="px-6 py-4 bg-neutral-50 border-b border-neutral-200 flex justify-between items-center">
+                            <div>
+                              <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                                {isStandardPlan ? "Standard Meal Schedule (Fixed Recipe / As-Is)" : "Customized Meal Schedule"}
+                              </h3>
+                              <p className="text-xs text-neutral-500 font-medium mt-0.5">
+                                {isStandardPlan ? "Standard chef-crafted portions without macro alterations." : "Dynamically scaled to customer's target calories."}
+                              </p>
+                            </div>
+                            {isStandardPlan && (
+                              <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                                Fixed Recipe Portion
+                              </span>
+                            )}
+                          </div>
+                          <div className="divide-y divide-neutral-100 max-h-96 overflow-y-auto">
+                            {previewData.scaled_matrix.map((item: any, idx: number) => (
+                              <div key={idx} className="p-4 hover:bg-neutral-50 transition-colors flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 bg-neutral-100 rounded-xl flex flex-col items-center justify-center shrink-0">
+                                    <span className="text-[10px] font-bold text-neutral-500 uppercase">Day</span>
+                                    <span className="text-sm font-black text-neutral-900">{item.day_index + 1}</span>
+                                  </div>
+                                  <div>
+                                    <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-1">{item.meal_type}</div>
+                                    <div className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                                      {item.bowl_name}
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-[10px] font-bold text-neutral-400 line-through">
+                                          ₹{item.scaled_price?.toFixed(2)}
+                                        </span>
+                                        {(() => {
+                                          const defaultFinal = previewData.final_discounted_price || 0;
+                                          const isOverride = formData.isOverrideEnabled;
+                                          const overrideVal = parseFloat(formData.overrideTotalPrice) || 0;
+                                          const actualFinal = (isOverride && formData.overrideTotalPrice !== "") ? overrideVal : defaultFinal;
+                                          const finalAvg = actualFinal / (previewData.scaled_matrix.length || 1);
+                                          const diff = (item.scaled_price || 0) - finalAvg;
+                                          return (
+                                            <>
+                                              <span className="text-[9px] font-bold text-red-500">
+                                                -{diff > 0 ? '₹' + diff.toFixed(2) : '+₹' + Math.abs(diff).toFixed(2)}
+                                              </span>
+                                              <span className="text-[10px] font-bold text-[#16A34A] bg-[#16A34A]/10 px-2 py-0.5 rounded-full">
+                                                ₹{finalAvg.toFixed(2)}
+                                              </span>
+                                            </>
+                                          )
+                                        })()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-6">
+                                  <div className="hidden sm:flex items-center gap-3">
+                                    <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_protein)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Pro</div></div>
+                                    <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_carbs)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Carb</div></div>
+                                    <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_fats)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Fat</div></div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm font-black text-neutral-900">{Math.round(item.scaled_calories)} <span className="text-xs text-neutral-500 font-medium">kcal</span></div>
+                                    {item.target_calories && item.target_calories > 0 ? (
+                                      <div className="text-[10px] font-bold text-green-600 uppercase">Target: {item.target_calories}</div>
+                                    ) : (
+                                      <div className="text-[10px] font-bold text-blue-600 uppercase">Fixed Recipe</div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-6">
-                              <div className="hidden sm:flex items-center gap-3">
-                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_protein)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Pro</div></div>
-                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_carbs)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Carb</div></div>
-                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_fats)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Fat</div></div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm font-black text-neutral-900">{Math.round(item.scaled_calories)} <span className="text-xs text-neutral-500 font-medium">kcal</span></div>
-                                <div className="text-[10px] font-bold text-green-600 uppercase">Target: {item.target_calories}</div>
-                              </div>
-                            </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 

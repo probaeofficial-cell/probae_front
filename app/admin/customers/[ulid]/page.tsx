@@ -51,6 +51,7 @@ export default function CustomerDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
+  const [hasSearchedPlans, setHasSearchedPlans] = useState(false);
   const [mealCategories, setMealCategories] = useState<any[]>([]);
   const [allPlans, setAllPlans] = useState<any[]>([]);
   const [customSchedule, setCustomSchedule] = useState<any[]>([]);
@@ -150,7 +151,7 @@ export default function CustomerDetailPage() {
     try {
             const [custData, planData] = await Promise.all([
         endpoints.customers.get(ulid),
-        endpoints.planTiers.list({ limit: 100 })
+        endpoints.planTiers.list({ limit: 200 })
       ]);
       const data: any = custData;
       if (planData && (planData as any).success) {
@@ -396,6 +397,7 @@ export default function CustomerDetailPage() {
   const loadPlans = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsLoadingPlans(true);
+    setHasSearchedPlans(true);
     setTimeout(() => {
       const days = parseInt(formData.planFrequency.split(" ")[0]);
       const matched = allPlans.filter(t => {
@@ -901,10 +903,18 @@ export default function CustomerDetailPage() {
                           <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-2">Currently Assigned Plan</div>
                           {(() => {
                             const p = allPlans.find(p => p._id === formData.selectedPlanId);
+                            const isStandard = p?.plan_type !== 'CUSTOM';
                             return (
                               <div className="flex justify-between items-center">
                                 <div>
-                                  <h4 className="font-bold text-neutral-900">{p.name}</h4>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-bold text-neutral-900">{p.name}</h4>
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                      isStandard ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-[#6A0FAD]"
+                                    }`}>
+                                      {isStandard ? "Standard • Fixed Recipe" : "Custom • Scaled"}
+                                    </span>
+                                  </div>
                                   <div className="text-xs text-neutral-500 font-bold uppercase mt-1">{p.duration} • {p.days} Days</div>
                                 </div>
                                 <div className="text-right">
@@ -923,7 +933,7 @@ export default function CustomerDetailPage() {
                         </ProbaeButton>
                       </div>
 
-                      {plans.length > 0 && (
+                      {hasSearchedPlans && (
                         <div className="mt-6 pt-6 border-t border-neutral-100">
                           <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider mb-4">Available Plans</h3>
                           
@@ -943,45 +953,84 @@ export default function CustomerDetailPage() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {plans.map(p => (
-                              <div 
-                                key={p._id} 
-                                onClick={() => { updateField("selectedPlanId", p._id); fetchPreview(p._id, formData.goal, customer?.calorie_profile?.mealCalories || {}, undefined, undefined, customSchedule); }}
-                                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.selectedPlanId === p._id ? "border-[#6A0FAD] bg-[#6A0FAD]/5" : "border-neutral-200 hover:border-[#6A0FAD]/30"}`}
-                              >
-                                <div className="flex justify-between items-start mb-2">
-                                  <h4 className="font-bold text-neutral-900">{p.name}</h4>
-                                  {formData.selectedPlanId === p._id && <Check className="w-5 h-5 text-[#6A0FAD]" />}
-                                </div>
-                                <div className="text-sm font-black text-neutral-900 mb-1">
-                                  {p.plan_type === 'CUSTOM' ? 'Dynamic Custom Plan' : 'Standard 500kcal'}
-                                </div>
-                                <div className="text-xs text-neutral-500 font-bold uppercase mb-2">
-                                  {p.duration} • {p.days} Days
-                                </div>
-                                <div className="text-xs text-[#6A0FAD] font-bold">
-                                  Meals: {p.included_meal_slots?.join(', ')}
-                                </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            {plans.length === 0 ? (
+                              <div className="col-span-1 md:col-span-2 p-6 bg-neutral-50 rounded-2xl text-center border border-neutral-200">
+                                <p className="text-sm font-bold text-neutral-800 mb-1">No pre-configured plans found for this configuration.</p>
+                                <p className="text-xs text-neutral-500 max-w-md mx-auto">
+                                  Matching <strong>{formData.planDuration}</strong> ({formData.planFrequency}) with meal slots: <strong>{formData.mealSlots.join(', ') || 'None selected'}</strong>.
+                                </p>
+                                <p className="text-xs text-[#6A0FAD] font-bold mt-2">
+                                  You can configure standard plans in Admin &gt; Plans, or use &quot;Create Custom Plan&quot; below.
+                                </p>
                               </div>
-                            ))}
+                            ) : (
+                              plans.map(p => {
+                                const isStandard = p.plan_type !== 'CUSTOM';
+                                const isSelected = formData.selectedPlanId === p._id;
+                                return (
+                                  <div 
+                                    key={p._id} 
+                                    onClick={() => { updateField("selectedPlanId", p._id); fetchPreview(p._id, formData.goal, customer?.calorie_profile?.mealCalories || {}, undefined, undefined, customSchedule); }}
+                                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                                      isSelected 
+                                        ? isStandard 
+                                          ? "border-blue-600 bg-blue-50/20 shadow-sm" 
+                                          : "border-[#6A0FAD] bg-[#6A0FAD]/5 shadow-sm" 
+                                        : "border-neutral-200 hover:border-neutral-300"
+                                    }`}
+                                  >
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div>
+                                        <h4 className="font-bold text-neutral-900">{p.name}</h4>
+                                        <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                          isStandard ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-[#6A0FAD]"
+                                        }`}>
+                                          {isStandard ? "Standard • Fixed Recipe (As-Is)" : "Custom • Dynamic Scaled"}
+                                        </span>
+                                      </div>
+                                      {isSelected && <Check className={`w-5 h-5 ${isStandard ? "text-blue-600" : "text-[#6A0FAD]"}`} />}
+                                    </div>
+                                    <div className="text-xs text-neutral-500 font-bold uppercase mb-1">
+                                      {p.duration} • {p.days} Days
+                                    </div>
+                                    <div className="text-xs text-neutral-500 mb-2">
+                                      {isStandard 
+                                        ? "Bowls served as crafted by chef without calorie scaling." 
+                                        : "Bowls scaled to customer calorie target."}
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t border-neutral-100">
+                                      <span className="text-xs text-[#6A0FAD] font-bold">Meals: {p.included_meal_slots?.join(', ')}</span>
+                                      <span className="text-[10px] font-black text-neutral-700 uppercase">{isStandard ? "As-Is Portion" : "Custom Scaled"}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+
                             {/* Custom Builder Card */}
                             <div 
                               onClick={() => { updateField("selectedPlanId", "CUSTOM_BUILDER"); fetchPreview("CUSTOM_BUILDER", formData.goal, customer?.calorie_profile?.mealCalories || {}, undefined, undefined, customSchedule); }}
-                              className={`p-4 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${formData.selectedPlanId === "CUSTOM_BUILDER" ? "border-orange-500 bg-orange-50" : "border-neutral-300 bg-neutral-50 hover:border-orange-500 hover:bg-orange-50/50"}`}
+                              className={`p-4 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${formData.selectedPlanId === "CUSTOM_BUILDER" ? "border-orange-500 bg-orange-50 shadow-sm" : "border-neutral-300 bg-neutral-50 hover:border-orange-500 hover:bg-orange-50/50"}`}
                             >
                               <div className="flex justify-between items-start mb-2">
-                                <h4 className="font-bold text-orange-600">{customSchedule.length > 0 ? "✨ Your Custom Plan" : "✨ Create Custom Plan"}</h4>
+                                <div>
+                                  <h4 className="font-bold text-orange-600">{customSchedule.length > 0 ? "✨ Your Custom Plan" : "✨ Create Custom Plan"}</h4>
+                                  <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-100 text-orange-700">
+                                    Bespoke • Slot-by-Slot
+                                  </span>
+                                </div>
                                 {formData.selectedPlanId === "CUSTOM_BUILDER" && <Check className="w-5 h-5 text-orange-500" />}
                               </div>
-                              <div className="text-sm font-black text-orange-600 mb-1">
-                                {customSchedule.length > 0 ? "Edit your bespoke layout" : "Bespoke Blueprint Builder"}
-                              </div>
-                              <div className="text-xs text-neutral-500 font-bold uppercase mb-2">
+                              <div className="text-xs text-neutral-500 font-bold uppercase mb-1">
                                 {formData.planDuration} • {formData.planFrequency}
                               </div>
-                              <div className="text-xs text-orange-600 font-bold">
-                                {customSchedule.length > 0 ? `${customSchedule.length} bowls mapped` : "Build your exact rotation"}
+                              <div className="text-xs text-neutral-500 mb-2">
+                                Build your exact daily bowl rotation manually with custom scaling.
+                              </div>
+                              <div className="flex justify-between items-center pt-2 border-t border-orange-100">
+                                <span className="text-xs text-orange-600 font-bold">{customSchedule.length > 0 ? `${customSchedule.length} bowls mapped` : "Build rotation"}</span>
+                                <span className="text-[10px] font-black text-orange-700 uppercase">Custom Rotation</span>
                               </div>
                             </div>
                           </div>
@@ -1239,69 +1288,93 @@ export default function CustomerDetailPage() {
                       );
                     })()}
 
-                    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
-                      <div className="px-6 py-4 bg-neutral-50 border-b border-neutral-200 flex justify-between items-center">
-                        <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">Customized Meal Schedule</h3>
-                        {isEditMode && (
-                          <button type="button" onClick={() => fetchPreview(formData.selectedPlanId || "", formData.goal, customer?.calorie_profile?.mealCalories || {})} className="text-xs font-bold text-[#6A0FAD] hover:underline">
-                            Refresh Preview
-                          </button>
-                        )}
-                      </div>
-                      <div className="divide-y divide-neutral-100 max-h-96 overflow-y-auto">
-                        {previewData.scaled_matrix.map((item: any, idx: number) => (
-                          <div key={idx} className="p-4 hover:bg-neutral-50 transition-colors flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-neutral-100 rounded-xl flex flex-col items-center justify-center shrink-0">
-                                <span className="text-[10px] font-bold text-neutral-500 uppercase">Day</span>
-                                <span className="text-sm font-black text-neutral-900">{item.day_index + 1}</span>
-                              </div>
-                              <div>
-                                <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-1">{item.meal_type}</div>
-                                <div className="text-sm font-bold text-neutral-900 flex items-center gap-2">
-                                  {item.bowl_name}
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-[10px] font-bold text-neutral-400 line-through">
-                                      ₹{item.scaled_price?.toFixed(2)}
-                                    </span>
-                                    {(() => {
-                                      const defaultFinal = previewData.final_discounted_price || 0;
-                                      const isOverride = formData.isOverrideEnabled;
-                                      const overrideVal = parseFloat(formData.overrideTotalPrice) || 0;
-                                      const actualFinal = (isOverride && formData.overrideTotalPrice !== "") ? overrideVal : defaultFinal;
-                                      const finalAvg = actualFinal / (previewData.scaled_matrix.length || 1);
-                                      const diff = (item.scaled_price || 0) - finalAvg;
-                                      return (
-                                        <>
-                                          <span className="text-[9px] font-bold text-red-500">
-                                            -{diff > 0 ? '₹' + diff.toFixed(2) : '+₹' + Math.abs(diff).toFixed(2)}
-                                          </span>
-                                          <span className="text-[10px] font-bold text-[#16A34A] bg-[#16A34A]/10 px-2 py-0.5 rounded-full">
-                                            ₹{finalAvg.toFixed(2)}
-                                          </span>
-                                        </>
-                                      )
-                                    })()}
+                    {(() => {
+                      const selectedPlanObj = allPlans.find(p => p._id === formData.selectedPlanId);
+                      const isStandardPlan = selectedPlanObj?.plan_type !== 'CUSTOM' && formData.selectedPlanId !== "CUSTOM_BUILDER";
+                      return (
+                        <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+                          <div className="px-6 py-4 bg-neutral-50 border-b border-neutral-200 flex justify-between items-center">
+                            <div>
+                              <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                                {isStandardPlan ? "Standard Meal Schedule (Fixed Recipe / As-Is)" : "Customized Meal Schedule"}
+                              </h3>
+                              <p className="text-xs text-neutral-500 font-medium mt-0.5">
+                                {isStandardPlan ? "Standard chef-crafted portions without macro alterations." : "Dynamically scaled to customer's target calories."}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              {isStandardPlan && (
+                                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                                  Fixed Recipe Portion
+                                </span>
+                              )}
+                              {isEditMode && (
+                                <button type="button" onClick={() => fetchPreview(formData.selectedPlanId || "", formData.goal, customer?.calorie_profile?.mealCalories || {})} className="text-xs font-bold text-[#6A0FAD] hover:underline">
+                                  Refresh Preview
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="divide-y divide-neutral-100 max-h-96 overflow-y-auto">
+                            {previewData.scaled_matrix.map((item: any, idx: number) => (
+                              <div key={idx} className="p-4 hover:bg-neutral-50 transition-colors flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 bg-neutral-100 rounded-xl flex flex-col items-center justify-center shrink-0">
+                                    <span className="text-[10px] font-bold text-neutral-500 uppercase">Day</span>
+                                    <span className="text-sm font-black text-neutral-900">{item.day_index + 1}</span>
+                                  </div>
+                                  <div>
+                                    <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-1">{item.meal_type}</div>
+                                    <div className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                                      {item.bowl_name}
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-[10px] font-bold text-neutral-400 line-through">
+                                          ₹{item.scaled_price?.toFixed(2)}
+                                        </span>
+                                        {(() => {
+                                          const defaultFinal = previewData.final_discounted_price || 0;
+                                          const isOverride = formData.isOverrideEnabled;
+                                          const overrideVal = parseFloat(formData.overrideTotalPrice) || 0;
+                                          const actualFinal = (isOverride && formData.overrideTotalPrice !== "") ? overrideVal : defaultFinal;
+                                          const finalAvg = actualFinal / (previewData.scaled_matrix.length || 1);
+                                          const diff = (item.scaled_price || 0) - finalAvg;
+                                          return (
+                                            <>
+                                              <span className="text-[9px] font-bold text-red-500">
+                                                -{diff > 0 ? '₹' + diff.toFixed(2) : '+₹' + Math.abs(diff).toFixed(2)}
+                                              </span>
+                                              <span className="text-[10px] font-bold text-[#16A34A] bg-[#16A34A]/10 px-2 py-0.5 rounded-full">
+                                                ₹{finalAvg.toFixed(2)}
+                                              </span>
+                                            </>
+                                          )
+                                        })()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-6">
+                                  <div className="hidden sm:flex items-center gap-3">
+                                    <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_protein)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Pro</div></div>
+                                    <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_carbs)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Carb</div></div>
+                                    <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_fats)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Fat</div></div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm font-black text-neutral-900">{Math.round(item.scaled_calories)} <span className="text-xs text-neutral-500 font-medium">kcal</span></div>
+                                    {item.target_calories && item.target_calories > 0 ? (
+                                      <div className="text-[10px] font-bold text-green-600 uppercase">Target: {item.target_calories}</div>
+                                    ) : (
+                                      <div className="text-[10px] font-bold text-blue-600 uppercase">Fixed Recipe</div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-6">
-                              <div className="hidden sm:flex items-center gap-3">
-                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_protein)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Pro</div></div>
-                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_carbs)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Carb</div></div>
-                                <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_fats)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Fat</div></div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm font-black text-neutral-900">{Math.round(item.scaled_calories)} <span className="text-xs text-neutral-500 font-medium">kcal</span></div>
-                                <div className="text-[10px] font-bold text-green-600 uppercase">Target: {item.target_calories}</div>
-                              </div>
-                            </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
