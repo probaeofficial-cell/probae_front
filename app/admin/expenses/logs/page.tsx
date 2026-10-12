@@ -26,13 +26,28 @@ export default function ExpenseLogsPage() {
   const [filterCategoryUlid, setFilterCategoryUlid] = useState("");
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ category_ulid: "", amount: "", expense_date: new Date().toISOString().slice(0, 10), notes: "" });
+  const [paymentRecipients, setPaymentRecipients] = useState<string[]>([]);
+  const [formData, setFormData] = useState({ category_ulid: "", amount: "", expense_date: new Date().toISOString().slice(0, 10), notes: "", sent_from: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   
   const [deleteUlid, setDeleteUlid] = useState<string | null>(null);
   const [editUlid, setEditUlid] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadPaymentRecipients() {
+      try {
+        const res: any = await endpoints.settings.getPaymentRecipients();
+        if (res && res.recipients) {
+          setPaymentRecipients(res.recipients);
+        }
+      } catch (err) {
+        console.error("Failed to load payment recipients", err);
+      }
+    }
+    loadPaymentRecipients();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 500);
@@ -79,7 +94,7 @@ export default function ExpenseLogsPage() {
       }
       
       setIsModalOpen(false);
-      setFormData({ category_ulid: "", amount: "", expense_date: new Date().toISOString().slice(0, 10), notes: "" });
+      setFormData({ category_ulid: "", amount: "", expense_date: new Date().toISOString().slice(0, 10), notes: "", sent_from: "" });
       setEditUlid(null);
       fetchData();
     } catch (err: any) {
@@ -156,7 +171,8 @@ export default function ExpenseLogsPage() {
                   expense_date: new Date().toISOString().slice(0, 10),
                   category_ulid: "",
                   amount: "",
-                  notes: ""
+                  notes: "",
+                  sent_from: ""
                 });
                 setIsModalOpen(true);
               }} className="!w-auto flex items-center justify-center gap-2 h-[48px] whitespace-nowrap px-4">
@@ -177,6 +193,7 @@ export default function ExpenseLogsPage() {
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Date</th>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Category</th>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Amount</th>
+                  <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Sent From</th>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Notes</th>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Recorded By</th>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase text-right">Actions</th>
@@ -184,12 +201,21 @@ export default function ExpenseLogsPage() {
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {expenses.length === 0 ? (
-                  <tr><td colSpan={6} className="py-8 text-center text-neutral-500">No expenses recorded for this month.</td></tr>
+                  <tr><td colSpan={7} className="py-8 text-center text-neutral-500">No expenses recorded for this month.</td></tr>
                 ) : expenses.map((e) => (
                   <tr key={e.ulid} className="hover:bg-neutral-50/30 transition-colors">
                     <td className="py-4 px-6 font-medium text-neutral-900 flex items-center gap-2"><Calendar className="w-4 h-4 text-neutral-400"/> {e.expense_date}</td>
                     <td className="py-4 px-6 font-bold text-neutral-700">{e.category?.name || "Unknown"}</td>
                     <td className="py-4 px-6 font-black text-red-600">₹{e.amount.toFixed(2)}</td>
+                    <td className="py-4 px-6 text-sm">
+                      {e.sent_from ? (
+                        <span className="px-2.5 py-1 bg-[#6A0FAD]/10 text-[#6A0FAD] font-bold text-xs rounded-lg">
+                          {e.sent_from}
+                        </span>
+                      ) : (
+                        <span className="text-neutral-400">—</span>
+                      )}
+                    </td>
                     <td className="py-4 px-6 text-sm text-neutral-500 max-w-xs truncate">{e.notes || "-"}</td>
                     <td className="py-4 px-6 text-sm text-neutral-500">{e.recorded_by_name || "System"}</td>
                     <td className="py-4 px-6 text-right">
@@ -200,7 +226,8 @@ export default function ExpenseLogsPage() {
                             expense_date: e.expense_date,
                             category_ulid: e.category?.ulid || "",
                             amount: e.amount.toString(),
-                            notes: e.notes || ""
+                            notes: e.notes || "",
+                            sent_from: e.sent_from || ""
                           });
                           setIsModalOpen(true);
                         }} className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"><Pencil className="w-4 h-4" /></button>
@@ -267,6 +294,19 @@ export default function ExpenseLogsPage() {
               <div>
                 <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Amount (₹)</label>
                 <input type="number" step="0.01" value={formData.amount} onChange={e => setFormData(p => ({...p, amount: e.target.value}))} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Sent From (Payment Recipient)</label>
+                <select 
+                  value={formData.sent_from} 
+                  onChange={e => setFormData(p => ({...p, sent_from: e.target.value}))}
+                  className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]"
+                >
+                  <option value="">— Select Recipient (Optional) —</option>
+                  {paymentRecipients.map((name, i) => (
+                    <option key={i} value={name}>{name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Notes (Optional)</label>

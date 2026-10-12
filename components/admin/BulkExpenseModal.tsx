@@ -11,6 +11,7 @@ interface BulkExpenseModalProps {
 
 export function BulkExpenseModal({ isOpen, onClose, onSuccess }: BulkExpenseModalProps) {
   const [categories, setCategories] = useState<any[]>([]);
+  const [paymentRecipients, setPaymentRecipients] = useState<string[]>([]);
   const [parsedData, setParsedData] = useState<any[] | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [isUploading, setIsUploading] = useState(false);
@@ -20,6 +21,7 @@ export function BulkExpenseModal({ isOpen, onClose, onSuccess }: BulkExpenseModa
       setParsedData(null);
       setSelectedRows(new Set());
       fetchCategories();
+      fetchPaymentRecipients();
     }
   }, [isOpen]);
 
@@ -32,16 +34,28 @@ export function BulkExpenseModal({ isOpen, onClose, onSuccess }: BulkExpenseModa
     }
   };
 
+  const fetchPaymentRecipients = async () => {
+    try {
+      const res: any = await endpoints.settings.getPaymentRecipients();
+      if (res && res.recipients) {
+        setPaymentRecipients(res.recipients);
+      }
+    } catch (err) {
+      console.error("Failed to load payment recipients", err);
+    }
+  };
+
   const downloadTemplate = () => {
+    const exampleRecipient = paymentRecipients[0] || "Adil";
     const ws_data = [
-      ["Date", "Category", "Amount", "Notes"],
-      ["2026-10-15", "Office Supplies", 150.50, "Printer ink and paper"],
-      ["2026-10-16", "Marketing", 500, "Facebook Ads"]
+      ["Date", "Category", "Amount", "Sent From", "Notes"],
+      ["2026-10-15", "Office Supplies", 150.50, exampleRecipient, "Printer ink and paper"],
+      ["2026-10-16", "Marketing", 500, exampleRecipient, "Facebook Ads"]
     ];
     const ws = XLSX.utils.aoa_to_sheet(ws_data);
     
     // Auto-size columns
-    ws['!cols'] = [{ wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 40 }];
+    ws['!cols'] = [{ wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 40 }];
     
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Expenses Template");
@@ -80,11 +94,24 @@ export function BulkExpenseModal({ isOpen, onClose, onSuccess }: BulkExpenseModa
         const rawAmount = row["Amount"]?.toString() || "";
         const cleanAmount = rawAmount.replace(/[^0-9.-]+/g, "");
         const amount = parseFloat(cleanAmount) || 0;
+
+        // Sent From (Payment Recipient) validation
+        const sentFromVal = (row["Sent From"] || row["SentFrom"] || row["Recipient"] || "").toString().trim();
+        let matchedRecipient: string | null = null;
+        if (sentFromVal) {
+          const matched = paymentRecipients.find(
+            r => r.trim().toLowerCase() === sentFromVal.toLowerCase()
+          );
+          matchedRecipient = matched || null;
+        }
         
         const errors = [];
         if (!matchedCat) errors.push(`Category '${catName || "empty"}' not found`);
         if (!dateVal) errors.push("Invalid date");
         if (amount <= 0) errors.push("Invalid amount");
+        if (sentFromVal && !matchedRecipient) {
+          errors.push(`'${sentFromVal}' is not in configured Payment Recipients`);
+        }
         
         return {
           id: index,
@@ -92,6 +119,7 @@ export function BulkExpenseModal({ isOpen, onClose, onSuccess }: BulkExpenseModa
           categoryName: catName || "",
           categoryUlid: matchedCat?.ulid || null,
           amount: amount,
+          sentFrom: matchedRecipient || sentFromVal || "",
           notes: row["Notes"] || "",
           isValid: errors.length === 0,
           errors: errors
@@ -131,15 +159,16 @@ export function BulkExpenseModal({ isOpen, onClose, onSuccess }: BulkExpenseModa
         category_ulid: p.categoryUlid,
         amount: p.amount,
         expense_date: p.date,
+        sent_from: p.sentFrom || undefined,
         notes: p.notes
       }));
       
     try {
       await endpoints.expenses.bulkCreate({ expenses: toSave });
       onSuccess();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to save some expenses. Please check your data.");
+      alert(err?.detail || err?.message || "Failed to save some expenses. Please check your data.");
     } finally {
       setIsUploading(false);
     }
@@ -225,6 +254,7 @@ export function BulkExpenseModal({ isOpen, onClose, onSuccess }: BulkExpenseModa
                         <th className="py-3 px-4 font-bold text-neutral-500 uppercase tracking-wider text-xs">Date</th>
                         <th className="py-3 px-4 font-bold text-neutral-500 uppercase tracking-wider text-xs">Category</th>
                         <th className="py-3 px-4 font-bold text-neutral-500 uppercase tracking-wider text-xs">Amount</th>
+                        <th className="py-3 px-4 font-bold text-neutral-500 uppercase tracking-wider text-xs">Sent From</th>
                         <th className="py-3 px-4 font-bold text-neutral-500 uppercase tracking-wider text-xs">Notes</th>
                       </tr>
                     </thead>
@@ -259,6 +289,15 @@ export function BulkExpenseModal({ isOpen, onClose, onSuccess }: BulkExpenseModa
                           <td className={`py-3 px-4 ${!row.date ? 'text-red-500' : 'text-neutral-900 font-medium'}`}>{row.date || 'Missing'}</td>
                           <td className={`py-3 px-4 ${!row.categoryUlid ? 'text-red-500' : 'text-neutral-900 font-medium'}`}>{row.categoryName || 'Missing'}</td>
                           <td className={`py-3 px-4 ${!row.amount ? 'text-red-500' : 'text-neutral-900 font-medium'}`}>₹{row.amount}</td>
+                          <td className="py-3 px-4">
+                            {row.sentFrom ? (
+                              <span className="px-2 py-0.5 bg-[#6A0FAD]/10 text-[#6A0FAD] font-bold text-xs rounded-md">
+                                {row.sentFrom}
+                              </span>
+                            ) : (
+                              <span className="text-neutral-400 text-xs">—</span>
+                            )}
+                          </td>
                           <td className="py-3 px-4 text-neutral-600 truncate max-w-[200px]">{row.notes}</td>
                         </tr>
                       ))}
