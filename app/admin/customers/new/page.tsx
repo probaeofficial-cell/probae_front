@@ -780,7 +780,7 @@ export default function NewCustomerPage() {
                     </div>
                   ) : (
                     plans.map(p => {
-                      const isStandard = p.plan_type !== 'CUSTOM' || (p.category && p.category.toLowerCase() === 'core');
+                      const isStandard = p.plan_type !== 'CUSTOM';
                       const isSelected = formData.selectedPlanId === p._id;
                       return (
                         <div 
@@ -868,7 +868,7 @@ export default function NewCustomerPage() {
                     <span className="ml-3 text-neutral-600 font-bold">
                       {(() => {
                         const selPlan = plans.find(p => p._id === formData.selectedPlanId);
-                        const isStd = selPlan?.plan_type !== 'CUSTOM' || (selPlan?.category && selPlan.category.toLowerCase() === 'core');
+                        const isStd = selPlan?.plan_type !== 'CUSTOM';
                         return isStd
                           ? "Loading standard recipe blueprint and pricing..."
                           : "Scaling recipe macros & calculating dynamic pricing...";
@@ -1011,7 +1011,7 @@ export default function NewCustomerPage() {
                     {/* Matrix Preview */}
                     {(() => {
                       const selPlan = plans.find(p => p._id === formData.selectedPlanId);
-                      const isStandardPlan = (selPlan?.plan_type !== 'CUSTOM' || (selPlan?.category && selPlan.category.toLowerCase() === 'core')) && formData.selectedPlanId !== "CUSTOM_BUILDER";
+                      const isStandardPlan = selPlan?.plan_type !== 'CUSTOM' && formData.selectedPlanId !== "CUSTOM_BUILDER";
                       return (
                         <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
                           <div className="px-6 py-4 bg-neutral-50 border-b border-neutral-200 flex justify-between items-center">
