@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, Search, User, KeyRound, LogOut, Check, Menu } from "lucide-react";
+import { Bell, Search, User, KeyRound, LogOut, Check, Menu, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { UserAvatar } from "./UserAvatar";
@@ -14,15 +14,18 @@ export function Header() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
-  // Load system settings for R2 URL stitching
-  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+  // Load system settings for R2 URL stitching and Kitchen status
+  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "", KITCHEN_OFF: "false" });
 
   useEffect(() => {
     async function fetchSystemSettings() {
       try {
-        const data = await endpoints.settings.getSystemSettings();
-        if (data && data.R2_BASE_URL !== undefined) {
-          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
+        const data = await endpoints.settings.getSystemSettings() as any;
+        if (data) {
+          setSystemSettings({
+            R2_BASE_URL: data.R2_BASE_URL || "",
+            KITCHEN_OFF: data.KITCHEN_OFF || "false",
+          });
         }
       } catch (error) {
         console.error("Error fetching system settings in Header:", error);
@@ -30,6 +33,14 @@ export function Header() {
     }
     if (user) {
       fetchSystemSettings();
+      // Listen for local updates and poll periodically
+      const handleCustomUpdate = () => fetchSystemSettings();
+      window.addEventListener("settings-updated", handleCustomUpdate);
+      const interval = setInterval(fetchSystemSettings, 30000);
+      return () => {
+        window.removeEventListener("settings-updated", handleCustomUpdate);
+        clearInterval(interval);
+      };
     }
   }, [user]);
 
@@ -219,6 +230,21 @@ export function Header() {
 
       {/* Right side icons */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+
+        {/* ── Kitchen Status Badge ─────────────────────────────────── */}
+        {systemSettings.KITCHEN_OFF === "true" && (
+          <button
+            type="button"
+            onClick={() => router.push("/admin/settings")}
+            title="Kitchen is OFF. Click to open Settings."
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all shadow-sm group"
+          >
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 hidden sm:inline" />
+            <span className="hidden sm:inline">Kitchen OFF</span>
+            <span className="sm:hidden text-[10px]">OFF</span>
+          </button>
+        )}
 
         {/* ── Notifications ───────────────────────────────────────── */}
         <div className="relative" ref={notifRef}>

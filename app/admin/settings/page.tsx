@@ -21,7 +21,7 @@ export default function SettingsPage() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
   // System Configurations state
-  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "", AUTO_ASSIGN_DRIVERS: "false" });
+  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "", AUTO_ASSIGN_DRIVERS: "false", KITCHEN_OFF: "false" });
   const [sysSaveStatus, setSysSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
   // Delivery pricing config state
@@ -60,7 +60,11 @@ export default function SettingsPage() {
       try {
         const data = await endpoints.settings.getSystemSettings() as any;
         if (data && data.R2_BASE_URL !== undefined) {
-          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL, AUTO_ASSIGN_DRIVERS: data.AUTO_ASSIGN_DRIVERS || "false" });
+          setSystemSettings({
+            R2_BASE_URL: data.R2_BASE_URL || "",
+            AUTO_ASSIGN_DRIVERS: data.AUTO_ASSIGN_DRIVERS || "false",
+            KITCHEN_OFF: data.KITCHEN_OFF || "false",
+          });
         }
         setDeliveryConfig({
           KITCHEN_LAT: data.KITCHEN_LAT || "",
@@ -94,8 +98,12 @@ export default function SettingsPage() {
       await endpoints.settings.updateSystemSettings({
         R2_BASE_URL: systemSettings.R2_BASE_URL,
         AUTO_ASSIGN_DRIVERS: systemSettings.AUTO_ASSIGN_DRIVERS,
+        KITCHEN_OFF: systemSettings.KITCHEN_OFF,
       });
       setSysSaveStatus("saved");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("settings-updated"));
+      }
     } catch (error) {
       console.error("Error saving system settings:", error);
       setSysSaveStatus("idle");
@@ -228,6 +236,37 @@ export default function SettingsPage() {
                   >
                     {systemSettings.AUTO_ASSIGN_DRIVERS === "true" ? <ToggleRight className="w-6 h-6 text-violet-600" /> : <ToggleLeft className="w-6 h-6 text-neutral-400" />}
                     <span className="text-sm font-bold text-neutral-700">{systemSettings.AUTO_ASSIGN_DRIVERS === "true" ? "Enabled (Auto-Assigns Driver)" : "Disabled (Manual Assignment Only)"}</span>
+                  </button>
+                </div>
+
+                <div className="pt-4 mt-2 border-t border-neutral-100">
+                  <label className="block text-sm font-semibold text-neutral-800 mb-1">
+                    Kitchen Operations Status (Kitchen Off Mode)
+                  </label>
+                  <p className="text-xs text-neutral-500 mb-3">
+                    When Kitchen is set to <strong>OFF</strong>, automated daily plan order generation is suspended and a notification banner is displayed on the dashboard.
+                  </p>
+                  <button 
+                    onClick={() => setSystemSettings({ ...systemSettings, KITCHEN_OFF: systemSettings.KITCHEN_OFF === "true" ? "false" : "true" })}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors w-full max-w-sm ${
+                      systemSettings.KITCHEN_OFF === "true"
+                        ? "bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100"
+                        : "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100"
+                    }`}
+                  >
+                    {systemSettings.KITCHEN_OFF === "true" ? (
+                      <ToggleRight className="w-6 h-6 text-rose-600" />
+                    ) : (
+                      <ToggleLeft className="w-6 h-6 text-emerald-600" />
+                    )}
+                    <div className="text-left">
+                      <span className="text-sm font-bold block">
+                        {systemSettings.KITCHEN_OFF === "true" ? "Kitchen is OFF (Orders Paused)" : "Kitchen is OPEN (Normal Operations)"}
+                      </span>
+                      <span className="text-[11px] opacity-75">
+                        {systemSettings.KITCHEN_OFF === "true" ? "Daily plan orders won't be auto-created" : "Automated daily orders generate as scheduled"}
+                      </span>
+                    </div>
                   </button>
                 </div>
               </div>

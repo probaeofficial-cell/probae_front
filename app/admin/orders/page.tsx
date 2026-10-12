@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap, CheckCircle2, Bot } from "lucide-react";
+import { Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap, CheckCircle2, Bot, AlertTriangle, Settings } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -43,6 +43,17 @@ export default function OrdersPage() {
   const [isCronRunning, setIsCronRunning] = useState(false);
   const [cronToast, setCronToast] = useState<{type: "success"|"error", msg: string} | null>(null);
   const [showGenerateConfirm, setShowGenerateConfirm] = useState(false);
+  const [generationErrorModal, setGenerationErrorModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    isKitchenOff: boolean;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    isKitchenOff: false,
+  });
 
   const handleRunCron = async (targetDay: string) => {
     setIsCronRunning(true);
@@ -56,8 +67,17 @@ export default function OrdersPage() {
       setTimeout(() => {
         fetchOrders(activeTab, page, targetDate, search, customerId, status, selectedMealSlot);
       }, 5000);
-    } catch {
-      setCronToast({ type: "error", msg: "Failed to run daily generation. Check backend logs." });
+    } catch (err: any) {
+      console.error("Daily order generation error:", err);
+      const errMsg = err?.message || err?.detail || "Failed to run daily order generation. Please check backend logs or system settings.";
+      const isKitchenOff = errMsg.toLowerCase().includes("kitchen is currently off") || errMsg.toLowerCase().includes("kitchen is off");
+
+      setGenerationErrorModal({
+        isOpen: true,
+        title: isKitchenOff ? "Kitchen is Currently OFF" : "Order Generation Failed",
+        message: errMsg,
+        isKitchenOff,
+      });
     } finally {
       setIsCronRunning(false);
       setTimeout(() => setCronToast(null), 8000);
@@ -630,6 +650,72 @@ export default function OrdersPage() {
             >
               Cancel
             </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Daily Generation Error Modal */}
+    {generationErrorModal.isOpen && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+        <div className="bg-white rounded-3xl p-6 sm:p-7 w-full max-w-md shadow-2xl relative overflow-hidden border border-neutral-100 animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-start gap-4 mb-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+              generationErrorModal.isKitchenOff ? "bg-amber-100 text-amber-600 border border-amber-200" : "bg-rose-100 text-rose-600 border border-rose-200"
+            }`}>
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-neutral-900 tracking-tight">
+                  {generationErrorModal.title}
+                </h3>
+                <button
+                  onClick={() => setGenerationErrorModal(prev => ({ ...prev, isOpen: false }))}
+                  className="text-neutral-400 hover:text-neutral-600 transition-colors p-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mt-0.5">
+                {generationErrorModal.isKitchenOff ? "Operations Paused" : "Execution Error"}
+              </p>
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-2xl mb-6 text-sm font-medium leading-relaxed ${
+            generationErrorModal.isKitchenOff
+              ? "bg-amber-50 text-amber-900 border border-amber-200/80"
+              : "bg-rose-50 text-rose-900 border border-rose-200/80"
+          }`}>
+            {generationErrorModal.message}
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            {generationErrorModal.isKitchenOff ? (
+              <>
+                <Link
+                  href="/admin/settings"
+                  className="w-full sm:flex-1 py-3 px-4 bg-neutral-900 hover:bg-neutral-800 text-white font-bold rounded-xl text-center text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <Settings className="w-4 h-4" />
+                  Turn On in Settings
+                </Link>
+                <button
+                  onClick={() => setGenerationErrorModal(prev => ({ ...prev, isOpen: false }))}
+                  className="w-full sm:w-auto py-3 px-5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold rounded-xl text-sm transition-colors"
+                >
+                  Dismiss
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setGenerationErrorModal(prev => ({ ...prev, isOpen: false }))}
+                className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold rounded-xl text-sm transition-colors"
+              >
+                Okay, Understood
+              </button>
+            )}
           </div>
         </div>
       </div>
