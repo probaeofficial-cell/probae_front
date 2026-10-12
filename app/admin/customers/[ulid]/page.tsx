@@ -192,7 +192,7 @@ export default function CustomerDetailPage() {
           allergies: data.allergies || [],
           comments: data.chef_instructions || "",
           status: data.status || "ACTIVE",
-          selectedPlanId: (data.custom_schedule && data.custom_schedule.length > 0) ? "CUSTOM_BUILDER" : (data.selected_plan_id || null),
+          selectedPlanId: (isBespokeSystemPlan && data.custom_schedule && data.custom_schedule.length > 0) ? "CUSTOM_BUILDER" : (data.selected_plan_id || null),
           planDuration: "WEEKLY",
           planFrequency: "5 DAYS",
           mealSlots: profile.mealSlots || [],
