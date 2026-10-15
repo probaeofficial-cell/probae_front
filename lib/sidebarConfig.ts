@@ -84,6 +84,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     icon: Package,
     roles: ["ADMIN"],
     subItems: {
+      dailyBowls: { label: "Daily Bowls", dotColor: "bg-amber-500", path: "/admin/orders/daily-bowls" },
       daily: { label: "Daily Orders", dotColor: "bg-blue-500", path: "/admin/orders" },
       procurement: { label: "Daily Purchase", dotColor: "bg-red-500", path: "/admin/kds/procurement" },
       prep: { label: "Kitchen Prep", dotColor: "bg-orange-500", path: "/admin/kds/prep" },

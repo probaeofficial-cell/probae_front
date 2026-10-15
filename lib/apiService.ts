@@ -371,6 +371,16 @@ export const endpoints = {
       if (params.meal_slot) searchParams.append("meal_slot", params.meal_slot);
       return api.get(`/orders?${searchParams.toString()}`);
     },
+    dailyBowls: (params: { target_date?: string; meal_slot?: string; page?: number; limit?: number; search?: string; plan_category?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params.target_date) searchParams.append("target_date", params.target_date);
+      if (params.meal_slot && params.meal_slot !== "ALL") searchParams.append("meal_slot", params.meal_slot);
+      if (params.page) searchParams.append("page", params.page.toString());
+      if (params.limit) searchParams.append("limit", params.limit.toString());
+      if (params.search) searchParams.append("search", params.search);
+      if (params.plan_category && params.plan_category !== "ALL") searchParams.append("plan_category", params.plan_category);
+      return api.get(`/orders/daily-bowls?${searchParams.toString()}`);
+    },
     preview: (payload: { customer_ulid: string; bowl_ulid: string; meal_slot: string; scaling_strategy?: "PROFILE_SCALED" | "STANDARD", target_calories?: number }) =>
       api.post("/orders/preview", payload),
     checkout: (payload: any) =>

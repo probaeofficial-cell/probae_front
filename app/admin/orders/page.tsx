@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap, CheckCircle2, Bot, AlertTriangle, Settings } from "lucide-react";
+import { Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap, CheckCircle2, Bot, AlertTriangle, Settings, Coffee } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -210,7 +210,16 @@ export default function OrdersPage() {
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 shrink-0">
             <div>
-              <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Daily Orders</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Daily Orders</h1>
+                <Link
+                  href="/admin/orders/daily-bowls"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#6A0FAD]/10 hover:bg-[#6A0FAD]/20 text-[#6A0FAD] transition-colors"
+                >
+                  <Coffee className="w-3.5 h-3.5" />
+                  View Daily Bowls →
+                </Link>
+              </div>
               <p className="text-neutral-500 font-medium mt-1">Manage subscription dispatches and custom orders</p>
             </div>
             
