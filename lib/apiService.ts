@@ -397,6 +397,10 @@ export const endpoints = {
       api.patch(`/orders/${orderUlid}/items/${itemUlid}`, payload),
     bulkAssignDriver: (payload: { order_ulids: string[], driver_ulid: string | null }) =>
       api.patch(`/orders/bulk-assign-driver`, payload),
+    previewBulkAdjust: (payload: { order_numbers: string[]; new_amount: number; adjustment_mode?: string }) =>
+      api.post(`/orders/preview-bulk-adjust`, payload),
+    bulkAdjustPrice: (payload: { order_numbers: string[]; new_amount: number; adjustment_mode?: string; reason?: string }) =>
+      api.post(`/orders/bulk-adjust-price`, payload),
     
     generateMessage: async (ulid: string, channel: string, type: string) => api.get(`/orders/${ulid}/generate-message?channel=${channel}&type=${type}`),
     markMessageSent: async (ulid: string, channel: string) => api.patch(`/orders/${ulid}/mark-message-sent`, { channel }),

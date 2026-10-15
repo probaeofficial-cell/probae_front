@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useState, useEffect } from "react";
-import { Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap, CheckCircle2, Bot, AlertTriangle, Settings, Coffee } from "lucide-react";
+import { Calendar, Edit3, Eye, ChevronLeft, ChevronRight, Plus, ListChecks, List, Filter, X, Clock, Zap, CheckCircle2, Bot, AlertTriangle, Settings, Coffee, Sliders } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -230,6 +230,15 @@ export default function OrdersPage() {
               >
                 <Clock className="w-4 h-4 text-[#6A0FAD]" /> Order Window
               </button>
+
+              {/* Batch Order & Wallet Adjust utility button - can be commented or removed anytime */}
+              <Link
+                href="/admin/orders/batch-adjust"
+                className="flex items-center justify-center gap-2 h-11 px-4 rounded-2xl bg-white border border-neutral-200 text-neutral-700 font-bold text-sm hover:bg-neutral-50 hover:border-neutral-300 shadow-sm transition-colors w-full sm:w-auto"
+                title="Bulk Adjust Order Price & Wallet"
+              >
+                <Sliders className="w-4 h-4 text-emerald-600" /> Batch Adjust
+              </Link>
 
               <button 
                 onClick={() => {
