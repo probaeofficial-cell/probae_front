@@ -257,7 +257,7 @@ export default function BatchAdjustOrdersPage() {
                   value={orderNumbersInput}
                   onChange={(e) => setOrderNumbersInput(e.target.value)}
                   placeholder="Paste order numbers here, e.g.:&#10;#26-10001&#10;#26-10002&#10;ORD-20261015-001"
-                  className="w-full border border-neutral-200 rounded-xl p-3 text-sm font-mono focus:border-[#6A0FAD] focus:ring-2 focus:ring-[#6A0FAD]/20 outline-none transition-all shadow-inner bg-neutral-50"
+                  className="w-full border border-neutral-200 text-neutral-400 rounded-xl p-3 text-sm font-mono focus:border-[#6A0FAD] focus:ring-2 focus:ring-[#6A0FAD]/20 outline-none transition-all shadow-inner bg-neutral-50"
                 />
 
                 {selectedOrderNumbers.length > 0 && (
