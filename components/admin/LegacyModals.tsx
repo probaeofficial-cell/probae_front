@@ -295,7 +295,14 @@ export function LegacyOrderModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-3xl w-full max-w-xl overflow-hidden flex flex-col">
         <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-neutral-900">{editData ? "Edit Past Meal" : "Log Past Meal"}</h2>
+          <div>
+            <h2 className="text-xl font-bold text-neutral-900">{editData ? "Edit Past Meal" : "Log Past Meal"}</h2>
+            {editData && (editData.order_number || editData.order_id) && (
+              <p className="text-xs font-mono text-neutral-400 mt-0.5">
+                Order {editData.order_number || `#${editData.order_id}`} {editData.order_id && editData.order_number ? `(ID: ${editData.order_id})` : ''}
+              </p>
+            )}
+          </div>
           <button onClick={onClose} className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
             <X className="w-5 h-5 text-neutral-500" />
           </button>

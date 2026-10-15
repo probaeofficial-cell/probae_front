@@ -159,6 +159,7 @@ export function CustomerCalories({ customerUlid, onRefresh }: { customerUlid: st
               <thead className="bg-neutral-50/50">
                 <tr>
                   <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Order #</th>
                   <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Meal</th>
                   <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Slot</th>
                   <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Calories</th>
@@ -169,7 +170,7 @@ export function CustomerCalories({ customerUlid, onRefresh }: { customerUlid: st
               <tbody className="divide-y divide-neutral-100">
                 {log.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-neutral-400 font-medium text-sm">
+                    <td colSpan={7} className="px-6 py-8 text-center text-neutral-400 font-medium text-sm">
                       {isLoading ? "Fetching logs..." : "No calorie logs found."}
                     </td>
                   </tr>
@@ -177,6 +178,35 @@ export function CustomerCalories({ customerUlid, onRefresh }: { customerUlid: st
                   paginatedLog.map((entry: any, idx: number) => (
                     <tr key={idx} className="hover:bg-neutral-50 transition-colors">
                       <td className="px-6 py-4 text-sm font-bold text-neutral-900">{entry.date}</td>
+                      <td className="px-6 py-4">
+                        {entry.order_number || entry.order_id ? (
+                          <div className="flex flex-col items-start gap-0.5">
+                            {entry.order_ulid ? (
+                              <a
+                                href={`/admin/orders/${entry.order_ulid}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center px-2 py-0.5 bg-neutral-100 hover:bg-[#6A0FAD]/10 text-neutral-800 hover:text-[#6A0FAD] font-mono text-xs font-bold rounded-md transition-colors border border-neutral-200"
+                                title={entry.order_id ? `Order ID: ${entry.order_id}` : undefined}
+                              >
+                                {entry.order_number || `#${entry.order_id}`}
+                              </a>
+                            ) : (
+                              <span 
+                                className="inline-flex items-center px-2 py-0.5 bg-neutral-100 text-neutral-700 font-mono text-xs font-bold rounded-md border border-neutral-200"
+                                title={entry.order_id ? `Order ID: ${entry.order_id}` : undefined}
+                              >
+                                {entry.order_number || `#${entry.order_id}`}
+                              </span>
+                            )}
+                            {entry.order_id && entry.order_number && (
+                              <span className="text-[10px] text-neutral-400 font-medium">ID: {entry.order_id}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-neutral-400 text-xs">—</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-sm font-medium text-neutral-900">{entry.bowl_name}</td>
                       <td className="px-6 py-4">
                         <span className="px-3 py-1 bg-[#6A0FAD]/10 text-[#6A0FAD] text-xs font-bold rounded-full">
