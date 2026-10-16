@@ -265,7 +265,9 @@ export default function SubscriptionsDashboard() {
                           </td>
                           <td className="p-4">
                             <span className="bg-neutral-100 text-neutral-700 px-3 py-1 rounded-full text-xs font-bold">
-                              {sub.plan.included_meal_slots.map((s:string)=>s.charAt(0).toUpperCase()+s.slice(1)).join(' + ')}
+                              {(sub.plan?.included_meal_slots || []).length > 0 
+                                ? sub.plan.included_meal_slots.map((s:string)=>s.charAt(0).toUpperCase()+s.slice(1)).join(' + ')
+                                : 'All Meals'}
                             </span>
                           </td>
                           <td className="p-4 font-bold text-neutral-600">
@@ -284,7 +286,11 @@ export default function SubscriptionsDashboard() {
                           <td className="p-4 text-center font-black text-neutral-500">{sub.progress.hold}</td>
                           <td className="p-4">
                             <p className="font-bold text-black">{sub.est_completion}</p>
-                            <p className="text-xs text-neutral-500">{sub.progress.left > 0 ? `${Math.ceil(sub.progress.left / sub.plan.included_meal_slots.length)} days remaining` : 'Done'}</p>
+                            <p className="text-xs text-neutral-500">
+                              {sub.progress.left > 0 
+                                ? `${Math.ceil(sub.progress.left / Math.max(1, (sub.plan?.included_meal_slots?.length || 1)))} days remaining` 
+                                : 'Done'}
+                            </p>
                           </td>
                           <td className="p-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -300,7 +306,7 @@ export default function SubscriptionsDashboard() {
                     })}
                     {paginatedSubs.length === 0 && (
                       <tr>
-                        <td colSpan={8} className="p-8 text-center text-neutral-500 font-bold">No subscriptions found</td>
+                        <td colSpan={9} className="p-8 text-center text-neutral-500 font-bold">No subscriptions found</td>
                       </tr>
                     )}
                   </tbody>
