@@ -1,9 +1,9 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { ArrowLeft, CheckCircle2, Search, Plus, Trash2, User, Activity } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { endpoints } from "@/lib/apiService";
 import { Header } from "@/components/admin/Header";
 import { ProbaeButton } from "@/components/ProbaeButton";
@@ -20,7 +20,24 @@ function customerHasCalorieTarget(customer: any): boolean {
 }
 
 export default function NewOrderPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col flex-1 h-full bg-[#E6E6E6] items-center justify-center">
+          <BowlLoader className="w-10 h-10" />
+        </div>
+      }
+    >
+      <NewOrderPageContent />
+    </Suspense>
+  );
+}
+
+function NewOrderPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const paramCustomerUlid = searchParams.get("customer_ulid");
+  const paramOrderType = searchParams.get("order_type");
   
   const [customers, setCustomers] = useState<any[]>([]);
   const [bowls, setBowls] = useState<any[]>([]);
@@ -57,11 +74,54 @@ export default function NewOrderPage() {
   const [paymentIntent, setPaymentIntent] = useState<string>("");
   const [showWarningModal, setShowWarningModal] = useState(false);
 
-  // Pick sensible defaults for each newly selected customer. The controls
-  // remain editable so admins can override either automatic choice.
+  // If customer_ulid is in URL, fetch customer directly
+  useEffect(() => {
+    if (!paramCustomerUlid) return;
+    const loadSpecificCustomer = async () => {
+      try {
+        const res = await endpoints.customers.get(paramCustomerUlid) as any;
+        if (res && res.ulid) {
+          setSelectedCustomer(res);
+          setCustomerSearch(res.name);
+          const hasPlan = Boolean(
+            paramOrderType === "PLAN" ||
+            res.subscription_status === "ACTIVE" ||
+            (res.remaining_bowl_count && res.remaining_bowl_count > 0) ||
+            res.selected_plan_id ||
+            res.active_subscription_id
+          );
+          if (hasPlan || paramOrderType === "PLAN") {
+            setOrderType("PLAN");
+            setPaymentIntent("PLAN_SUBSCRIPTION");
+          } else {
+            setOrderType(res.is_affiliate ? "AFFILIATE" : "CUSTOM");
+          }
+          setScalingStrategy(customerHasCalorieTarget(res) ? "PROFILE_SCALED" : "STANDARD");
+        }
+      } catch (e) {
+        console.error("Failed to load customer from URL parameter", e);
+      }
+    };
+    loadSpecificCustomer();
+  }, [paramCustomerUlid, paramOrderType]);
+
+  // Pick sensible defaults for each newly selected customer.
   useEffect(() => {
     if (!selectedCustomer) return;
-    setOrderType(selectedCustomer.is_affiliate ? "AFFILIATE" : "CUSTOM");
+    const hasPlan = Boolean(
+      paramOrderType === "PLAN" ||
+      selectedCustomer.subscription_status === "ACTIVE" ||
+      (selectedCustomer.remaining_bowl_count && selectedCustomer.remaining_bowl_count > 0) ||
+      selectedCustomer.selected_plan_id ||
+      selectedCustomer.active_subscription_id
+    );
+    if (hasPlan || paramOrderType === "PLAN") {
+      setOrderType("PLAN");
+      setPaymentIntent("PLAN_SUBSCRIPTION");
+    } else {
+      setOrderType(selectedCustomer.is_affiliate ? "AFFILIATE" : "CUSTOM");
+      setPaymentIntent("");
+    }
     setScalingStrategy(customerHasCalorieTarget(selectedCustomer) ? "PROFILE_SCALED" : "STANDARD");
   }, [selectedCustomer?.ulid]);
 
@@ -364,8 +424,8 @@ export default function NewOrderPage() {
         scaling_strategy: scalingStrategy,
         target_date: targetDate,
         items: payloadItems,
-        payment_intent: paymentIntent,
-        payment_method: paymentIntent === 'UPFRONT_PAYMENT' ? paymentMethod : null,
+        payment_intent: orderType === "PLAN" ? "PLAN_SUBSCRIPTION" : paymentIntent,
+        payment_method: (paymentIntent === 'UPFRONT_PAYMENT' && orderType !== "PLAN") ? paymentMethod : null,
         include_delivery_charge: includeDelivery,
         delivery_cost_total: effectiveDeliveryCharge,
       }) as any;
@@ -462,16 +522,38 @@ export default function NewOrderPage() {
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center border border-neutral-200 shadow-sm shrink-0">
                   <User className="w-8 h-8 text-[#6A0FAD]" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-black text-neutral-900">{selectedCustomer.name}</h3>
+                <div className="flex-1 w-full">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <h3 className="text-xl font-black text-neutral-900">{selectedCustomer.name}</h3>
+                    <div className="flex items-center gap-2">
+                      {orderType === "PLAN" ? (
+                        <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                          (selectedCustomer.remaining_bowl_count ?? 0) > 0
+                            ? "bg-green-100 text-green-700 border border-green-200"
+                            : "bg-red-100 text-red-700 border border-red-200"
+                        }`}>
+                          Plan Quota: {selectedCustomer.remaining_bowl_count ?? 0} Bowls Left
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-neutral-100 text-neutral-600">
+                          {orderType} Order
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-4 mt-2 mb-4">
                     <div className="flex items-center gap-1.5 text-sm font-medium text-neutral-600">
                       <Activity className="w-4 h-4 text-[#6A0FAD]" />
-                      Goal: <span className="text-neutral-900 font-bold uppercase">{selectedCustomer.goal}</span>
+                      Goal: <span className="text-neutral-900 font-bold uppercase">{selectedCustomer.goal || 'General'}</span>
                     </div>
                     {selectedCustomer.calorie_profile?.tdee && (
                       <div className="flex items-center gap-1.5 text-sm font-medium text-neutral-600">
                         Total Target: <span className="text-neutral-900 font-bold">{Math.round(selectedCustomer.calorie_profile.probaeTarget || selectedCustomer.calorie_profile.tdee)} kcal</span>
+                      </div>
+                    )}
+                    {selectedCustomer.wallet_balance !== undefined && (
+                      <div className="flex items-center gap-1.5 text-sm font-medium text-neutral-600">
+                        Wallet: <span className="text-neutral-900 font-bold">₹{Number(selectedCustomer.wallet_balance).toFixed(2)}</span>
                       </div>
                     )}
                   </div>
@@ -497,10 +579,21 @@ export default function NewOrderPage() {
                   <select
                     id="order-type"
                     value={orderType}
-                    onChange={(event) => setOrderType(event.target.value as OrderType)}
+                    onChange={(event) => {
+                      const nextType = event.target.value as OrderType;
+                      setOrderType(nextType);
+                      if (nextType === "PLAN") {
+                        setPaymentIntent("PLAN_SUBSCRIPTION");
+                        if (customerHasCalorieTarget(selectedCustomer)) {
+                          changeScalingStrategy("PROFILE_SCALED");
+                        }
+                      } else if (paymentIntent === "PLAN_SUBSCRIPTION") {
+                        setPaymentIntent("");
+                      }
+                    }}
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] outline-none"
                   >
-                    <option value="PLAN">Plan</option>
+                    <option value="PLAN">Plan (Prepaid Subscription)</option>
                     <option value="CUSTOM">Custom</option>
                     <option value="AFFILIATE">Affiliate</option>
                     <option value="TRIAL">Trial</option>
@@ -831,33 +924,54 @@ export default function NewOrderPage() {
             <div className="w-full bg-[#1c1c1c] p-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4 z-30 rounded-2xl shadow-xl">
               <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 w-full sm:w-auto">
                 <div className="text-center sm:text-left">
-                  <div className="text-neutral-400 font-bold text-sm">Grand Total ({orderItems.length} items)</div>
-                  <div className="text-3xl font-black text-[#00E676]">₹{grandTotal.toFixed(2)}</div>
+                  <div className="text-neutral-400 font-bold text-sm">Grand Total ({orderItems.length} bowl{orderItems.length > 1 ? 's' : ''})</div>
+                  {orderType === "PLAN" ? (
+                    <div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-black text-[#00E676]">₹0.00</span>
+                        <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Plan Quota</span>
+                      </div>
+                      <div className="text-xs text-neutral-400 mt-0.5">
+                        Retail Value: ₹{grandTotal.toFixed(2)} • Deducts {orderItems.reduce((sum, item) => sum + item.quantity, 0)} bowl(s) upon delivery
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-3xl font-black text-[#00E676]">₹{grandTotal.toFixed(2)}</div>
+                  )}
                 </div>
                 <div className="hidden sm:block w-px h-12 bg-neutral-700"></div>
                 <div className="flex flex-col gap-2 w-full sm:w-auto text-white">
-                  <select value={paymentIntent} onChange={e => setPaymentIntent(e.target.value)} className="bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#6A0FAD]">
-                    <option value="" disabled>Select Payment Method...</option>
-                    <option value="UPFRONT_PAYMENT">Pay Now (Cash/UPI)</option>
-                  <option value="WALLET_DEDUCTION">Deduct from Wallet</option>
-                  <option value="PAY_ON_DELIVERY">Pay on Delivery (COD)</option>
-                </select>
-                {paymentIntent === 'UPFRONT_PAYMENT' && (
-                  <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#6A0FAD]">
-                    <option value="UPI">UPI / Scan</option>
-                    <option value="CASH">Cash</option>
-                  </select>
-                )}
+                  {orderType === "PLAN" ? (
+                    <div className="bg-neutral-800/90 border border-emerald-500/40 rounded-xl px-4 py-2 text-sm text-emerald-300 font-medium flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Prepaid via Active Subscription ({selectedCustomer?.remaining_bowl_count ?? 0} bowls left)</span>
+                    </div>
+                  ) : (
+                    <>
+                      <select value={paymentIntent} onChange={e => setPaymentIntent(e.target.value)} className="bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#6A0FAD]">
+                        <option value="" disabled>Select Payment Method...</option>
+                        <option value="UPFRONT_PAYMENT">Pay Now (Cash/UPI)</option>
+                        <option value="WALLET_DEDUCTION">Deduct from Wallet</option>
+                        <option value="PAY_ON_DELIVERY">Pay on Delivery (COD)</option>
+                      </select>
+                      {paymentIntent === 'UPFRONT_PAYMENT' && (
+                        <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#6A0FAD]">
+                          <option value="UPI">UPI / Scan</option>
+                          <option value="CASH">Cash</option>
+                        </select>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-            <ProbaeButton 
-              onClick={initiateCheckout}
-              disabled={isSubmitting || isRecalculating || !!recalculationError || !paymentIntent || (paymentIntent === 'UPFRONT_PAYMENT' && !paymentMethod)}
-              className="w-full md:w-auto md:!px-10 disabled:opacity-50"
-            >
-              {isSubmitting ? <BowlLoader className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
-              Approve & Create Order
-            </ProbaeButton>
+              <ProbaeButton 
+                onClick={initiateCheckout}
+                disabled={isSubmitting || isRecalculating || !!recalculationError || (orderType !== "PLAN" && (!paymentIntent || (paymentIntent === 'UPFRONT_PAYMENT' && !paymentMethod)))}
+                className="w-full md:w-auto md:!px-10 disabled:opacity-50"
+              >
+                {isSubmitting ? <BowlLoader className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                {orderType === "PLAN" ? "Approve Plan Order" : "Approve & Create Order"}
+              </ProbaeButton>
             </div>
           </div>
         )}

@@ -5,13 +5,14 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { LocationPicker } from "@/components/admin/LocationPicker";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints, api } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
-import { Edit2, Check, ArrowLeft, Trash2, Camera, Upload, Lock, Unlock, Hourglass, ChevronDown } from "lucide-react";
+import { Edit2, Check, ArrowLeft, Trash2, Camera, Upload, Lock, Unlock, Hourglass, ChevronDown, Plus } from "lucide-react";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { CustomerLedger } from "../components/CustomerLedger";
 import { CustomerCalories } from "@/components/admin/CustomerCalories";
@@ -600,6 +601,12 @@ export default function CustomerDetailPage() {
               <div className="flex items-center gap-3">
                 {!isEditMode ? (
                   <>
+                    <Link
+                      href={`/admin/orders/new?customer_ulid=${customer.ulid}&order_type=PLAN`}
+                      className="px-4 py-2 text-sm font-bold bg-[#16A34A] text-white hover:bg-[#15803d] rounded-xl transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" /> Create Plan Order
+                    </Link>
                     <button onClick={() => setShowDeleteModal(true)} className="px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-2 border border-transparent hover:border-red-200">
                       <Trash2 className="w-4 h-4" /> Delete
                     </button>

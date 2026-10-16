@@ -232,13 +232,13 @@ export default function OrdersPage() {
               </button>
 
               {/* Batch Order & Wallet Adjust utility button - can be commented or removed anytime */}
-              <Link
+              {/* <Link
                 href="/admin/orders/batch-adjust"
                 className="flex items-center justify-center gap-2 h-11 px-4 rounded-2xl bg-white border border-neutral-200 text-neutral-700 font-bold text-sm hover:bg-neutral-50 hover:border-neutral-300 shadow-sm transition-colors w-full sm:w-auto"
                 title="Bulk Adjust Order Price & Wallet"
               >
                 <Sliders className="w-4 h-4 text-emerald-600" /> Batch Adjust
-              </Link>
+              </Link> */}
 
               <button 
                 onClick={() => {
