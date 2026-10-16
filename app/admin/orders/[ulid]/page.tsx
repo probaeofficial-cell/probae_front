@@ -254,14 +254,18 @@ export default function OrderDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {item.adjusted_ingredients?.map((ing: any, i: number) => (
-                <tr key={i}>
-                  <td>{ing.name}</td>
-                  <td>{ing.macro_tag}</td>
-                  <td>{ing.original_weight}g</td>
-                  <td><strong>{ing.new_weight}g</strong></td>
-                </tr>
-              ))}
+              {item.adjusted_ingredients?.map((ing: any, i: number) => {
+                const origW = Number(ing.original_weight ?? ing.weight_g ?? ing.weight_g_or_ml ?? ing.new_weight ?? 0);
+                const newW = Number(ing.new_weight ?? ing.weight_g ?? ing.weight_g_or_ml ?? ing.original_weight ?? 0);
+                return (
+                  <tr key={i}>
+                    <td>{ing.name}</td>
+                    <td>{ing.macro_tag}</td>
+                    <td>{origW > 0 ? `${origW.toFixed(1)}g` : "—"}</td>
+                    <td><strong>{newW > 0 ? `${newW.toFixed(1)}g` : "—"}</strong></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           <div style={{ fontSize: 12, color: "#6b7280", marginTop: 6 }}>
@@ -461,7 +465,10 @@ export default function OrderDetailPage() {
                  }
 
                  const isExpanded = expandedItems.has(item.ulid);
-                 const totalWeight = item.adjusted_ingredients?.reduce((sum: number, ing: any) => sum + (ing.original_weight || 0), 0) || 0;
+                 const totalWeight = item.adjusted_ingredients?.reduce((sum: number, ing: any) => {
+                   const w = Number(ing.new_weight ?? ing.weight_g ?? ing.weight_g_or_ml ?? ing.original_weight ?? ing.quantity ?? 0);
+                   return sum + w;
+                 }, 0) || 0;
 
                  return (
                    <div key={item.ulid} className="bg-white rounded-3xl shadow-[0_2px_15px_rgba(0,0,0,0.03)] border border-neutral-100 overflow-hidden flex flex-col transition-all">
@@ -536,12 +543,15 @@ export default function OrderDetailPage() {
                            </div>
                          </div>
                          <div className="space-y-2">
-                           {item.adjusted_ingredients?.map((ing: any, i: number) => (
-                             <div key={i} className="flex justify-between items-center border-b border-neutral-200/50 pb-2 last:border-0 last:pb-0">
-                               <span className="font-medium text-neutral-800 flex-1">{ing.name}</span>
-                               <span className="text-neutral-400 font-medium ml-2">{Math.round(ing.new_weight || ing.quantity || ing.original_weight || 0)}g</span>
-                             </div>
-                           ))}
+                           {item.adjusted_ingredients?.map((ing: any, i: number) => {
+                             const weight = Number(ing.new_weight ?? ing.weight_g ?? ing.weight_g_or_ml ?? ing.original_weight ?? ing.quantity ?? 0);
+                             return (
+                               <div key={i} className="flex justify-between items-center border-b border-neutral-200/50 pb-2 last:border-0 last:pb-0">
+                                 <span className="font-medium text-neutral-800 flex-1">{ing.name}</span>
+                                 <span className="text-neutral-400 font-medium ml-2">{Math.round(weight)}g</span>
+                               </div>
+                             );
+                           })}
                            {(!item.adjusted_ingredients || item.adjusted_ingredients.length === 0) && (
                              <p className="text-neutral-400 italic">No ingredients found.</p>
                            )}

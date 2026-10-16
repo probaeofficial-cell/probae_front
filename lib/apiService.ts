@@ -561,6 +561,14 @@ export const endpoints = {
       }
       return await api.get<PaginatedIngredients>(`/ingredients/${query}`);
     },
+    list: async (page: number = 1, size: number = 100, search?: string): Promise<PaginatedIngredients> => {
+      let query = `?page=${page}&page_size=${size}`;
+      if (search) {
+        query += `&search=${encodeURIComponent(search)}`;
+      }
+      return await api.get<PaginatedIngredients>(`/ingredients/${query}`);
+    },
+
     getIngredient: async (ulid: string): Promise<Ingredient> => {
       return await api.get<Ingredient>(`/ingredients/${ulid}`);
     },
@@ -808,6 +816,12 @@ export const endpoints = {
     calculateCalories: async (data: any) => await api.post("/customers/calculate-calories", data),
     previewPlanPrice: async (data: any) => await api.post("/customers/preview-plan-price", data),
     previewCustomPlanPrice: async (data: any) => await api.post("/customers/preview-custom-plan", data),
+    customizeBowl: async (customerUlid: string, data: {
+      schedule_ulid?: string;
+      bowl_ulid: string;
+      apply_to_all_days: boolean;
+      custom_ingredients: any[];
+    }): Promise<any> => await api.patch(`/customers/${customerUlid}/meal-schedule/customize-bowl`, data),
     del: async (ulid: string) => await api.del(`/customers/${ulid}`),
     migrateActivePlan: async (ulid: string, data: any) => await api.post(`/customers/${ulid}/migrate-active-plan`, data),
     legacySubscription: async (ulid: string, data: any) => await api.post(`/customers/${ulid}/legacy-subscription`, data),

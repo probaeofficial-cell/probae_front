@@ -117,6 +117,35 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
       }
       
       const mappedItems = data.items.map((item: any) => {
+         const rawIngredients = Array.isArray(item.adjusted_ingredients) ? item.adjusted_ingredients : [];
+         const normalizedIngredients = rawIngredients.map((ing: any) => {
+            const rawWeight = ing.new_weight ?? ing.weight_g ?? ing.weight_g_or_ml ?? ing.original_weight ?? ing.quantity ?? 0;
+            const numWeight = typeof rawWeight === "number" ? rawWeight : (parseFloat(rawWeight) || 0);
+            const origWeight = ing.original_weight ?? ing.new_weight ?? ing.weight_g ?? ing.weight_g_or_ml ?? ing.quantity ?? 0;
+            const numOrigWeight = typeof origWeight === "number" ? origWeight : (parseFloat(origWeight) || 0);
+            const cals = typeof ing.calories === "number" ? ing.calories : (parseFloat(ing.calories) || 0);
+            const pro = typeof ing.protein === "number" ? ing.protein : (parseFloat(ing.protein) || 0);
+            const carb = typeof ing.carbs === "number" ? ing.carbs : (parseFloat(ing.carbs) || 0);
+            const fat = typeof ing.fat === "number" ? ing.fat : (parseFloat(ing.fat) || 0);
+            const fib = typeof ing.fiber === "number" ? ing.fiber : (parseFloat(ing.fiber) || 0);
+            const cost = typeof ing.cost === "number" ? ing.cost : (parseFloat(ing.cost || ing.raw_cost) || 0);
+
+            return {
+               ...ing,
+               name: ing.name || ing.ingredient_name || "Ingredient",
+               macro_tag: ing.macro_tag || "OTHER",
+               original_weight: numOrigWeight,
+               new_weight: numWeight,
+               weight_g: numWeight,
+               calories: cals,
+               protein: pro,
+               carbs: carb,
+               fat: fat,
+               fiber: fib,
+               cost: cost,
+            };
+         });
+
          return {
             id: item.ulid,
             bowlUlid: item.bowl_ulid,
@@ -129,9 +158,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
               new_raw_material_cost: item.raw_material_cost,
               packaging_cost: item.packaging_cost,
               fixed_cost: item.fixed_cost,
-              ingredients: JSON.parse(JSON.stringify(item.adjusted_ingredients))
+              ingredients: JSON.parse(JSON.stringify(normalizedIngredients))
             },
-            workingIngredients: JSON.parse(JSON.stringify(item.adjusted_ingredients))
+            workingIngredients: JSON.parse(JSON.stringify(normalizedIngredients))
          };
       });
       setOrderItems(mappedItems);
@@ -285,17 +314,19 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
     const newItems = [...orderItems];
     const item = newItems[itemIndex];
     const ing = item.workingIngredients[ingIndex];
+    const previewIng = item.previewData?.ingredients?.[ingIndex] || ing;
     
-    const originalScaledWeight = item.previewData.ingredients[ingIndex].new_weight;
+    const originalScaledWeight = Number(previewIng.new_weight ?? previewIng.weight_g ?? ing.new_weight ?? ing.weight_g ?? 0);
     const ratio = originalScaledWeight > 0 ? (newWeight / originalScaledWeight) : 0;
     
     ing.new_weight = newWeight;
-    ing.calories = item.previewData.ingredients[ingIndex].calories * ratio;
-    ing.protein = (item.previewData.ingredients[ingIndex].protein || 0) * ratio;
-    ing.carbs = (item.previewData.ingredients[ingIndex].carbs || 0) * ratio;
-    ing.fat = (item.previewData.ingredients[ingIndex].fat || 0) * ratio;
-    ing.fiber = (item.previewData.ingredients[ingIndex].fiber || 0) * ratio;
-    ing.cost = (item.previewData.ingredients[ingIndex].cost || 0) * ratio;
+    ing.weight_g = newWeight;
+    ing.calories = Number(previewIng.calories || 0) * ratio;
+    ing.protein = Number(previewIng.protein || 0) * ratio;
+    ing.carbs = Number(previewIng.carbs || 0) * ratio;
+    ing.fat = Number(previewIng.fat || 0) * ratio;
+    ing.fiber = Number(previewIng.fiber || 0) * ratio;
+    ing.cost = Number(previewIng.cost || previewIng.raw_cost || 0) * ratio;
     
     setOrderItems(newItems);
   };
@@ -305,17 +336,20 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
     const newItems = [...orderItems];
     const item = newItems[itemIndex];
     const ing = item.workingIngredients[ingIndex];
+    const previewIng = item.previewData?.ingredients?.[ingIndex] || ing;
     
-    const originalScaledCal = item.previewData.ingredients[ingIndex].calories;
+    const originalScaledCal = Number(previewIng.calories || 0);
     const ratio = originalScaledCal > 0 ? (newCal / originalScaledCal) : 0;
     
+    const baseWeight = Number(previewIng.new_weight ?? previewIng.weight_g ?? ing.new_weight ?? ing.weight_g ?? 0);
     ing.calories = newCal;
-    ing.new_weight = item.previewData.ingredients[ingIndex].new_weight * ratio;
-    ing.protein = (item.previewData.ingredients[ingIndex].protein || 0) * ratio;
-    ing.carbs = (item.previewData.ingredients[ingIndex].carbs || 0) * ratio;
-    ing.fat = (item.previewData.ingredients[ingIndex].fat || 0) * ratio;
-    ing.fiber = (item.previewData.ingredients[ingIndex].fiber || 0) * ratio;
-    ing.cost = (item.previewData.ingredients[ingIndex].cost || 0) * ratio;
+    ing.new_weight = baseWeight * ratio;
+    ing.weight_g = baseWeight * ratio;
+    ing.protein = Number(previewIng.protein || 0) * ratio;
+    ing.carbs = Number(previewIng.carbs || 0) * ratio;
+    ing.fat = Number(previewIng.fat || 0) * ratio;
+    ing.fiber = Number(previewIng.fiber || 0) * ratio;
+    ing.cost = Number(previewIng.cost || previewIng.raw_cost || 0) * ratio;
     
     setOrderItems(newItems);
   };
@@ -678,38 +712,46 @@ export default function EditOrderPage({ params }: { params: Promise<{ ulid: stri
                   <div className="overflow-x-auto border-t border-neutral-100">
                     <table className="w-full text-left text-sm border-collapse min-w-[600px]">
                       <tbody className="divide-y divide-neutral-100">
-                        {item.workingIngredients.map((ing: any, i: number) => (
-                          <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
-                            <td className="px-6 py-4 font-bold text-neutral-900 w-1/4">{ing.name}</td>
-                            <td className="px-6 py-4 w-1/6">
-                              <span className="px-2 py-1 rounded text-[9px] font-black tracking-wider uppercase bg-neutral-100 text-neutral-500">{ing.macro_tag}</span>
-                            </td>
-                            <td className="px-6 py-4 text-right text-neutral-400 font-bold w-1/6">{item.previewData.ingredients[i].original_weight}g</td>
-                            <td className="px-6 py-4 text-right text-[#6A0FAD] font-bold bg-[#F9F5FD] w-1/6">{item.previewData.ingredients[i].new_weight}g</td>
-                            <td className="px-6 py-4 text-right w-1/3">
-                              <div className="flex items-center justify-end gap-2">
-                                <div className="flex items-center bg-white border border-neutral-200 rounded-lg focus-within:ring-2 focus-within:ring-[#6A0FAD]/20 focus-within:border-[#6A0FAD] transition-all">
-                                  <input 
-                                    type="number" 
-                                    value={ing.new_weight.toFixed(1)}
-                                    onChange={(e) => handleWeightChange(itemIndex, i, e.target.value)}
-                                    className="w-20 text-center bg-transparent px-2 py-1.5 font-bold text-neutral-900 outline-none"
-                                  />
-                                  <span className="pr-3 text-xs text-neutral-400 font-bold select-none">g</span>
+                        {item.workingIngredients.map((ing: any, i: number) => {
+                          const previewIng = item.previewData?.ingredients?.[i];
+                          const origWeight = Number(previewIng?.original_weight ?? ing.original_weight ?? ing.new_weight ?? ing.weight_g ?? 0);
+                          const scaledWeight = Number(previewIng?.new_weight ?? ing.new_weight ?? ing.weight_g ?? 0);
+                          const currentWeight = Number(ing.new_weight ?? ing.weight_g ?? 0);
+                          const currentCals = Number(ing.calories ?? 0);
+
+                          return (
+                            <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                              <td className="px-6 py-4 font-bold text-neutral-900 w-1/4">{ing.name}</td>
+                              <td className="px-6 py-4 w-1/6">
+                                <span className="px-2 py-1 rounded text-[9px] font-black tracking-wider uppercase bg-neutral-100 text-neutral-500">{ing.macro_tag}</span>
+                              </td>
+                              <td className="px-6 py-4 text-right text-neutral-400 font-bold w-1/6">{origWeight.toFixed(1)}g</td>
+                              <td className="px-6 py-4 text-right text-[#6A0FAD] font-bold bg-[#F9F5FD] w-1/6">{scaledWeight.toFixed(1)}g</td>
+                              <td className="px-6 py-4 text-right w-1/3">
+                                <div className="flex items-center justify-end gap-2">
+                                  <div className="flex items-center bg-white border border-neutral-200 rounded-lg focus-within:ring-2 focus-within:ring-[#6A0FAD]/20 focus-within:border-[#6A0FAD] transition-all">
+                                    <input 
+                                      type="number" 
+                                      value={currentWeight.toFixed(1)}
+                                      onChange={(e) => handleWeightChange(itemIndex, i, e.target.value)}
+                                      className="w-20 text-center bg-transparent px-2 py-1.5 font-bold text-neutral-900 outline-none"
+                                    />
+                                    <span className="pr-3 text-xs text-neutral-400 font-bold select-none">g</span>
+                                  </div>
+                                  <div className="flex items-center bg-white border border-neutral-200 rounded-lg focus-within:ring-2 focus-within:ring-[#6A0FAD]/20 focus-within:border-[#6A0FAD] transition-all">
+                                    <input 
+                                      type="number" 
+                                      value={currentCals.toFixed(1)}
+                                      onChange={(e) => handleCalorieChange(itemIndex, i, e.target.value)}
+                                      className="w-20 text-center bg-transparent px-2 py-1.5 font-bold text-neutral-900 outline-none"
+                                    />
+                                    <span className="pr-3 text-xs text-neutral-400 font-bold select-none">kcal</span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center bg-white border border-neutral-200 rounded-lg focus-within:ring-2 focus-within:ring-[#6A0FAD]/20 focus-within:border-[#6A0FAD] transition-all">
-                                  <input 
-                                    type="number" 
-                                    value={ing.calories.toFixed(1)}
-                                    onChange={(e) => handleCalorieChange(itemIndex, i, e.target.value)}
-                                    className="w-20 text-center bg-transparent px-2 py-1.5 font-bold text-neutral-900 outline-none"
-                                  />
-                                  <span className="pr-3 text-xs text-neutral-400 font-bold select-none">kcal</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

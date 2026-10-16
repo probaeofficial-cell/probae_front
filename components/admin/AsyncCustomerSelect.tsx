@@ -94,7 +94,7 @@ export default function AsyncCustomerSelect({ value, onChange, onSelectFull, sel
     };
   }, [handleObserver]);
 
-  const currentOption = options.find(o => o.id === value) || selectedCustomer;
+  const currentOption = options.find(o => (o.id !== undefined && o.id === value) || (o.ulid && o.ulid === value)) || selectedCustomer;
   const displayLabel = value === 0 ? "Select Customer..." : currentOption ? currentOption.name : "Select Customer...";
 
   return (
@@ -115,8 +115,8 @@ export default function AsyncCustomerSelect({ value, onChange, onSelectFull, sel
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input 
-                type="text"
-                placeholder="Search customers..."
+                type="text" 
+                placeholder="Search customers..." 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full h-9 pl-9 pr-3 bg-neutral-50 rounded-xl text-sm outline-none placeholder:text-neutral-400 text-neutral-900"
@@ -137,26 +137,30 @@ export default function AsyncCustomerSelect({ value, onChange, onSelectFull, sel
               {value === 0 && <div className="w-2 h-2 rounded-full bg-[#7c3aed]" />}
             </div>
             
-            {options.map((opt) => (
-              <div 
-                key={opt.id}
-                onClick={() => {
-                  onChange(opt.id);
-                  if (onSelectFull) onSelectFull(opt);
-                  setIsOpen(false);
-                  setSearch("");
-                }}
-                className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-between group ${value === opt.id ? 'bg-[#f3f0ff] text-[#7c3aed] font-semibold' : 'text-neutral-900 hover:bg-neutral-50'}`}
-              >
-                <div className="flex flex-col">
-                  <span className="truncate">{opt.name}</span>
-                  <span className="text-[10px] text-neutral-500">{opt.phone}</span>
+            {options.map((opt, idx) => {
+              const optKey = opt.ulid ? `cust-${opt.ulid}` : opt.id !== undefined ? `cust-id-${opt.id}` : `cust-idx-${idx}`;
+              const isSelected = (opt.id !== undefined && opt.id === value) || (opt.ulid && opt.ulid === value);
+              return (
+                <div 
+                  key={optKey}
+                  onClick={() => {
+                    onChange(opt.id ?? opt.ulid);
+                    if (onSelectFull) onSelectFull(opt);
+                    setIsOpen(false);
+                    setSearch("");
+                  }}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-between group ${isSelected ? 'bg-[#f3f0ff] text-[#7c3aed] font-semibold' : 'text-neutral-900 hover:bg-neutral-50'}`}
+                >
+                  <div className="flex flex-col">
+                    <span className="truncate">{opt.name}</span>
+                    <span className="text-[10px] text-neutral-500">{opt.phone}</span>
+                  </div>
+                  {isSelected && (
+                    <div className="w-2 h-2 rounded-full bg-[#7c3aed]" />
+                  )}
                 </div>
-                {value === opt.id && (
-                  <div className="w-2 h-2 rounded-full bg-[#7c3aed]" />
-                )}
-              </div>
-            ))}
+              );
+            })}
             
             {hasMore && (
               <div ref={loadingNodeRef} className="py-3 flex justify-center">

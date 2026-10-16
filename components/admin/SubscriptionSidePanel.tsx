@@ -3,16 +3,40 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { X, Calendar, Edit3, PauseCircle, RefreshCw, CheckCircle2, Clock } from "lucide-react";
+import { X, Calendar, Edit3, PauseCircle, RefreshCw, CheckCircle2, Clock, SlidersHorizontal, Sparkles } from "lucide-react";
 import { api } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { BowlLoader } from "@/components/admin/BowlLoader";
+import { BowlCustomizerModal } from "@/components/admin/BowlCustomizerModal";
 
 export function SubscriptionSidePanel({ subscription, onClose, onUpdate }: { subscription: any, onClose: () => void, onUpdate?: () => void }) {
   const [activeTab, setActiveTab] = useState<"overview" | "schedule">("overview");
   const [schedule, setSchedule] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+
+  const [customizerModal, setCustomizerModal] = useState<{
+    isOpen: boolean;
+    bowlUlid: string;
+    bowlName: string;
+    dayIndex: number;
+    mealSlot: string;
+    scheduleUlid: string;
+    initialIngredients: any[];
+    packagingCost: number;
+    fixedCost: number;
+  }>({
+    isOpen: false,
+    bowlUlid: "",
+    bowlName: "",
+    dayIndex: 1,
+    mealSlot: "",
+    scheduleUlid: "",
+    initialIngredients: [],
+    packagingCost: 0,
+    fixedCost: 0,
+  });
+
   useEffect(() => {
     api.get("/settings").then((res: any) => {
       if (res && res.R2_BASE_URL) setSystemSettings({ R2_BASE_URL: res.R2_BASE_URL });
@@ -212,9 +236,40 @@ export function SubscriptionSidePanel({ subscription, onClose, onUpdate }: { sub
                           {bowl.image && <img src={getMediaUrl(systemSettings.R2_BASE_URL, bowl.image) || undefined} alt="" className="w-full h-full object-cover" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-black truncate">{bowl.name}</p>
-                          <p className="text-xs text-neutral-500">{bowl.calories} kcal</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-bold text-black truncate">{bowl.name}</p>
+                            {item.is_customized && (
+                              <span className="text-[9px] font-black bg-purple-100 text-[#6A0FAD] px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                <Sparkles className="w-2.5 h-2.5" /> CUSTOM
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-neutral-500 font-medium">
+                            {bowl.calories || 0} kcal {bowl.price ? `• ₹${bowl.price}` : ""}
+                          </p>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const ings = (item.is_customized && item.custom_ingredients && item.custom_ingredients.length > 0)
+                              ? item.custom_ingredients
+                              : (bowl.base_ingredients || []);
+                            setCustomizerModal({
+                              isOpen: true,
+                              bowlUlid: bowl.ulid,
+                              bowlName: bowl.name,
+                              dayIndex: item.day_index,
+                              mealSlot: item.meal_slot,
+                              scheduleUlid: item.ulid,
+                              initialIngredients: ings,
+                              packagingCost: 0,
+                              fixedCost: 0,
+                            });
+                          }}
+                          className="px-2.5 py-1.5 text-xs font-bold text-[#6A0FAD] bg-[#6A0FAD]/10 hover:bg-[#6A0FAD]/20 rounded-xl transition-colors flex items-center gap-1.5 shrink-0"
+                        >
+                          <SlidersHorizontal className="w-3.5 h-3.5" /> Customize
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -224,6 +279,25 @@ export function SubscriptionSidePanel({ subscription, onClose, onUpdate }: { sub
           </div>
         )}
       </div>
+
+      <BowlCustomizerModal
+        isOpen={customizerModal.isOpen}
+        onClose={() => setCustomizerModal(prev => ({ ...prev, isOpen: false }))}
+        bowlUlid={customizerModal.bowlUlid}
+        bowlName={customizerModal.bowlName}
+        dayIndex={customizerModal.dayIndex}
+        mealSlot={customizerModal.mealSlot}
+        scheduleUlid={customizerModal.scheduleUlid}
+        customerUlid={s.customer.ulid}
+        initialIngredients={customizerModal.initialIngredients}
+        basePackagingCost={customizerModal.packagingCost}
+        baseFixedCost={customizerModal.fixedCost}
+        onSave={async () => {
+          await loadSchedule();
+          if (onUpdate) onUpdate();
+        }}
+      />
     </div>
   );
 }
+

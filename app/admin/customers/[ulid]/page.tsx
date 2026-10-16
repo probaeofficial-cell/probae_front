@@ -12,11 +12,14 @@ import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints, api } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
-import { Edit2, Check, ArrowLeft, Trash2, Camera, Upload, Lock, Unlock, Hourglass, ChevronDown, Plus } from "lucide-react";
+import { Edit2, Check, ArrowLeft, Trash2, Camera, Upload, Lock, Unlock, Hourglass, ChevronDown, Plus, SlidersHorizontal, Sparkles } from "lucide-react";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { CustomerLedger } from "../components/CustomerLedger";
 import { CustomerCalories } from "@/components/admin/CustomerCalories";
 import { CustomerHistory } from "@/components/admin/CustomerHistory";
+import { BowlCustomizerModal, CustomIngredient, parseBowlIngredient } from "@/components/admin/BowlCustomizerModal";
+
+
 
 
 export default function CustomerDetailPage() {
@@ -73,6 +76,67 @@ export default function CustomerDetailPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [zones, setZones] = useState<any[]>([]);
+
+  const [customizerModal, setCustomizerModal] = useState<{
+    isOpen: boolean;
+    bowlUlid: string;
+    bowlName: string;
+    dayIndex: number;
+    mealSlot: string;
+    scheduleUlid: string;
+    initialIngredients: CustomIngredient[];
+    packagingCost: number;
+    fixedCost: number;
+  }>({
+    isOpen: false,
+    bowlUlid: "",
+    bowlName: "",
+    dayIndex: 1,
+    mealSlot: "",
+    scheduleUlid: "",
+    initialIngredients: [],
+    packagingCost: 0,
+    fixedCost: 0,
+  });
+
+  const handleOpenMealCustomizer = async (meal: any) => {
+    if (meal.is_customized && meal.custom_ingredients && meal.custom_ingredients.length > 0) {
+      setCustomizerModal({
+        isOpen: true,
+        bowlUlid: meal.bowl_ulid,
+        bowlName: meal.bowl_name || "Unknown Bowl",
+        dayIndex: meal.day_index,
+        mealSlot: meal.meal_slot,
+        scheduleUlid: meal.ulid,
+        initialIngredients: meal.custom_ingredients,
+        packagingCost: 0,
+        fixedCost: 0,
+      });
+      return;
+    }
+
+    try {
+      const bowlData: any = await endpoints.bowls.getBowl(meal.bowl_ulid);
+      const ingredientsList: CustomIngredient[] = (bowlData.ingredients || []).map((bi: any) => parseBowlIngredient(bi));
+
+
+      setCustomizerModal({
+        isOpen: true,
+        bowlUlid: meal.bowl_ulid,
+        bowlName: meal.bowl_name || "Unknown Bowl",
+        dayIndex: meal.day_index,
+        mealSlot: meal.meal_slot,
+        scheduleUlid: meal.ulid,
+        initialIngredients: ingredientsList,
+        packagingCost: Number(bowlData.packaging?.total_cost || bowlData.packaging_cost || 0),
+        fixedCost: Number(bowlData.fixed_cost || 0),
+      });
+    } catch (err) {
+      console.error("Failed to load bowl ingredients", err);
+      alert("Failed to load bowl ingredients for customization.");
+    }
+  };
+
 
   const [formData, setFormData] = useState({
     name: "",
@@ -1185,11 +1249,31 @@ export default function CustomerDetailPage() {
                                         </div>
                                         <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
                                           {dayMeals.map((meal: any, idx: number) => (
-                                            <div key={idx} className="bg-white p-2 rounded-lg border border-neutral-100 flex flex-col justify-center">
-                                              <div className="text-[10px] font-bold text-orange-500 uppercase mb-0.5">{meal.meal_slot}</div>
-                                              <div className="text-xs font-bold text-neutral-900 line-clamp-2 leading-tight">{meal.bowl_name || "Unknown Bowl"}</div>
+                                            <div key={idx} className="bg-white p-2.5 rounded-lg border border-neutral-100 flex flex-col justify-between group hover:border-[#6A0FAD]/40 transition-colors">
+                                              <div>
+                                                <div className="flex items-center justify-between">
+                                                  <div className="text-[10px] font-bold text-orange-500 uppercase mb-0.5">{meal.meal_slot}</div>
+                                                  {meal.is_customized && (
+                                                    <span className="text-[9px] font-black bg-purple-100 text-[#6A0FAD] px-1 py-0.2 rounded flex items-center gap-0.5">
+                                                      <Sparkles className="w-2.5 h-2.5" /> CUSTOM
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <div className="text-xs font-bold text-neutral-900 line-clamp-2 leading-tight">{meal.bowl_name || "Unknown Bowl"}</div>
+                                                {meal.custom_price && (
+                                                  <div className="text-[10px] text-neutral-500 font-semibold mt-0.5">₹{meal.custom_price} • {meal.custom_calories} kcal</div>
+                                                )}
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() => handleOpenMealCustomizer(meal)}
+                                                className="mt-2 text-[10px] font-bold text-[#6A0FAD] bg-[#6A0FAD]/10 hover:bg-[#6A0FAD]/20 py-1 px-2 rounded-md flex items-center justify-center gap-1 transition-colors"
+                                              >
+                                                <SlidersHorizontal className="w-3 h-3" /> Customize
+                                              </button>
                                             </div>
                                           ))}
+
                                         </div>
                                       </div>
                                     );
@@ -1755,6 +1839,24 @@ export default function CustomerDetailPage() {
           </div>
         </div>
       )}
+
+      <BowlCustomizerModal
+        isOpen={customizerModal.isOpen}
+        onClose={() => setCustomizerModal(prev => ({ ...prev, isOpen: false }))}
+        bowlUlid={customizerModal.bowlUlid}
+        bowlName={customizerModal.bowlName}
+        dayIndex={customizerModal.dayIndex}
+        mealSlot={customizerModal.mealSlot}
+        scheduleUlid={customizerModal.scheduleUlid}
+        customerUlid={customer?.ulid || (params?.ulid as string)}
+        initialIngredients={customizerModal.initialIngredients}
+        basePackagingCost={customizerModal.packagingCost}
+        baseFixedCost={customizerModal.fixedCost}
+        onSave={async () => {
+          await fetchCustomer();
+        }}
+      />
     </div>
   );
 }
+
