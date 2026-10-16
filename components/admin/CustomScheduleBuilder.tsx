@@ -653,8 +653,14 @@ export function CustomScheduleBuilder({ days, mealSlots, onChange, initialSchedu
 
       {/* Copy Bowl Modal */}
       {copyBowlModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-neutral-100 p-6 flex flex-col max-h-[90vh]">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setCopyBowlModal(prev => ({ ...prev, isOpen: false }))}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-neutral-100 p-6 flex flex-col max-h-[90vh]"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
               <div>
                 <h3 className="text-lg font-black text-neutral-900 flex items-center gap-2">
@@ -834,8 +840,14 @@ export function CustomScheduleBuilder({ days, mealSlots, onChange, initialSchedu
 
       {/* Copy Entire Day Modal */}
       {copyDayModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-neutral-100 p-6 flex flex-col max-h-[90vh]">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setCopyDayModal(prev => ({ ...prev, isOpen: false }))}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-neutral-100 p-6 flex flex-col max-h-[90vh]"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
               <div>
                 <h3 className="text-lg font-black text-neutral-900 flex items-center gap-2">
@@ -1013,8 +1025,14 @@ export function CustomScheduleBuilder({ days, mealSlots, onChange, initialSchedu
 
       {/* Overwrite Confirmation Dialog */}
       {overwriteConfirm.isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-neutral-100 p-6 flex flex-col animate-in zoom-in-95 duration-150">
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setOverwriteConfirm(prev => ({ ...prev, isOpen: false }))}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-neutral-100 p-6 flex flex-col animate-in zoom-in-95 duration-150"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="flex items-start gap-3.5 mb-4">
               <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-5 h-5" />
