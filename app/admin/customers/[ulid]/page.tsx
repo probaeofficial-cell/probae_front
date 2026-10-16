@@ -99,6 +99,93 @@ export default function CustomerDetailPage() {
     fixedCost: 0,
   });
 
+  // Preview matrix customizer modal state
+  const [previewCustomizer, setPreviewCustomizer] = useState<{
+    isOpen: boolean;
+    bowlUlid: string;
+    bowlName: string;
+    dayIndex: number;
+    mealSlot: string;
+    initialIngredients: any[];
+    packagingCost: number;
+    fixedCost: number;
+  }>({
+    isOpen: false,
+    bowlUlid: "",
+    bowlName: "",
+    dayIndex: 1,
+    mealSlot: "",
+    initialIngredients: [],
+    packagingCost: 0,
+    fixedCost: 0,
+  });
+
+  const handleOpenPreviewCustomizer = (item: any) => {
+    setPreviewCustomizer({
+      isOpen: true,
+      bowlUlid: item.bowl_ulid || "",
+      bowlName: item.bowl_name || "Custom Bowl",
+      dayIndex: item.day_index + 1,
+      mealSlot: item.meal_type || "",
+      initialIngredients: item.custom_ingredients || [],
+      packagingCost: item.packaging_cost || 0,
+      fixedCost: item.fixed_cost || 0,
+    });
+  };
+
+  const handleSavePreviewCustomization = (customData: any) => {
+    let updatedSchedule = [...customSchedule];
+    if (customData.applyToAllDays && previewData?.scaled_matrix) {
+      previewData.scaled_matrix.forEach((row: any) => {
+        if (row.bowl_ulid === customData.bowlUlid || row.meal_type.toLowerCase() === customData.mealSlot?.toLowerCase()) {
+          const existingIdx = updatedSchedule.findIndex(
+            (s) => s.day_index === row.day_index + 1 && s.meal_slot.toLowerCase() === row.meal_type.toLowerCase()
+          );
+          const schedItem = {
+            day_index: row.day_index + 1,
+            meal_slot: row.meal_type.toLowerCase(),
+            bowl_ulid: row.bowl_ulid || customData.bowlUlid,
+            bowl_name: row.bowl_name,
+            is_customized: true,
+            custom_ingredients: customData.customIngredients,
+            custom_calories: customData.customCalories,
+            custom_macros: customData.customMacros,
+            custom_price: customData.customPrice,
+          };
+          if (existingIdx >= 0) {
+            updatedSchedule[existingIdx] = schedItem;
+          } else {
+            updatedSchedule.push(schedItem);
+          }
+        }
+      });
+    } else {
+      const existingIdx = updatedSchedule.findIndex(
+        (s) => s.day_index === previewCustomizer.dayIndex && s.meal_slot.toLowerCase() === previewCustomizer.mealSlot.toLowerCase()
+      );
+      const schedItem = {
+        day_index: previewCustomizer.dayIndex,
+        meal_slot: previewCustomizer.mealSlot.toLowerCase(),
+        bowl_ulid: customData.bowlUlid,
+        bowl_name: previewCustomizer.bowlName,
+        is_customized: true,
+        custom_ingredients: customData.customIngredients,
+        custom_calories: customData.customCalories,
+        custom_macros: customData.customMacros,
+        custom_price: customData.customPrice,
+      };
+      if (existingIdx >= 0) {
+        updatedSchedule[existingIdx] = schedItem;
+      } else {
+        updatedSchedule.push(schedItem);
+      }
+    }
+
+    setCustomSchedule(updatedSchedule);
+    setPreviewCustomizer(prev => ({ ...prev, isOpen: false }));
+    fetchPreview(formData.selectedPlanId || "", formData.goal, customer?.calorie_profile?.mealCalories || {}, formData.include_delivery, undefined, updatedSchedule);
+  };
+
   const handleOpenMealCustomizer = async (meal: any) => {
     if (meal.is_customized && meal.custom_ingredients && meal.custom_ingredients.length > 0) {
       setCustomizerModal({
@@ -191,13 +278,15 @@ export default function CustomerDetailPage() {
           });
         }
       } else {
+        const scheduleToPass = customSched !== undefined ? customSched : (customSchedule.length > 0 ? customSchedule : undefined);
         resData = await endpoints.customers.previewPlanPrice({
           plan_tier_ulid: planUlid,
           goal: goal,
           calorie_profile: { mealCalories: mealCalories || {} },
           include_delivery: isDeliveryIncluded,
           latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
-          longitude: formData.longitude ? parseFloat(formData.longitude) : undefined
+          longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
+          custom_schedule: scheduleToPass
         });
       }
       if (resData && resData.success) {
@@ -547,9 +636,9 @@ export default function CustomerDetailPage() {
         plan_start_date: !formData.plan_start_date ? null : new Date(formData.plan_start_date).toISOString(),
         status: finalStatus,
         image_filename: formData.image_filename,
-        include_delivery: formData.include_delivery,
         override_total_price: formData.isOverrideEnabled && formData.overrideTotalPrice ? parseFloat(formData.overrideTotalPrice) : null,
-        custom_schedule: formData.selectedPlanId === "CUSTOM_BUILDER" ? customSchedule : null,
+        custom_schedule: (customSchedule && customSchedule.length > 0) ? customSchedule : null,
+        custom_discount_percentage: formData.selectedPlanId === "CUSTOM_BUILDER" ? (parseFloat(formData.customDiscountPct) || 0) : undefined,
         calorie_profile: customer.calorie_profile ? {
           ...customer.calorie_profile,
           probaeTarget: formData.probaeTarget,
@@ -1305,7 +1394,19 @@ export default function CustomerDetailPage() {
                     {(() => {
                       const totalBowls = previewData.scaled_matrix?.length || 1;
                       const grossPrice = previewData.gross_price || 0;
-                      const defaultFinal = previewData.final_discounted_price || 0;
+                      const isCustomBuilder = formData.selectedPlanId === "CUSTOM_BUILDER";
+                      const activeDiscountPct = isCustomBuilder
+                        ? (parseFloat(formData.customDiscountPct) || 0)
+                        : (previewData.discount_percentage || 0);
+
+                      const roundTo9 = (val: number) => Math.floor(val / 10) * 10 + 9;
+                      const computedDiscountAmount = isCustomBuilder
+                        ? Math.round(grossPrice * (activeDiscountPct / 100))
+                        : (previewData.discount_amount || 0);
+                      const defaultFinal = isCustomBuilder
+                        ? (activeDiscountPct > 0 ? roundTo9(grossPrice - computedDiscountAmount) : grossPrice)
+                        : (previewData.final_discounted_price || 0);
+
                       const isOverride = formData.isOverrideEnabled;
                       const overrideVal = parseFloat(formData.overrideTotalPrice) || 0;
                       
@@ -1359,8 +1460,8 @@ export default function CustomerDetailPage() {
                               
                               <div className="flex flex-col gap-3">
                                 <div className="flex justify-between items-center text-sm">
-                                  <span className="text-neutral-500 font-medium">Base Discount ({previewData.discount_percentage}%)</span> 
-                                  <span className="font-bold text-red-500">- ₹{previewData.discount_amount}</span>
+                                  <span className="text-neutral-500 font-medium">Base Discount ({activeDiscountPct}%)</span> 
+                                  <span className="font-bold text-red-500">- ₹{computedDiscountAmount}</span>
                                 </div>
                                 
                                 {(isOverride && formData.overrideTotalPrice !== "") && (
@@ -1466,7 +1567,14 @@ export default function CustomerDetailPage() {
                                     <span className="text-sm font-black text-neutral-900">{item.day_index + 1}</span>
                                   </div>
                                   <div>
-                                    <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-1">{item.meal_type}</div>
+                                    <div className="text-xs font-bold text-[#6A0FAD] uppercase tracking-wider mb-1 flex items-center gap-2">
+                                      <span>{item.meal_type}</span>
+                                      {item.is_customized && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-700">
+                                          <Sparkles className="w-2.5 h-2.5" /> Customized
+                                        </span>
+                                      )}
+                                    </div>
                                     <div className="text-sm font-bold text-neutral-900 flex items-center gap-2">
                                       {item.bowl_name}
                                       <div className="flex items-center gap-1">
@@ -1496,7 +1604,7 @@ export default function CustomerDetailPage() {
                                   </div>
                                 </div>
                                 
-                                <div className="flex items-center gap-6">
+                                <div className="flex items-center gap-4">
                                   <div className="hidden sm:flex items-center gap-3">
                                     <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_protein)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Pro</div></div>
                                     <div className="text-center"><div className="text-xs font-black text-neutral-900">{Math.round(item.scaled_carbs)}g</div><div className="text-[9px] font-bold text-neutral-500 uppercase">Carb</div></div>
@@ -1510,6 +1618,21 @@ export default function CustomerDetailPage() {
                                       <div className="text-[10px] font-bold text-blue-600 uppercase">Fixed Recipe</div>
                                     )}
                                   </div>
+                                  {isEditMode && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenPreviewCustomizer(item)}
+                                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+                                        item.is_customized
+                                          ? "bg-purple-100 text-[#6A0FAD] border border-purple-200 hover:bg-purple-200"
+                                          : "bg-neutral-100 text-neutral-700 hover:bg-[#6A0FAD] hover:text-white"
+                                      }`}
+                                      title="Customize bowl ingredients & weights"
+                                    >
+                                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                                      <span>{item.is_customized ? "Edit Custom" : "Customize"}</span>
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -1856,6 +1979,21 @@ export default function CustomerDetailPage() {
           await fetchCustomer();
         }}
       />
+
+      {previewCustomizer.isOpen && (
+        <BowlCustomizerModal
+          isOpen={previewCustomizer.isOpen}
+          onClose={() => setPreviewCustomizer(prev => ({ ...prev, isOpen: false }))}
+          bowlUlid={previewCustomizer.bowlUlid}
+          bowlName={previewCustomizer.bowlName}
+          dayIndex={previewCustomizer.dayIndex}
+          mealSlot={previewCustomizer.mealSlot}
+          initialIngredients={previewCustomizer.initialIngredients}
+          basePackagingCost={previewCustomizer.packagingCost}
+          baseFixedCost={previewCustomizer.fixedCost}
+          onSave={handleSavePreviewCustomization}
+        />
+      )}
     </div>
   );
 }
