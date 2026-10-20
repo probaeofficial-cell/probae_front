@@ -75,7 +75,7 @@ export function Header() {
     setIsProfileOpen(false);
     try {
       await logout();
-      const loginRoute = user?.role === "delivery" ? "/delivery/login" : "/admin/login";
+      const loginRoute = user?.role?.toLowerCase() === "delivery" ? "/delivery/login" : "/admin/login";
       router.push(loginRoute);
     } catch (err) {
       console.error("Logout failed", err);
@@ -87,7 +87,8 @@ export function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchNotifications = async () => {
-    if (!user || (user.role !== "admin" && user.role !== "delivery")) return;
+    const roleLower = user?.role?.toLowerCase();
+    if (!user || (roleLower !== "admin" && roleLower !== "delivery")) return;
     try {
       const res = await endpoints.notifications.get();
       setNotifications(res.notifications);
@@ -341,7 +342,7 @@ export function Header() {
                   type="button"
                   onClick={() => {
                     setIsProfileOpen(false);
-                    const profilePath = user?.role === "delivery" ? "/delivery/profile" : "/admin/profile";
+                    const profilePath = user?.role?.toLowerCase() === "delivery" ? "/delivery/profile" : "/admin/profile";
                     router.push(profilePath);
                   }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 hover:text-black hover:bg-neutral-100 rounded-xl transition-colors"

@@ -22,7 +22,7 @@ interface AuthContextType {
   accessToken: string | null;
   isLoading: boolean;
   setAccessToken: (token: string | null, rememberMe?: boolean) => void;
-  fetchMe: (token?: string) => Promise<void>;
+  fetchMe: (token?: string) => Promise<User | null>;
   logout: () => Promise<void>;
 }
 
@@ -41,22 +41,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessTokenState(token);
   };
 
-  const fetchMe = async (overrideToken?: string) => {
+  const fetchMe = async (overrideToken?: string): Promise<User | null> => {
     const token = overrideToken || accessToken;
     if (!token) {
       setUser(null);
       setIsLoading(false);
-      return;
+      return null;
     }
 
     try {
       const data = await endpoints.users.getMe();
       setUser(data);
+      return data;
     } catch (err) {
       console.error("Failed to fetch /me", err);
       setUser(null);
       setMemoryAccessToken(null);
       setAccessTokenState(null);
+      return null;
     } finally {
       setIsLoading(false);
     }

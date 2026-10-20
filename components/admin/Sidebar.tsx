@@ -14,7 +14,7 @@ export function Sidebar() {
   const { user } = useAuth();
   
   // Default to null if user is not loaded to prevent premature admin-only API calls
-  const userRole = user ? (user.role === "delivery" ? "DELIVERY" : "ADMIN") : null;
+  const userRole = user ? (user.role?.toLowerCase() === "delivery" ? "DELIVERY" : "ADMIN") : null;
 
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});

@@ -18,7 +18,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
 
     if (isLoginPage) {
       if (user) {
-        if (user.role === "delivery") {
+        if (user.role?.toLowerCase() === "delivery") {
           router.push("/delivery");
         } else {
           router.push("/admin/dashboard");
@@ -26,6 +26,8 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
       }
     } else if (!user) {
       router.push("/admin/login");
+    } else if (user.role?.toLowerCase() === "delivery") {
+      router.push("/delivery");
     }
   }, [isLoginPage, isLoading, user, router]);
 
@@ -39,7 +41,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
 
   // While waiting for router.push to take effect, show the loader instead of returning null
   // Returning null during an active Next.js App Router transition can cause the page to freeze
-  if ((isLoginPage && user) || (!isLoginPage && !user)) {
+  if ((isLoginPage && user) || (!isLoginPage && !user) || (!isLoginPage && user?.role?.toLowerCase() === "delivery")) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#141414] text-white">
         <BowlLoader className="h-8 w-8 text-[#6A0FAD]" />
@@ -60,7 +62,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
       <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] pointer-events-none">
         <div className="pointer-events-auto backdrop-blur-xl bg-white/30 border border-white/50 shadow-[0_8px_32px_rgba(31,38,135,0.15)] rounded-full px-3 py-1.5 flex items-center justify-center hover:bg-white/40 transition-all duration-300 cursor-default">
           <span className="text-[10px] sm:text-xs font-black text-neutral-800/70 tracking-widest uppercase">
-            v1.261020
+            v2.261020
           </span>
         </div>
       </div>

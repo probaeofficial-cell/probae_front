@@ -21,7 +21,7 @@ export default function DeliveryPortal() {
     if (!authLoading) {
       if (!user) {
         router.push("/delivery/login");
-      } else if (user.role !== "delivery") {
+      } else if (user.role?.toLowerCase() !== "delivery") {
         router.push("/admin/dashboard");
       } else {
         fetchDeliveries();

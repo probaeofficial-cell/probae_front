@@ -18,7 +18,7 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
 
     if (isLoginPage) {
       if (user) {
-        if (user.role === "delivery") {
+        if (user.role?.toLowerCase() === "delivery") {
           router.push("/delivery");
         } else {
           router.push("/admin/dashboard");

@@ -614,9 +614,10 @@ export default function LoginForm({
   const handleLoginSuccess = async (tokenVal: string, role?: string) => {
     setAccessToken(tokenVal, rememberMe);
     setView("success");
-    await fetchMe(tokenVal);
+    const me = await fetchMe(tokenVal);
+    const resolvedRole = (role || me?.role || "").toLowerCase();
     setTimeout(() => {
-      if (role === "delivery") {
+      if (resolvedRole === "delivery") {
         router.push("/delivery");
       } else {
         router.push("/admin/dashboard");
