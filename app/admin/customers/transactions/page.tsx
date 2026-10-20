@@ -269,7 +269,47 @@ export default function WalletAndTransactionsPage() {
           {/* TASK 4: GLOBAL LEDGER TABLE */}
           <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden flex flex-col shrink-0">
             <div className="p-6 border-b border-neutral-100 bg-neutral-50/50 flex flex-col xl:flex-row justify-between items-center gap-4">
-              <h2 className="text-lg font-black text-neutral-900">Ledger History</h2>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full xl:w-auto">
+                <h2 className="text-lg font-black text-neutral-900">Ledger History</h2>
+                
+                {/* 3 Tabs: All Transactions | Deposits | Debits */}
+                <div className="relative flex bg-neutral-200/70 p-1 rounded-2xl w-full sm:w-[420px]">
+                  <div 
+                    className={`absolute top-1 bottom-1 left-1 w-[calc(33.333%-0.25rem)] bg-white rounded-xl shadow-sm transition-transform duration-300 ease-out ${
+                      filterType === "" ? "translate-x-0" : filterType === "DEPOSIT" ? "translate-x-[100%]" : "translate-x-[200%]"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setFilterType(""); setPage(1); }}
+                    className={`relative z-10 flex-1 py-1.5 px-3 rounded-xl flex items-center justify-center gap-1 font-bold text-xs transition-colors duration-300 ${
+                      filterType === "" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-900"
+                    }`}
+                  >
+                    All Transactions
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setFilterType("DEPOSIT"); setPage(1); }}
+                    className={`relative z-10 flex-1 py-1.5 px-3 rounded-xl flex items-center justify-center gap-1 font-bold text-xs transition-colors duration-300 ${
+                      filterType === "DEPOSIT" ? "text-green-700" : "text-neutral-500 hover:text-neutral-900"
+                    }`}
+                  >
+                    <ArrowDown className="w-3.5 h-3.5 text-green-600" />
+                    Deposits
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setFilterType("DEBIT"); setPage(1); }}
+                    className={`relative z-10 flex-1 py-1.5 px-3 rounded-xl flex items-center justify-center gap-1 font-bold text-xs transition-colors duration-300 ${
+                      filterType === "DEBIT" ? "text-red-700" : "text-neutral-500 hover:text-neutral-900"
+                    }`}
+                  >
+                    <ArrowUp className="w-3.5 h-3.5 text-red-600" />
+                    Debits
+                  </button>
+                </div>
+              </div>
               
               <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
                 <div className="relative w-full sm:w-64">
@@ -297,20 +337,6 @@ export default function WalletAndTransactionsPage() {
                     className="px-4 py-2 rounded-xl border border-neutral-200 text-sm font-medium focus:border-[#6A0FAD] outline-none bg-white text-neutral-900"
                   />
                 </div>
-
-                <select
-                  value={filterType}
-                  onChange={(e) => {
-                    setFilterType(e.target.value);
-                    setPage(1);
-                  }}
-                  className="px-4 py-2 rounded-xl border border-neutral-200 text-sm font-medium focus:border-[#6A0FAD] outline-none bg-white min-w-[120px] text-neutral-900"
-                >
-                  <option value="">All Types</option>
-                  <option value="DEPOSIT">Deposits</option>
-                  <option value="DEBIT">Debits</option>
-                  <option value="REFUND">Refunds</option>
-                </select>
               </div>
             </div>
 

@@ -12,6 +12,7 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [txTypeFilter, setTxTypeFilter] = useState("");
 
   const [showModal, setShowModal] = useState(false);
   const [amount, setAmount] = useState("");
@@ -88,6 +89,7 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
   };
 
   const isNegative = balance < 0;
+  const filteredTransactions = transactions.filter(tx => !txTypeFilter || tx.transaction_type === txTypeFilter);
   const totalPages = Math.ceil(totalCount / 20) || 1;
 
   return (
@@ -111,8 +113,46 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
 
       {/* Ledger Table */}
       <div className="bg-white rounded-3xl border border-neutral-100 overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50">
+        <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50 flex flex-col sm:flex-row justify-between items-center gap-4">
           <h3 className="font-bold text-neutral-900">Transaction History</h3>
+
+          {/* 3 Tabs: All Transactions | Deposits | Debits */}
+          <div className="relative flex bg-neutral-200/70 p-1 rounded-2xl w-full sm:w-[380px]">
+            <div 
+              className={`absolute top-1 bottom-1 left-1 w-[calc(33.333%-0.25rem)] bg-white rounded-xl shadow-sm transition-transform duration-300 ease-out ${
+                txTypeFilter === "" ? "translate-x-0" : txTypeFilter === "DEPOSIT" ? "translate-x-[100%]" : "translate-x-[200%]"
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setTxTypeFilter("")}
+              className={`relative z-10 flex-1 py-1.5 px-3 rounded-xl flex items-center justify-center gap-1 font-bold text-xs transition-colors duration-300 ${
+                txTypeFilter === "" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              All Transactions
+            </button>
+            <button
+              type="button"
+              onClick={() => setTxTypeFilter("DEPOSIT")}
+              className={`relative z-10 flex-1 py-1.5 px-3 rounded-xl flex items-center justify-center gap-1 font-bold text-xs transition-colors duration-300 ${
+                txTypeFilter === "DEPOSIT" ? "text-green-700" : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <ArrowDown className="w-3.5 h-3.5 text-green-600" />
+              Deposits
+            </button>
+            <button
+              type="button"
+              onClick={() => setTxTypeFilter("DEBIT")}
+              className={`relative z-10 flex-1 py-1.5 px-3 rounded-xl flex items-center justify-center gap-1 font-bold text-xs transition-colors duration-300 ${
+                txTypeFilter === "DEBIT" ? "text-red-700" : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <ArrowUp className="w-3.5 h-3.5 text-red-600" />
+              Debits
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[600px]">
@@ -130,12 +170,18 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center"><BowlLoader className="mx-auto h-8 w-8 text-[#6A0FAD]" /></td>
                 </tr>
-              ) : transactions.length === 0 ? (
+              ) : filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-neutral-500">No transactions recorded yet.</td>
+                  <td colSpan={5} className="px-6 py-8 text-center text-neutral-500">
+                    {txTypeFilter === "DEPOSIT"
+                      ? "No deposit transactions recorded yet."
+                      : txTypeFilter === "DEBIT"
+                      ? "No debit transactions recorded yet."
+                      : "No transactions recorded yet."}
+                  </td>
                 </tr>
               ) : (
-                transactions.map((tx: any) => (
+                filteredTransactions.map((tx: any) => (
                   <tr key={tx.ulid} className="border-b border-neutral-50 hover:bg-neutral-50/50">
                     <td className="px-6 py-4 text-sm text-neutral-600 whitespace-nowrap">
                       {new Date(tx.transaction_date).toLocaleString()}

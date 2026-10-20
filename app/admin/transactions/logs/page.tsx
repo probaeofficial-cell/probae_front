@@ -65,28 +65,58 @@ export default function TransactionLogsPage() {
       <div className="mt-4 flex-1 flex flex-col min-h-0">
         <Breadcrumbs segments={["Transactions", "Logs"]} />
         
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Transaction Logs</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Transaction Logs</h1>
+            <p className="text-neutral-500 font-medium text-sm mt-1">Review financial ledger entries, customer deposits, and order debits</p>
+          </div>
           
-          <div className="flex flex-wrap items-center gap-4">
-            <select 
-              value={transactionType} 
-              onChange={e => { setTransactionType(e.target.value); setPage(1); }}
-              className="bg-white border border-neutral-200 rounded-xl px-4 py-2 text-sm font-bold text-neutral-700 outline-none focus:ring-2 focus:ring-[#6A0FAD]/20"
-            >
-              <option value="">All Types</option>
-              <option value="DEPOSIT">Income (Deposit)</option>
-              <option value="DEBIT">Expense / Sales (Debit)</option>
-              <option value="REFUND">Refund</option>
-            </select>
-            
+          <div className="flex flex-wrap items-center gap-3">
             <input 
               type="month" 
               value={month} 
               onChange={e => { setMonth(e.target.value); setPage(1); }}
-              className="bg-white border border-neutral-200 rounded-xl px-4 py-2 text-sm font-bold text-neutral-700 outline-none focus:ring-2 focus:ring-[#6A0FAD]/20"
+              className="bg-white border border-neutral-200 rounded-xl px-4 py-2 text-sm font-bold text-neutral-700 outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 shadow-sm"
             />
           </div>
+        </div>
+
+        {/* 3 Tabs: All Transactions | Deposits | Debits */}
+        <div className="relative flex mb-6 shrink-0 bg-neutral-100 p-1.5 rounded-2xl w-full max-w-[480px]">
+          <div 
+            className={`absolute top-1.5 bottom-1.5 left-1.5 w-[calc(33.333%-0.25rem)] bg-white rounded-xl shadow-sm transition-transform duration-300 ease-out ${
+              transactionType === "" ? "translate-x-0" : transactionType === "DEPOSIT" ? "translate-x-[100%]" : "translate-x-[200%]"
+            }`}
+          />
+          <button
+            type="button"
+            onClick={() => { setTransactionType(""); setPage(1); }}
+            className={`relative z-10 flex-1 py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs sm:text-sm transition-colors duration-300 ${
+              transactionType === "" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-900"
+            }`}
+          >
+            All Transactions
+          </button>
+          <button
+            type="button"
+            onClick={() => { setTransactionType("DEPOSIT"); setPage(1); }}
+            className={`relative z-10 flex-1 py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs sm:text-sm transition-colors duration-300 ${
+              transactionType === "DEPOSIT" ? "text-green-700" : "text-neutral-500 hover:text-neutral-900"
+            }`}
+          >
+            <ArrowDownRight className="w-4 h-4 text-green-600" />
+            Deposits
+          </button>
+          <button
+            type="button"
+            onClick={() => { setTransactionType("DEBIT"); setPage(1); }}
+            className={`relative z-10 flex-1 py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs sm:text-sm transition-colors duration-300 ${
+              transactionType === "DEBIT" ? "text-red-700" : "text-neutral-500 hover:text-neutral-900"
+            }`}
+          >
+            <ArrowUpRight className="w-4 h-4 text-red-600" />
+            Debits
+          </button>
         </div>
 
         {isLoading ? (
@@ -108,7 +138,15 @@ export default function TransactionLogsPage() {
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {transactions.length === 0 ? (
-                  <tr><td colSpan={6} className="py-8 text-center text-neutral-500">No transactions found.</td></tr>
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-neutral-500 font-medium">
+                      {transactionType === "DEPOSIT"
+                        ? "No deposit transactions found for this month."
+                        : transactionType === "DEBIT"
+                        ? "No debit transactions found for this month."
+                        : "No transactions found for this month."}
+                    </td>
+                  </tr>
                 ) : transactions.map((t) => (
                   <tr key={t.ulid} className="hover:bg-neutral-50/30 transition-colors">
                     <td className="py-4 px-6 font-medium text-neutral-900">{new Date(t.created_at).toLocaleString()}</td>
@@ -121,7 +159,12 @@ export default function TransactionLogsPage() {
                       )}
                     </td>
                     <td className="py-4 px-6 font-black text-neutral-900">₹{t.amount.toFixed(2)}</td>
-                    <td className="py-4 px-6 text-sm text-neutral-500">{t.payment_method || "-"}</td>
+                    <td className="py-4 px-6 text-sm text-neutral-600">
+                      <div>{t.payment_method || "-"}</div>
+                      {t.payment_to && (
+                        <span className="text-xs text-neutral-400 font-normal">→ {t.payment_to}</span>
+                      )}
+                    </td>
                     <td className="py-4 px-6 text-sm text-neutral-500 font-mono">{t.reference_id || "-"}</td>
                     <td className="py-4 px-6 text-right">
                       <button onClick={() => setDeleteUlid(t.ulid)} className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
