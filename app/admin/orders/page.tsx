@@ -171,7 +171,17 @@ export default function OrdersPage() {
   const fetchOrders = async (source: string, pageNum: number, dateFilter: string, searchQuery: string, customerIdFilter: number, statusFilter: string, mealSlotFilter: string) => {
     setIsLoading(true);
     try {
-      const data = await endpoints.orders.list({ source: source === "ALL" ? undefined : source, page: pageNum, limit: 10, target_date: dateFilter, search: searchQuery || undefined, customer_id: customerIdFilter || 0, status: statusFilter || undefined, meal_slot: mealSlotFilter === "ALL" ? undefined : mealSlotFilter }) as any;
+      const isSearchActive = !!searchQuery?.trim();
+      const data = await endpoints.orders.list({
+        source: source === "ALL" ? undefined : source,
+        page: pageNum,
+        limit: 10,
+        target_date: isSearchActive ? undefined : (dateFilter || undefined),
+        search: isSearchActive ? searchQuery.trim() : undefined,
+        customer_id: customerIdFilter || 0,
+        status: statusFilter || undefined,
+        meal_slot: mealSlotFilter === "ALL" ? undefined : mealSlotFilter
+      }) as any;
       if (data.success) {
         setOrders(data.orders);
         setTotalPages(Math.ceil(data.total_count / data.limit) || 1);
@@ -338,6 +348,59 @@ export default function OrdersPage() {
                 </select>
               </label>
             </div>
+
+            {(search || customerId || status) && (
+              <div className="flex items-center gap-2 flex-wrap mb-4 -mt-1">
+                <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Active Filters:</span>
+                {search && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#6A0FAD]/10 text-[#6A0FAD] border border-[#6A0FAD]/20">
+                    Order ID: {search}
+                    <button 
+                      onClick={() => { setSearch(""); setPage(1); }}
+                      className="hover:bg-[#6A0FAD]/20 rounded-full p-0.5 transition-colors"
+                      title="Clear Order ID filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {customerId ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    Customer ID: {customerId}
+                    <button 
+                      onClick={() => { setCustomerId(0); setPage(1); }}
+                      className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                      title="Clear Customer filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ) : null}
+                {status && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                    Status: {status}
+                    <button 
+                      onClick={() => { setStatus(""); setPage(1); }}
+                      className="hover:bg-amber-200 rounded-full p-0.5 transition-colors"
+                      title="Clear Status filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setCustomerId(0);
+                    setStatus("");
+                    setPage(1);
+                  }}
+                  className="text-xs font-bold text-neutral-500 hover:text-neutral-800 underline ml-2"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-3">
               {[
