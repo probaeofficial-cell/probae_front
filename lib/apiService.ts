@@ -108,7 +108,7 @@ const onTokenRefreshed = (token: string | null) => {
 };
 
 // ─── Error Handling ──────────────────────────────────────────────────────────
-const parseError = async (response: Response): Promise<never> => {
+const parseError = async (response: Response, endpoint?: string): Promise<never> => {
   let errorMessage = `HTTP Error: ${response.status} ${response.statusText}`;
   let detail = null;
   try {
@@ -125,8 +125,8 @@ const parseError = async (response: Response): Promise<never> => {
     // If response is not JSON, fallback to the standard HTTP status message
   }
 
-  // Intercept 401 status codes and redirect to login page if not already there
-  if (response.status === 401) {
+  // Intercept 401 status codes and redirect to login page if not already there (skip for login endpoints)
+  if (response.status === 401 && !endpoint?.startsWith("/auth/login")) {
     clearTokens();
     if (typeof window !== "undefined") {
       const isDeliveryPath = window.location.pathname.startsWith("/delivery");
@@ -177,7 +177,8 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
     let response = await fetch(url, config);
 
     // ─── Interceptor: Handle 401 Unauthorized ────────────────────────────────
-    if (response.status === 401) {
+    const isAuthEndpoint = endpoint.startsWith("/auth/login") || endpoint.startsWith("/auth/refresh");
+    if (response.status === 401 && !isAuthEndpoint) {
       if (!isRefreshing) {
         isRefreshing = true;
         try {
@@ -211,8 +212,10 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
           clearTokens();
           onTokenRefreshed(null); 
           if (typeof window !== "undefined") {
-            if (!window.location.pathname.startsWith("/admin/login")) {
-              window.location.href = "/admin/login";
+            const isDeliveryPath = window.location.pathname.startsWith("/delivery");
+            const loginUrl = isDeliveryPath ? "/delivery/login" : "/admin/login";
+            if (!window.location.pathname.startsWith(loginUrl)) {
+              window.location.href = loginUrl;
             }
           }
           throw new ApiError("Session expired. Please log in again.", 401);
@@ -234,7 +237,7 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
     }
 
     if (!response.ok) {
-      return parseError(response);
+      return parseError(response, endpoint);
     }
 
     if (response.status === 204) {
@@ -425,7 +428,10 @@ export const endpoints = {
         console.error("Failed to call logout API", e);
       } finally {
         clearTokens();
-        if (typeof window !== "undefined") window.location.href = "/admin/login";
+        if (typeof window !== "undefined") {
+          const isDeliveryPath = window.location.pathname.startsWith("/delivery");
+          window.location.href = isDeliveryPath ? "/delivery/login" : "/admin/login";
+        }
       }
     },
     
