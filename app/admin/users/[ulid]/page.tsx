@@ -6,6 +6,7 @@ import { ArrowLeft, Save, Activity } from "lucide-react";
 import { api } from "@/lib/apiService";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function UserPreviewPage() {
   const router = useRouter();
@@ -17,6 +18,17 @@ export default function UserPreviewPage() {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "error" | "success";
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "error",
+  });
   const [user, setUser] = useState<any>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [form, setForm] = useState({
@@ -24,7 +36,7 @@ export default function UserPreviewPage() {
     email: "",
     full_name: "",
     password: "",
-    role: "customer",
+    role: "CUSTOMER",
     is_active: true
   });
 
@@ -61,7 +73,7 @@ export default function UserPreviewPage() {
         email: uRes.email,
         full_name: uRes.full_name || "",
         password: "",
-        role: uRes.role,
+        role: uRes.role ? uRes.role.toUpperCase() : "CUSTOMER",
         is_active: uRes.is_active
       });
     } catch (e) {
@@ -107,11 +119,21 @@ export default function UserPreviewPage() {
       if (!payload.password) delete payload.password;
       
       await api.patch<any>(`/auth/admin/${params.ulid}`, payload);
-      alert("Updated successfully");
-      router.push(`/admin/users/${params.ulid}`);
+      setModalConfig({
+        isOpen: true,
+        title: "Success",
+        message: "User updated successfully",
+        type: "success",
+      });
       fetchData();
     } catch (e: any) {
-      alert(e.detail || e.message || "Failed to update user");
+      const msg = e?.detail || e?.message || "Failed to update user";
+      setModalConfig({
+        isOpen: true,
+        title: "Action Failed",
+        message: typeof msg === "string" ? msg : JSON.stringify(msg),
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -185,11 +207,11 @@ export default function UserPreviewPage() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-neutral-700 mb-2">Role</label>
-                <select disabled={!isEditing} value={form.role} onChange={(e) => setForm({...form, role: e.target.value})} className="w-full h-[52px] bg-neutral-100 rounded-[16px] px-4 outline-none text-neutral-800 font-medium placeholder:text-neutral-400 focus:ring-2 focus:ring-[#6A0FAD]/20 appearance-none disabled:opacity-50 border border-transparent">
-                  <option value="customer">Customer</option>
-                  <option value="admin">Admin</option>
-                  <option value="staff">Staff</option>
-                  <option value="delivery">Delivery</option>
+                <select disabled={!isEditing} value={form.role?.toUpperCase()} onChange={(e) => setForm({...form, role: e.target.value})} className="w-full h-[52px] bg-neutral-100 rounded-[16px] px-4 outline-none text-neutral-800 font-medium placeholder:text-neutral-400 focus:ring-2 focus:ring-[#6A0FAD]/20 appearance-none disabled:opacity-50 border border-transparent">
+                  <option value="ADMIN">Admin</option>
+                  <option value="CUSTOMER">Customer</option>
+                  <option value="STAFF">Staff</option>
+                  <option value="DELIVERY">Delivery</option>
                 </select>
               </div>
               <div>
@@ -267,6 +289,15 @@ export default function UserPreviewPage() {
         </div>
       </div>
     </div>
+
+    <ConfirmationModal
+      isOpen={modalConfig.isOpen}
+      onClose={() => setModalConfig((prev) => ({ ...prev, isOpen: false }))}
+      title={modalConfig.title}
+      message={modalConfig.message}
+      type={modalConfig.type}
+      cancelText="Close"
+    />
   </div></div>
 );
 }

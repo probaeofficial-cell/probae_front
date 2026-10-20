@@ -6,16 +6,18 @@ import { ArrowLeft, Save } from "lucide-react";
 import { api } from "@/lib/apiService";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function CreateUserPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [form, setForm] = useState({
     username: "",
     email: "",
     full_name: "",
     password: "",
-    role: "customer",
+    role: "ADMIN",
     customer_id: ""
   });
 
@@ -30,7 +32,8 @@ export default function CreateUserPage() {
       const res = await api.post<any>("/auth/admin", payload);
       router.push(`/admin/users/${res.ulid}`);
     } catch (e: any) {
-      alert(e.detail || e.message || "Failed to create user");
+      const msg = e?.detail || e?.message || "Failed to create user";
+      setErrorMessage(typeof msg === "string" ? msg : JSON.stringify(msg));
     } finally {
       setLoading(false);
     }
@@ -77,10 +80,10 @@ export default function CreateUserPage() {
             <div>
               <label className="block text-sm font-bold text-neutral-700 mb-2">Role</label>
               <select value={form.role} onChange={(e) => setForm({...form, role: e.target.value})} className="w-full h-[52px] bg-neutral-100 rounded-[16px] px-4 outline-none text-neutral-800 font-medium placeholder:text-neutral-400 focus:ring-2 focus:ring-[#6A0FAD]/20 appearance-none disabled:opacity-50 border border-transparent">
-                <option value="customer">Customer</option>
-                <option value="admin">Admin</option>
-                <option value="staff">Staff</option>
-                <option value="delivery">Delivery</option>
+                <option value="ADMIN">Admin</option>
+                <option value="CUSTOMER">Customer</option>
+                <option value="STAFF">Staff</option>
+                <option value="DELIVERY">Delivery</option>
               </select>
             </div>
             <div>
@@ -98,6 +101,15 @@ export default function CreateUserPage() {
         </form>
       </div>
     </div>
+
+    <ConfirmationModal
+      isOpen={!!errorMessage}
+      onClose={() => setErrorMessage("")}
+      title="Action Failed"
+      message={errorMessage}
+      type="error"
+      cancelText="Close"
+    />
   </div></div>
 );
 }
