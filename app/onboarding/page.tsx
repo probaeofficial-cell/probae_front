@@ -5,9 +5,61 @@ import Link from "next/link";
 import { ArrowRight, ArrowLeft, Check, Plus, Info, Sun, Moon, Utensils, Home, X, Lock, Unlock, Dumbbell, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { endpoints } from "@/lib/apiService";
+import { customerEndpoints } from "@/lib/customerApiService";
+
+const calculateMifflinLocally = (data: { sex: string; age: number; height: number; weight: number; activityLevel: string; goal: string }) => {
+  const isMale = data.sex.toLowerCase() === "male";
+  const bmr = (10 * data.weight) + (6.25 * data.height) - (5 * data.age) + (isMale ? 5 : -161);
+  let activityMultiplier = 1.2;
+  const al = data.activityLevel.toLowerCase();
+  if (al === "lightly active") activityMultiplier = 1.375;
+  else if (al === "active") activityMultiplier = 1.55;
+  else if (al === "very active" || al === "athlete") activityMultiplier = 1.725;
+  let tdee = bmr * activityMultiplier;
+  const g = data.goal.toLowerCase();
+  if (g.includes("loss")) tdee -= 500;
+  else if (g.includes("gain")) tdee += 300;
+  if (isMale && tdee < 1500) tdee = 1500;
+  if (!isMale && tdee < 1200) tdee = 1200;
+  tdee = Math.round(tdee);
+  let proteinFactor = 1.6;
+  if (al === "sedentary" || al === "lightly active") {
+    proteinFactor = (g.includes("maintain") || g.includes("loss")) ? (al === "sedentary" ? 0.8 : 1.0) : 1.6;
+  } else if (al === "active") {
+    proteinFactor = 1.5;
+  } else if (al === "very active" || al === "athlete") {
+    proteinFactor = 2.0;
+  }
+  const protein = Math.round(data.weight * proteinFactor);
+  const fat = Math.round((tdee * 0.25) / 9);
+  const proteinCals = protein * 4;
+  const fatCals = fat * 9;
+  const carbs = Math.max(0, Math.round((tdee - proteinCals - fatCals) / 4));
+  const fiber = Math.round((tdee / 1000) * 14);
+  return { total: tdee, protein, carbs, fat, fiber };
+};
 
 export default function OnboardingPage() {
   const router = useRouter();
+
+  // Restore scrolling on onboarding page
+  useEffect(() => {
+    document.body.classList.add("landing-page");
+    document.documentElement.classList.add("landing-page");
+    document.body.style.overflow = "auto";
+    document.documentElement.style.overflow = "auto";
+    document.body.style.height = "auto";
+    document.documentElement.style.height = "auto";
+    return () => {
+      document.body.classList.remove("landing-page");
+      document.documentElement.classList.remove("landing-page");
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.body.style.height = "";
+      document.documentElement.style.height = "";
+    };
+  }, []);
 
   const getTotalDeliveredDays = (duration: string, daysPerWeek: number) => {
     if (duration.toLowerCase() === 'monthly') {
@@ -43,6 +95,16 @@ export default function OnboardingPage() {
   const [requestSubmitted, setRequestSubmitted] = useState(false);
   const [isSubmittingCustom, setIsSubmittingCustom] = useState(false);
   const [latestPlanRequest, setLatestPlanRequest] = useState<any>(null);
+  const [planPreviewData, setPlanPreviewData] = useState<{
+    final_discounted_price: number;
+    gross_price: number;
+    discount_percentage: number;
+    discount_amount: number;
+    bowls_by_slot: Record<string, any[]>;
+    scaled_matrix: any[];
+    is_custom: boolean;
+  } | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -267,31 +329,47 @@ export default function OnboardingPage() {
   const handleContinueToStep2 = (e: React.FormEvent) => {
     e.preventDefault();
     setStep(2);
-    // Save progress in background
-    fetch('/api/onboarding/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...formData, onboardingStep: 2 })
-    }).catch(console.error);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      const root = document.getElementById("onboarding-root");
+      if (root) root.scrollTo({ top: 0, behavior: "smooth" });
+      try {
+        localStorage.setItem("probae_onboarding_formData", JSON.stringify({ ...formData, onboardingStep: 2 }));
+      } catch {}
+    }
   };
 
   const handleContinueToStep3 = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/onboarding/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, onboardingStep: 3 })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCalorieProfile(data.calorieProfile);
+      let calProfile: any = null;
+      try {
+        calProfile = await customerEndpoints.calculateCalories({
+          sex: formData.sex,
+          age: parseInt(formData.age) || 25,
+          height: parseFloat(formData.height) || 170,
+          weight: parseFloat(formData.weight) || 70,
+          activity_level: formData.activityLevel,
+          goal: formData.goal,
+        });
+      } catch {
+        calProfile = calculateMifflinLocally({
+          sex: formData.sex,
+          age: parseInt(formData.age) || 25,
+          height: parseFloat(formData.height) || 170,
+          weight: parseFloat(formData.weight) || 70,
+          activityLevel: formData.activityLevel,
+          goal: formData.goal,
+        });
+      }
+
+      if (calProfile) {
+        setCalorieProfile(calProfile);
         setFormData(prev => {
           const newCalories = { ...prev.mealCalories };
           if (prev.mealSlots.length > 0) {
-            // Assign 1/3 to each slot by default if it was newly added (i.e. had the default 500)
-            const perSlot = Math.round(data.calorieProfile.total / 3);
+            const perSlot = Math.round(calProfile.total / (prev.mealSlots.length || 1));
             prev.mealSlots.forEach((slot) => {
               if (!newCalories[slot] || newCalories[slot] === 500) {
                 newCalories[slot] = perSlot;
@@ -304,6 +382,11 @@ export default function OnboardingPage() {
           };
         });
         setStep(3); // Go to Calorie Profile
+        if (typeof window !== "undefined") {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          const root = document.getElementById("onboarding-root");
+          if (root) root.scrollTo({ top: 0, behavior: "smooth" });
+        }
       }
     } catch (err) {
       console.error(err);
@@ -315,164 +398,174 @@ export default function OnboardingPage() {
   const handleContinueToStep4 = (e: React.FormEvent) => {
     e.preventDefault();
     setStep(4);
-    fetch('/api/onboarding/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...formData, onboardingStep: 4 })
-    }).catch(console.error);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      const root = document.getElementById("onboarding-root");
+      if (root) root.scrollTo({ top: 0, behavior: "smooth" });
+      try {
+        localStorage.setItem("probae_onboarding_formData", JSON.stringify({ ...formData, onboardingStep: 4 }));
+      } catch {}
+    }
+  };
+
+  const loadPlanPreview = async (planUlid: string, planOverride?: any) => {
+    setIsLoadingPreview(true);
+    try {
+      const isCustom = planUlid === "CUSTOM_BUILDER" || planOverride?.plan_type?.toUpperCase() === "CUSTOM";
+      const res = await customerEndpoints.previewPlanPrice({
+        plan_tier_ulid: planUlid,
+        duration: formData.planDuration,
+        frequency: formData.planFrequency,
+        meal_slots: formData.mealSlots,
+        calorie_profile: {
+          total: getTotalPurchasedCalories(),
+          mealCalories: formData.mealCalories,
+        },
+        goal: formData.goal,
+        discount_percentage: planOverride?.discount_percentage || 0,
+      });
+
+      if (res && res.success) {
+        setPlanPreviewData({
+          final_discounted_price: res.final_discounted_price,
+          gross_price: res.gross_price,
+          discount_percentage: res.discount_percentage,
+          discount_amount: res.discount_amount || 0,
+          bowls_by_slot: res.bowls_by_slot || {},
+          scaled_matrix: res.scaled_matrix || [],
+          is_custom: isCustom || res.is_custom,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load plan preview", err);
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const handleSelectPlan = async (planId: string, planObj?: any) => {
+    setSelectedPlan(planId);
+    await loadPlanPreview(planId, planObj);
   };
 
   const handleContinueToStep5 = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoadingPlans(true);
     setStep(5);
-    
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      const root = document.getElementById("onboarding-root");
+      if (root) root.scrollTo({ top: 0, behavior: "smooth" });
+      try {
+        localStorage.setItem("probae_onboarding_formData", JSON.stringify({ ...formData, onboardingStep: 5 }));
+      } catch {}
+    }
+
     try {
-      // Save filter choices
-      await fetch('/api/onboarding/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, onboardingStep: 5 })
+      const data = await customerEndpoints.getFilteredPlans({
+        duration: formData.planDuration,
+        frequency: formData.planFrequency,
+        mealSlots: formData.mealSlots,
       });
-      
-      // Fetch dynamic plans
-      const res = await fetch('/api/onboarding/plans', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          duration: formData.planDuration, 
-          frequency: formData.planFrequency,
-          mealSlots: formData.mealSlots 
-        })
-      });
-      const data = await res.json();
-      if (data.success && data.plans) {
-        setPlans(data.plans);
+
+      const fetchedPlans = (data && data.success && Array.isArray(data.plans)) ? data.plans : [];
+      setPlans(fetchedPlans);
+
+      if (fetchedPlans.length > 0) {
+        const firstPlan = fetchedPlans[0];
+        const planId = firstPlan.ulid || firstPlan._id;
+        setSelectedPlan(planId);
+        await loadPlanPreview(planId, firstPlan);
+      } else {
+        // No pre-built plan matching -> automatically select Custom Plan!
+        setSelectedPlan("CUSTOM_BUILDER");
+        await loadPlanPreview("CUSTOM_BUILDER", { plan_type: "CUSTOM" });
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to filter plans:", err);
+      setSelectedPlan("CUSTOM_BUILDER");
+      await loadPlanPreview("CUSTOM_BUILDER", { plan_type: "CUSTOM" });
     } finally {
       setIsLoadingPlans(false);
     }
   };
 
-  const handleConnectRequest = async () => {
+  const handleFinalizePlan = async () => {
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/onboarding/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: formData.phone,
-          name: formData.name,
-          filters: {
-            duration: formData.planDuration,
-            frequency: formData.planFrequency,
-            mealSlots: formData.mealSlots,
-            calorieTarget: calorieProfile?.total
-          }
-        })
+      const isCustomBuilder = selectedPlan === "CUSTOM_BUILDER";
+      const plan = plans.find(p => (p.ulid || p._id) === selectedPlan);
+      const planName = isCustomBuilder 
+        ? `Bespoke Custom Plan (${formData.planDuration} - ${formData.planFrequency})` 
+        : (plan?.name || "Personalized Meal Plan");
+      const planType = (isCustomBuilder || plan?.plan_type?.toUpperCase() === "CUSTOM") ? "CUSTOM" : "STANDARD";
+      
+      const slotCaloriesSummary = formData.mealSlots
+        .map(slot => `${slot}: ${formData.mealCalories[slot] || 0} kcal`)
+        .join(" | ");
+
+      let bowlsSummary = "Standard meal rotation";
+      if (planPreviewData?.scaled_matrix && planPreviewData.scaled_matrix.length > 0) {
+        bowlsSummary = planPreviewData.scaled_matrix
+          .slice(0, 15)
+          .map((item) => `Day ${item.day_index + 1} [${item.meal_slot}]: ${item.bowl_name} (${item.scaled_calories} kcal, P:${item.scaled_protein}g C:${item.scaled_carbs}g F:${item.scaled_fats}g - ₹${item.scaled_price})`)
+          .join("\n");
+      }
+
+      const formattedMessage = [
+        "=== CUSTOMER ONBOARDING PLAN FINALIZATION ===",
+        `Customer: ${formData.name}`,
+        `Phone: ${formData.phone}`,
+        `Delivery Address: ${formData.address}`,
+        `Sex: ${formData.sex} | Age: ${formData.age} | Height: ${formData.height}cm | Weight: ${formData.weight}kg`,
+        `Activity Level: ${formData.activityLevel} | Goal: ${formData.goal}`,
+        `Dietary Preferences: ${formData.dietaryPreferences.length > 0 ? formData.dietaryPreferences.join(", ") : "None"}`,
+        `Allergies: ${formData.allergies.length > 0 ? formData.allergies.join(", ") : "None"}`,
+        `Chef Instructions: ${formData.comments || "None"}`,
+        "",
+        "=== SELECTED PLAN DETAILS ===",
+        `Plan: ${planName} [${planType}]`,
+        `Duration: ${formData.planDuration} | Frequency: ${formData.planFrequency}`,
+        `Meal Slots: ${formData.mealSlots.join(", ")}`,
+        `Daily Purchased Calories: ${getTotalPurchasedCalories()} kcal`,
+        `Calorie Distribution: ${slotCaloriesSummary}`,
+        "",
+        "=== PRICING BREAKDOWN ===",
+        `Gross Price: ₹${planPreviewData?.gross_price || 0}`,
+        `Discount: ${planPreviewData?.discount_percentage || 0}% (₹${planPreviewData?.discount_amount || 0})`,
+        `Final Price: ₹${planPreviewData?.final_discounted_price || 0}`,
+        "",
+        "=== SCHEDULED BOWLS ===",
+        bowlsSummary
+      ].join("\n");
+
+      await customerEndpoints.submitEnquiry({
+        name: formData.name,
+        phone: formData.phone,
+        email: undefined,
+        plan_interest: `${planName} - ₹${planPreviewData?.final_discounted_price || 0}`,
+        message: formattedMessage,
       });
-      const data = await res.json();
-      if (data.success) {
-        setRequestSubmitted(true);
+
+      setShowCheckoutModal(false);
+      setStep(6); // Success Step
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        const root = document.getElementById("onboarding-root");
+        if (root) root.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to submit enquiry:", err);
+      setShowCheckoutModal(false);
+      setStep(6);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCustomBowlOrder = async () => {
-    setIsSubmittingCustom(true);
-    try {
-      const res = await fetch("/api/onboarding/request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name || "Unknown",
-          phone: formData.phone || "Unknown",
-          filters: {
-            duration: formData.planDuration,
-            frequency: formData.planFrequency,
-            mealSlots: formData.mealSlots,
-            calorieTarget: getTotalPurchasedCalories(),
-          },
-          notes: "User requested a custom bowl instead of the standard plans.",
-        }),
-      });
-      if (res.ok) {
-        setStep(6);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSubmittingCustom(false);
-    }
-  };
-
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const plan = plans.find(p => p._id === selectedPlan);
-      
-      const calculatedBowls: any[] = [];
-      let selectedMealCombo = formData.mealSlots.join(" + ");
-
-      if (plan && plan.selections) {
-        plan.selections.forEach((bucket: any) => {
-          let isSlotSelected = false;
-          if (bucket.type === 'B' && formData.mealSlots.includes('B-FAST')) isSlotSelected = true;
-          if (bucket.type === 'L' && formData.mealSlots.includes('LUNCH')) isSlotSelected = true;
-          if (bucket.type === 'D' && formData.mealSlots.includes('DINNER')) isSlotSelected = true;
-          
-          if (isSlotSelected && bucket.bowls) {
-            bucket.bowls.forEach((bowl: any) => {
-              const stats = getDynamicBowlStats(bowl, bucket.type);
-              calculatedBowls.push({
-                originalBowlId: bowl._id,
-                name: bowl.name,
-                assignedCalories: stats.calories,
-                calculatedWeight: stats.weight,
-                calculatedPrice: stats.price,
-                mealType: bucket.type === 'B' ? 'Breakfast' : bucket.type === 'L' ? 'Lunch' : bucket.type === 'D' ? 'Dinner' : bucket.type,
-                ratio: getRatioForType(bucket.type),
-                macros: stats.macros,
-                micros: bowl.micros || [],
-                selectedDip: customizedDips[bowl._id] || (bowl.dips && bowl.dips.length === 1 ? bowl.dips[0] : undefined)
-              });
-            });
-          }
-        });
-      }
-
-      const prices = plan ? getPlanDynamicPrices(plan) : { total: 0, discounted: 0 };
-      const finalTotalPrice = prices.discounted;
-
-      const res = await fetch('/api/onboarding/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          selectedPlan, 
-          onboardingStep: 6,
-          selectedMealCombo,
-          calculatedBowls,
-          finalTotalPrice,
-          purchasedCalories: getTotalPurchasedCalories()
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setShowCheckoutModal(false);
-        setStep(6); // Success Step
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
-    }
+    await handleSelectPlan("CUSTOM_BUILDER", { plan_type: "CUSTOM" });
+    setShowCheckoutModal(true);
   };
 
   const getRatioForType = (typeCode: string) => {
@@ -670,7 +763,11 @@ export default function OnboardingPage() {
           </motion.div>
         </div>
       )}
-      <div className="min-h-screen bg-[#111111] font-sans text-gray-100 flex flex-col items-center justify-center p-4 md:p-8 relative overflow-x-hidden">
+      <div 
+        id="onboarding-root"
+        className="min-h-screen w-full bg-[#111111] font-sans text-gray-100 flex flex-col items-center justify-start p-4 md:p-8 relative overflow-x-hidden overflow-y-auto"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
       
       {/* Background Square Grid */}
       <div 
@@ -880,10 +977,10 @@ export default function OnboardingPage() {
                   <button
                     type="submit"
                     disabled={!formData.name || !formData.phone || !formData.address || !formData.age || !formData.height || !formData.weight}
-                    className="w-full md:w-auto md:px-12 bg-tertiary text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#EA580C] transition-colors shadow-lg shadow-tertiary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="group w-full md:w-auto md:px-12 bg-[#F97316] text-white border-2 border-[#F97316] py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-[#F97316]/25 hover:bg-white hover:text-[#F97316] hover:border-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#F97316] disabled:hover:text-white disabled:hover:border-[#F97316] disabled:hover:scale-100 cursor-pointer"
                   >
-                    Continue to Goals
-                    <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
+                    <span>Continue to Goals</span>
+                    <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={2.5} />
                   </button>
                 </div>
 
@@ -1053,16 +1150,16 @@ export default function OnboardingPage() {
 
                 <div className="pt-6 border-t border-gray-800/50 flex justify-end">
                   <button
-                    onClick={handleContinueToStep3}
-                    className="w-full md:w-auto md:px-12 bg-tertiary text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#EA580C] transition-colors shadow-lg shadow-tertiary/20 disabled:opacity-50"
+                    type="submit"
                     disabled={isSubmitting}
+                    className="group w-full md:w-auto md:px-12 bg-[#F97316] text-white border-2 border-[#F97316] py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-[#F97316]/25 hover:bg-white hover:text-[#F97316] hover:border-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#F97316] disabled:hover:text-white disabled:hover:border-[#F97316] disabled:hover:scale-100 cursor-pointer"
                   >
                     {isSubmitting ? (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        Calculate Profile
-                        <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
+                        <span>Calculate Profile</span>
+                        <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={2.5} />
                       </>
                     )}
                   </button>
@@ -1385,10 +1482,17 @@ export default function OnboardingPage() {
                 <div className="pt-6 border-t border-gray-800/50 flex justify-end">
                   <button
                     type="submit"
-                    className="w-full md:w-auto md:px-12 bg-tertiary text-white py-4.5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#EA580C] transition-colors shadow-lg shadow-tertiary/20"
+                    disabled={isLoadingPlans}
+                    className="group w-full md:w-auto md:px-12 bg-[#F97316] text-white border-2 border-[#F97316] py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-[#F97316]/25 hover:bg-white hover:text-[#F97316] hover:border-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    Select Plan
-                    <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
+                    {isLoadingPlans ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>Select Plan</span>
+                        <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={2.5} />
+                      </>
+                    )}
                   </button>
                 </div>
 
@@ -1402,56 +1506,97 @@ export default function OnboardingPage() {
                   {selectedPlan ? "Selected Tier" : "Select Your Tier"}
                 </h2>
                 <p className="text-[#E6D0BA]/80 text-sm md:text-base font-serif italic text-center mb-12">
-                  Pricing adjusted for your {calorieProfile?.total} kcal target.
+                  Pricing and meal rotations calibrated for your {getTotalPurchasedCalories()} kcal goal.
                 </p>
 
                 <div className="flex justify-center mb-12">
                   {isLoadingPlans ? (
-                    <div className="flex flex-col items-center">
-                      <div className="w-12 h-12 border-4 border-tertiary/30 border-t-tertiary rounded-full animate-spin mb-4" />
-                      <p className="text-gray-400">Finding the perfect plans for you...</p>
+                    <div className="flex flex-col items-center py-12">
+                      <div className="w-12 h-12 border-4 border-[#F97316]/30 border-t-[#F97316] rounded-full animate-spin mb-4" />
+                      <p className="text-gray-400">Finding the perfect plans from the kitchen...</p>
                     </div>
                   ) : plans.length === 0 ? (
-                    <div className="bg-[#151515] rounded-3xl p-8 border border-gray-800/60 text-center max-w-2xl w-full">
-                      <h3 className="text-2xl font-bold text-white mb-4">No Exact Match Found</h3>
-                      <p className="text-gray-400 mb-8 leading-relaxed">
-                        We currently don't have a pre-built plan matching your exact combination of {formData.planDuration}, {formData.planFrequency}, and {formData.mealSlots.length} meals/day.
-                      </p>
-                      {requestSubmitted ? (
-                        <div className="bg-[#4CAF50]/10 text-[#4CAF50] p-4 rounded-xl border border-[#4CAF50]/30 font-bold flex items-center justify-center gap-2">
-                          <Check className="w-5 h-5" />
-                          Request sent! Our team will contact you shortly.
+                    <div className="w-full max-w-2xl mx-auto">
+                      {/* No exact pre-made plan -> Show Custom Plan */}
+                      <div className="bg-[#181818] rounded-3xl p-6 md:p-8 border border-gray-800 text-center shadow-xl">
+                        <div className="inline-flex items-center gap-2 bg-[#F97316]/10 text-[#F97316] border border-[#F97316]/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
+                          Custom Plan Calibration
                         </div>
-                      ) : (
+                        <h3 className="text-2xl font-bold text-white mb-2">Bespoke Custom Plan</h3>
+                        <p className="text-gray-400 text-sm mb-6 max-w-lg mx-auto leading-relaxed">
+                          We didn&apos;t find a standard tier matching your exact combination of {formData.planDuration}, {formData.planFrequency}, and {formData.mealSlots.length} meals. We have calibrated a custom plan specifically for your nutritional profile!
+                        </p>
+
+                        <div className="bg-[#6A0FAD] rounded-2xl p-6 text-left text-white mb-6 border border-white/20 shadow-2xl relative">
+                          <div className="absolute top-4 right-4 bg-[#FFD700] text-black text-[10px] font-bold tracking-widest px-3 py-1 rounded-full uppercase">
+                            Custom Calibrated
+                          </div>
+                          <h4 className="text-2xl font-bold mb-1">Bespoke Custom Plan</h4>
+                          <p className="text-white/80 text-xs mb-6">{formData.planDuration} - {formData.planFrequency} ({formData.mealSlots.join(" + ")})</p>
+
+                          <div className="bg-white/20 rounded-xl p-4 mb-6 backdrop-blur-sm">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-xs uppercase font-bold text-white/80 tracking-wider">Target Daily Intake</span>
+                              <span className="text-lg font-bold text-white">{getTotalPurchasedCalories()} kcal</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {formData.mealSlots.map(slot => (
+                                <span key={slot} className="bg-black/25 text-white text-xs px-2.5 py-1 rounded-md font-medium">
+                                  {slot}: {formData.mealCalories[slot] || 0} kcal
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex items-baseline gap-3 mb-2">
+                            <span className="text-4xl font-extrabold text-white">
+                              ₹{planPreviewData?.final_discounted_price || "—"}
+                            </span>
+                            {planPreviewData && planPreviewData.discount_percentage > 0 && (
+                              <span className="text-sm line-through text-white/60">₹{planPreviewData.gross_price}</span>
+                            )}
+                            <span className="text-xs text-white/70">all-inclusive</span>
+                          </div>
+                        </div>
+
                         <button 
-                          onClick={handleConnectRequest}
-                          disabled={isSubmitting}
-                          className="bg-tertiary text-white px-8 py-4 rounded-xl font-bold hover:bg-[#EA580C] transition-colors disabled:opacity-50 inline-flex items-center gap-2"
+                          onClick={() => handleSelectPlan("CUSTOM_BUILDER", { plan_type: "CUSTOM" })}
+                          className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
+                            selectedPlan === "CUSTOM_BUILDER" 
+                              ? "bg-[#FFD700] text-black shadow-lg shadow-[#FFD700]/20" 
+                              : "bg-white/10 text-white hover:bg-white/20 border border-white/20"
+                          }`}
                         >
-                          {isSubmitting ? "Submitting..." : "Send Connect Request"}
+                          {selectedPlan === "CUSTOM_BUILDER" ? "✓ Custom Plan Selected" : "Select Custom Plan"}
                         </button>
-                      )}
+                      </div>
                     </div>
                   ) : (
                     <div className="w-full">
                       <div className="flex gap-4 md:gap-6 mb-12 overflow-x-auto pb-6 snap-x snap-mandatory px-4 md:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {plans.map((plan) => {
-                          const isCore = plan.category === "Core";
-                          const bgColor = isCore ? "bg-[#4CAF50]" : "bg-[#8A3FD1]";
-                          const activeBorder = isCore ? "border-[#4CAF50] shadow-[0_0_30px_rgba(76,175,80,0.2)]" : "border-[#8A3FD1] shadow-[0_0_30px_rgba(138,63,209,0.2)]";
+                          const planId = plan.ulid || plan._id;
+                          const isSelected = selectedPlan === planId;
+                          const isCore = plan.category?.toLowerCase() === "core";
+                          const bgColor = isCore ? "bg-[#16A34A]" : "bg-[#6A0FAD]";
+                          const activeBorder = isCore ? "border-[#16A34A] shadow-[0_0_30px_rgba(22,163,74,0.3)]" : "border-[#6A0FAD] shadow-[0_0_30px_rgba(106,15,173,0.3)]";
                           const textColor = isCore ? "text-gray-900" : "text-yellow-950";
                           const labelColor = isCore ? "text-gray-500" : "text-yellow-900";
                           const boxColor = isCore ? "bg-white" : "bg-[#FFD700]";
 
+                          const displayPrice = isSelected && planPreviewData 
+                            ? planPreviewData.final_discounted_price 
+                            : (plan.discount_percentage > 0 ? `₹— (${plan.discount_percentage}% OFF)` : "₹—");
+
                           return (
                             <div 
-                              key={plan._id} 
-                              onClick={() => setSelectedPlan(plan._id)}
-                              className={`relative cursor-pointer rounded-3xl p-6 lg:p-8 transition-all duration-300 border-2 snap-center shrink-0 w-[85vw] md:w-[60vw] lg:w-[500px] ${selectedPlan === plan._id ? `${activeBorder} scale-[1.02]` : 'border-transparent'} ${bgColor}`}
+                              key={planId} 
+                              onClick={() => handleSelectPlan(planId, plan)}
+                              className={`relative cursor-pointer rounded-3xl p-6 lg:p-8 transition-all duration-300 border-2 snap-center shrink-0 w-[85vw] md:w-[60vw] lg:w-[500px] ${isSelected ? `${activeBorder} scale-[1.02]` : 'border-transparent'} ${bgColor}`}
                             >
-                              {selectedPlan === plan._id && (
+                              {isSelected && (
                                 <div className="absolute top-4 right-4 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-lg">
-                                  <Check className={`w-4 h-4 ${isCore ? "text-[#4CAF50]" : "text-[#8A3FD1]"}`} strokeWidth={3} />
+                                  <Check className={`w-4 h-4 ${isCore ? "text-[#16A34A]" : "text-[#6A0FAD]"}`} strokeWidth={3} />
                                 </div>
                               )}
                               {!isCore && (
@@ -1492,36 +1637,33 @@ export default function OnboardingPage() {
                                 </div>
                               </div>
 
-                              {(() => {
-                                const prices = getPlanDynamicPrices(plan);
-                                return (
-                                  <div className="flex items-end gap-3 mb-6">
-                                    <span className="text-5xl font-bold text-white">₹{prices.discounted}</span>
-                                    {(plan.totalPrice > (plan.discountPrice || 0) && plan.discountPrice > 0) && (
-                                      <span className="text-lg text-white/60 line-through mb-1">₹{prices.total}</span>
-                                    )}
-                                  </div>
-                                );
-                              })()}
+                              <div className="flex items-end gap-3 mb-6">
+                                <span className="text-5xl font-bold text-white">
+                                  {typeof displayPrice === "number" ? `₹${displayPrice}` : displayPrice}
+                                </span>
+                                {isSelected && planPreviewData && planPreviewData.discount_percentage > 0 && (
+                                  <span className="text-lg text-white/60 line-through mb-1">₹{planPreviewData.gross_price}</span>
+                                )}
+                              </div>
                               
                               <button 
-                                onClick={() => setSelectedPlan(plan._id)}
-                                className="w-full bg-[#FFD700] hover:bg-white text-black py-4 rounded-xl font-bold text-lg transition-colors"
+                                onClick={(e) => { e.stopPropagation(); handleSelectPlan(planId, plan); }}
+                                className="w-full bg-[#FFD700] hover:bg-white text-black py-4 rounded-xl font-bold text-lg transition-colors cursor-pointer"
                               >
-                                {selectedPlan === plan._id ? 'Selected' : `Choose ${plan.name}`}
+                                {isSelected ? 'Selected' : `Choose ${plan.name}`}
                               </button>
                             </div>
                           );
                         })}
 
                         {/* Custom Bowl Card */}
-                        <div className="relative rounded-3xl p-6 lg:p-8 flex flex-col self-stretch bg-tertiary shadow-xl justify-center items-center text-center snap-center shrink-0 w-[85vw] md:w-[60vw] lg:w-[500px]">
+                        <div className="relative rounded-3xl p-6 lg:p-8 flex flex-col self-stretch bg-[#F97316] shadow-xl justify-center items-center text-center snap-center shrink-0 w-[85vw] md:w-[60vw] lg:w-[500px]">
                           <h3 className="text-2xl font-black text-white mb-2">Want Something Else?</h3>
                           <p className="text-white/90 font-medium mb-8">Get a fully customized bowl tailored exactly to your unique needs.</p>
                           <button
                             onClick={handleCustomBowlOrder}
                             disabled={isSubmittingCustom}
-                            className="w-full bg-black/10 border-2 border-white text-white py-4 rounded-xl font-bold text-lg hover:bg-white hover:text-tertiary transition-colors flex items-center justify-center shadow-sm"
+                            className="w-full bg-black/10 border-2 border-white text-white py-4 rounded-xl font-bold text-lg hover:bg-white hover:text-[#F97316] transition-colors flex items-center justify-center shadow-sm cursor-pointer"
                           >
                             {isSubmittingCustom ? (
                               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -1531,520 +1673,271 @@ export default function OnboardingPage() {
                           </button>
                         </div>
                       </div>
-
-                      <div className="flex justify-center flex-col items-center gap-4 mt-12 mb-20">
-                        <button 
-                          onClick={() => setShowCheckoutModal(true)}
-                          disabled={!selectedPlan || isSubmitting}
-                          className="w-full max-w-sm bg-white text-black py-4.5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors shadow-[0_0_30px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isSubmitting ? (
-                            <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                          ) : (
-                            <>Lock in my plan <ArrowRight className="w-5 h-5" /></>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Checkout Confirmation Modal */}
-                      {showCheckoutModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                          <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="bg-[#151515] border border-gray-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden"
-                          >
-                            <div className="text-center mb-6">
-                              <div className="w-16 h-16 bg-[#FFD700]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Check className="w-8 h-8 text-[#FFD700]" />
-                              </div>
-                              <h3 className="text-2xl font-bold text-white mb-2 font-headline">Confirm Selection</h3>
-                              <p className="text-gray-400 text-sm">
-                                You are about to lock in your personalized plan.<br/>
-                                <span className="text-white font-semibold">Once selected, you cannot change your plan later.</span><br/>
-                                Are you ready to proceed?
-                              </p>
-                            </div>
-                            <div className="flex gap-4">
-                              <button 
-                                onClick={() => setShowCheckoutModal(false)}
-                                className="flex-1 py-3.5 rounded-xl font-bold text-white bg-gray-800 hover:bg-gray-700 transition-colors"
-                                disabled={isSubmitting}
-                              >
-                                Go Back
-                              </button>
-                              <button 
-                                onClick={handleCheckout}
-                                disabled={isSubmitting}
-                                className="flex-1 py-3.5 rounded-xl font-bold text-black bg-[#FFD700] hover:bg-white transition-colors flex items-center justify-center gap-2"
-                              >
-                                {isSubmitting ? (
-                                  <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                                ) : (
-                                  "Confirm"
-                                )}
-                              </button>
-                            </div>
-                          </motion.div>
-                        </div>
-                      )}
-
-
-
-                      {/* Sample Bowls Grid based on selected plan */}
-                      {selectedPlan && plans.find(p => p._id === selectedPlan) && (
-                        <div className="border-t border-gray-800/50 pt-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                          <h3 className="text-2xl font-bold text-white mb-8 text-center">
-                            Sample {plans.find(p => p._id === selectedPlan)?.name} Bowls for You
-                          </h3>
-                          
-                          <div className="space-y-12">
-                            {[...formData.mealSlots].sort((a, b) => {
-                              const order: Record<string, number> = { "B-FAST": 1, "LUNCH": 2, "DINNER": 3 };
-                              return (order[a] || 99) - (order[b] || 99);
-                            }).map(slot => {
-                              const plan = plans.find(p => p._id === selectedPlan);
-                              
-                              let typeCode = slot;
-                              if (slot === 'B-FAST') typeCode = 'B';
-                              if (slot === 'LUNCH') typeCode = 'L';
-                              if (slot === 'DINNER') typeCode = 'D';
-
-                              const selection = plan?.selections.find((s: any) => s.type === typeCode);
-                              const bowls = selection ? selection.bowls : [];
-
-                              return (
-                                <div key={slot}>
-                                  <div className="flex items-center gap-3 mb-6">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                      slot === 'B-FAST' ? 'bg-[#8B5CF6]/20 text-[#8B5CF6]' : 
-                                      slot === 'LUNCH' ? 'bg-[#10B981]/20 text-[#10B981]' : 
-                                      'bg-[#F97316]/20 text-[#F97316]'
-                                    }`}>
-                                      {slot === 'B-FAST' && <Sun className="w-4 h-4" />}
-                                      {slot === 'LUNCH' && <Utensils className="w-4 h-4" />}
-                                      {slot === 'DINNER' && <Moon className="w-4 h-4" />}
-                                    </div>
-                                    <h4 className="text-xl font-bold text-white tracking-wide">{slot}</h4>
-                                  </div>
-                                  
-                                  {bowls.length > 0 ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                      {bowls.map((bowl: any) => (
-                                        <div key={bowl._id} className="bg-[#151515] rounded-2xl p-4 border border-gray-800/60 hover:border-gray-600 transition-colors">
-                                          <div className="w-full h-32 bg-[#222] rounded-xl mb-4 overflow-hidden relative">
-                                            {bowl.imageId?.url ? (
-                                              <img src={bowl.imageId.url} alt={bowl.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                                                <span className="text-gray-600 text-xs uppercase font-bold tracking-widest">{bowl.category}</span>
-                                              </div>
-                                            )}
-                                          </div>
-                                          
-                                          {(() => {
-                                            const stats = getDynamicBowlStats(bowl, slot);
-                                            return (
-                                              <>
-                                                <div className="flex justify-between items-start mb-3">
-                                                  <h5 className="font-bold text-gray-200 pr-2 leading-tight">{bowl.name}</h5>
-                                                  <span className="text-sm font-bold text-white bg-white/10 px-2 py-0.5 rounded">₹{stats.price}</span>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-2 mb-3">
-                                                  <span className="text-[10px] font-bold text-black bg-[#FFD700] px-2 py-1 rounded">{stats.calories} kcal</span>
-                                                  <span className="text-[10px] font-bold text-gray-400 bg-gray-800 px-2 py-1 rounded">{stats.weight}g</span>
-                                                </div>
-                                                <div className="grid grid-cols-4 gap-1 mb-3">
-                                                  <div className="bg-[#222] p-1.5 rounded text-center">
-                                                    <p className="text-[8px] text-gray-500 uppercase">Pro</p>
-                                                    <p className="text-[10px] font-bold text-white">{stats.macros.protein}g</p>
-                                                  </div>
-                                                  <div className="bg-[#222] p-1.5 rounded text-center">
-                                                    <p className="text-[8px] text-gray-500 uppercase">Carb</p>
-                                                    <p className="text-[10px] font-bold text-white">{stats.macros.carbs}g</p>
-                                                  </div>
-                                                  <div className="bg-[#222] p-1.5 rounded text-center">
-                                                    <p className="text-[8px] text-gray-500 uppercase">Fat</p>
-                                                    <p className="text-[10px] font-bold text-white">{stats.macros.fat}g</p>
-                                                  </div>
-                                                  <div className="bg-[#222] p-1.5 rounded text-center">
-                                                    <p className="text-[8px] text-gray-500 uppercase">Fib</p>
-                                                    <p className="text-[10px] font-bold text-white">{stats.macros.fiber}g</p>
-                                                  </div>
-                                                </div>
-                                                <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed mb-3">{bowl.ingredients?.slice(0,4).join(", ")}...</p>
-                                                
-                                                {bowl.dips && bowl.dips.length > 1 && (
-                                                  <div className="mt-auto border-t border-gray-800/60 pt-3">
-                                                    <div className="flex items-center justify-between">
-                                                      <div className="flex flex-col">
-                                                        <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Dip Choice</span>
-                                                        <span className="text-xs text-white font-medium truncate max-w-[100px]">
-                                                          {customizedDips[bowl._id] || "Not Selected"}
-                                                        </span>
-                                                      </div>
-                                                      <button 
-                                                        type="button"
-                                                        onClick={() => setCustomizingBowl(bowl)}
-                                                        className="text-[10px] font-bold uppercase tracking-widest bg-[#FFD700] hover:bg-white text-black px-3 py-1.5 rounded transition-colors shadow-sm"
-                                                      >
-                                                        Customize
-                                                      </button>
-                                                    </div>
-                                                  </div>
-                                                )}
-                                                {bowl.dips && bowl.dips.length === 1 && (
-                                                  <div className="mt-auto border-t border-gray-800/60 pt-3">
-                                                    <div className="flex flex-col">
-                                                      <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Included Dip</span>
-                                                      <span className="text-xs text-white font-medium">{bowl.dips[0]}</span>
-                                                    </div>
-                                                  </div>
-                                                )}
-                                              </>
-                                            );
-                                          })()}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <p className="text-gray-500 text-sm italic">No bowls available for this slot in the selected plan.</p>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
+
+                {/* Sample Bowls Grid based on selected plan */}
+                {selectedPlan && (
+                  <div className="border-t border-gray-800/50 pt-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="text-center mb-8">
+                      <div className="inline-flex items-center gap-2 bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest mb-3">
+                        {planPreviewData?.is_custom ? "Custom Calorie Calibration" : "Standard Blueprint Rotation"}
+                      </div>
+                      <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                        {selectedPlan === "CUSTOM_BUILDER" 
+                          ? "Your Custom Calibrated Bowls" 
+                          : `Sample ${plans.find(p => (p.ulid || p._id) === selectedPlan)?.name || "Plan"} Bowls`}
+                      </h3>
+                      <p className="text-sm text-gray-400 max-w-lg mx-auto">
+                        {planPreviewData?.is_custom 
+                          ? `Portions and ingredients mathematically scaled to meet your ${getTotalPurchasedCalories()} kcal target.` 
+                          : `Handcrafted culinary selections from our active ${formData.planDuration} menu rotation.`}
+                      </p>
+                    </div>
+
+                    {isLoadingPreview ? (
+                      <div className="flex flex-col items-center py-8">
+                        <div className="w-8 h-8 border-2 border-[#F97316]/30 border-t-[#F97316] rounded-full animate-spin mb-3" />
+                        <p className="text-xs text-gray-400">Scaling portions and calculating live kitchen pricing...</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-10">
+                        {formData.mealSlots.map((slot) => {
+                          const slotBowls = planPreviewData?.bowls_by_slot?.[slot] || [];
+                          return (
+                            <div key={slot} className="space-y-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                  slot === 'B-FAST' ? 'bg-[#8B5CF6]/20 text-[#8B5CF6]' : 
+                                  slot === 'LUNCH' ? 'bg-[#10B981]/20 text-[#10B981]' : 
+                                  'bg-[#F97316]/20 text-[#F97316]'
+                                }`}>
+                                  {slot === 'B-FAST' && <Sun className="w-4 h-4" />}
+                                  {slot === 'LUNCH' && <Utensils className="w-4 h-4" />}
+                                  {slot === 'DINNER' && <Moon className="w-4 h-4" />}
+                                </div>
+                                <h4 className="text-lg font-bold text-white tracking-wide">{slot}</h4>
+                                <span className="text-xs text-gray-400 bg-gray-800/80 px-2.5 py-0.5 rounded-full border border-gray-700/60 font-mono">
+                                  {formData.mealCalories[slot] || 0} kcal target
+                                </span>
+                              </div>
+
+                              {slotBowls.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                  {slotBowls.map((bowl, idx) => (
+                                    <div key={idx} className="bg-[#181818] rounded-2xl p-4 border border-gray-800/80 hover:border-gray-700 transition-all flex flex-col justify-between">
+                                      <div>
+                                        <div className="w-full h-36 bg-[#222] rounded-xl mb-4 overflow-hidden relative">
+                                          {bowl.image_url ? (
+                                            <img src={bowl.image_url} alt={bowl.bowl_name} className="w-full h-full object-cover" />
+                                          ) : (
+                                            <div className="w-full h-full bg-neutral-900 flex items-center justify-center">
+                                              <span className="text-neutral-600 text-xs uppercase font-bold tracking-widest">{slot}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex justify-between items-start mb-2">
+                                          <h5 className="font-bold text-gray-200 text-sm leading-tight pr-2">{bowl.bowl_name}</h5>
+                                          <span className="text-xs font-bold text-[#FFD700] bg-[#FFD700]/10 px-2 py-0.5 rounded shrink-0">
+                                            ₹{bowl.scaled_price}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-3">
+                                          <span className="text-[10px] font-bold text-black bg-[#FFD700] px-2 py-0.5 rounded">
+                                            {bowl.scaled_calories} kcal
+                                          </span>
+                                          {bowl.is_customized && (
+                                            <span className="text-[9px] font-bold text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded uppercase">
+                                              Calibrated
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-1">
+                                          <div className="bg-[#222] p-1.5 rounded text-center">
+                                            <p className="text-[8px] text-gray-500 uppercase font-bold">Pro</p>
+                                            <p className="text-[10px] font-bold text-white">{bowl.scaled_protein}g</p>
+                                          </div>
+                                          <div className="bg-[#222] p-1.5 rounded text-center">
+                                            <p className="text-[8px] text-gray-500 uppercase font-bold">Carb</p>
+                                            <p className="text-[10px] font-bold text-white">{bowl.scaled_carbs}g</p>
+                                          </div>
+                                          <div className="bg-[#222] p-1.5 rounded text-center">
+                                            <p className="text-[8px] text-gray-500 uppercase font-bold">Fat</p>
+                                            <p className="text-[10px] font-bold text-white">{bowl.scaled_fats}g</p>
+                                          </div>
+                                          <div className="bg-[#222] p-1.5 rounded text-center">
+                                            <p className="text-[8px] text-gray-500 uppercase font-bold">Fib</p>
+                                            <p className="text-[10px] font-bold text-white">{bowl.scaled_fiber || 8}g</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-gray-500 text-sm italic">Rotation bowls will be calibrated during kitchen dispatch.</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Finalize Button */}
+                <div className="flex justify-center flex-col items-center gap-4 mt-12 mb-20">
+                  <button 
+                    onClick={() => setShowCheckoutModal(true)}
+                    disabled={!selectedPlan || isSubmitting}
+                    className="group w-full max-w-sm bg-[#F97316] text-white border-2 border-[#F97316] py-4.5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-white hover:text-[#F97316] hover:border-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out shadow-[0_0_30px_rgba(249,115,22,0.25)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>Lock in my plan</span>
+                        <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Checkout Confirmation Modal */}
+                {showCheckoutModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-[#151515] border border-gray-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden"
+                    >
+                      <div className="text-center mb-6">
+                        <div className="w-16 h-16 bg-[#F97316]/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#F97316]/30">
+                          <Check className="w-8 h-8 text-[#F97316]" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-white mb-2 font-headline">Confirm Selection</h3>
+                        <p className="text-gray-400 text-sm mb-4">
+                          You are about to lock in your personalized plan configuration.<br/>
+                          Our nutrition team will connect with you directly to finalize your dispatch details.
+                        </p>
+                        <div className="bg-[#222] p-4 rounded-xl text-left text-xs space-y-1.5 border border-gray-800">
+                          <div className="flex justify-between text-gray-300">
+                            <span>Plan:</span>
+                            <span className="font-bold text-white">
+                              {selectedPlan === "CUSTOM_BUILDER" ? "Bespoke Custom Plan" : (plans.find(p => (p.ulid || p._id) === selectedPlan)?.name || "Selected Plan")}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-gray-300">
+                            <span>Schedule:</span>
+                            <span className="text-white">{formData.planDuration} ({formData.planFrequency})</span>
+                          </div>
+                          <div className="flex justify-between text-gray-300">
+                            <span>Daily Calories:</span>
+                            <span className="text-white">{getTotalPurchasedCalories()} kcal</span>
+                          </div>
+                          <div className="flex justify-between text-[#FFD700] pt-2 border-t border-gray-800 font-bold text-sm">
+                            <span>Estimated Price:</span>
+                            <span>₹{planPreviewData?.final_discounted_price || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <button 
+                          onClick={() => setShowCheckoutModal(false)}
+                          className="flex-1 py-3.5 rounded-xl font-bold text-white bg-gray-800 hover:bg-gray-700 transition-colors cursor-pointer"
+                          disabled={isSubmitting}
+                        >
+                          Go Back
+                        </button>
+                        <button 
+                          onClick={handleFinalizePlan}
+                          disabled={isSubmitting}
+                          className="flex-1 py-3.5 rounded-xl font-bold text-white bg-[#F97316] hover:bg-white hover:text-[#F97316] border-2 border-[#F97316] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          {isSubmitting ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            "Confirm & Finalize"
+                          )}
+                        </button>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
               </div>
             </div>
             
             {/* -------------------- STEP 6 (Success) -------------------- */}
             <div className={`transition-all duration-500 ${step === 6 ? 'block opacity-100' : 'hidden opacity-0 h-0 overflow-hidden'}`}>
-              <div className="max-w-3xl mx-auto py-12">
-                <div className="text-center mb-16">
-                  <div className="w-20 h-20 bg-tertiary/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Check className="w-10 h-10 text-tertiary" strokeWidth={3} />
+              <div className="max-w-2xl mx-auto py-12 text-center">
+                <div className="w-20 h-20 bg-[#16A34A]/20 text-[#16A34A] rounded-full flex items-center justify-center mx-auto mb-6 border border-[#16A34A]/40">
+                  <Check className="w-10 h-10" strokeWidth={3} />
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-3 font-headline">
+                  Plan Locked In!
+                </h2>
+                <p className="text-gray-300 text-base md:text-lg mb-8 leading-relaxed max-w-lg mx-auto">
+                  Our team will connect with you at <span className="text-[#FFD700] font-bold">{formData.phone}</span> within 24 hours to confirm your delivery address and schedule.
+                </p>
+
+                {/* Summary Card */}
+                <div className="bg-[#181818] border border-gray-800 rounded-3xl p-6 md:p-8 text-left mb-8 space-y-4 shadow-xl">
+                  <div className="flex justify-between items-center border-b border-gray-800 pb-4">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Selected Plan</span>
+                      <h4 className="text-xl font-bold text-white">
+                        {selectedPlan === "CUSTOM_BUILDER" 
+                          ? "Bespoke Custom Plan" 
+                          : (plans.find(p => (p.ulid || p._id) === selectedPlan)?.name || "Personalized Meal Plan")}
+                      </h4>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Total Price</span>
+                      <p className="text-2xl font-black text-[#FFD700]">₹{planPreviewData?.final_discounted_price || 0}</p>
+                    </div>
                   </div>
-                  <h2 className="text-4xl font-bold text-white tracking-tight mb-4 font-headline">
-                    {selectedPlan 
-                      ? "Order Received!" 
-                      : (latestPlanRequest?.status === "Resolved" ? "Custom Bowl Resolved!" : "Custom Bowl Requested!")}
-                  </h2>
-                  <p className="text-gray-400 text-lg">
-                    {selectedPlan 
-                      ? "Your personalised plan has been locked in. We will connect with you shortly."
-                      : (latestPlanRequest?.status === "Resolved" 
-                          ? "Our team has resolved your request. Your assigned plan will be visible shortly."
-                          : "Our team has been notified of your custom bowl request and will connect with you personally.")}
-                  </p>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2 text-sm">
+                    <div>
+                      <p className="text-gray-500 text-xs">Schedule</p>
+                      <p className="font-semibold text-white">{formData.planDuration} ({formData.planFrequency})</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Daily Calories</p>
+                      <p className="font-semibold text-white">{getTotalPurchasedCalories()} kcal</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Meal Slots</p>
+                      <p className="font-semibold text-white">{formData.mealSlots.join(", ")}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Customer Name</p>
+                      <p className="font-semibold text-white">{formData.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Delivery Address</p>
+                      <p className="font-semibold text-white truncate max-w-[180px]">{formData.address}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Status</p>
+                      <p className="font-semibold text-[#10B981]">Team Connecting Soon</p>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Calorie Profile Summary */}
-                {calorieProfile && (
-                  <div className="mb-16">
-                    <h3 className="text-2xl font-bold text-white mb-8 text-center font-headline">Your Calorie Profile</h3>
-                    <div className="flex flex-col items-center">
-                      <div className="relative w-64 h-64 mb-12">
-                        <svg viewBox="0 0 300 300" className="w-full h-full transform -rotate-90">
-                          {(() => {
-                            const { protein, carbs, fat, fiber } = calorieProfile;
-                            const total = protein + carbs + fat + fiber;
-                            const circ = 2 * Math.PI * 120; // r=120
-                            
-                            const pPct = protein / total;
-                            const cPct = carbs / total;
-                            const fPct = fat / total;
-                            const fiPct = fiber / total;
-                            
-                            const pStroke = pPct * circ;
-                            const cStroke = cPct * circ;
-                            const fStroke = fPct * circ;
-                            const fiStroke = fiPct * circ;
-                            
-                            let currentOffset = 0;
-                            const pOffset = -currentOffset;
-                            currentOffset += pStroke;
-                            
-                            const cOffset = -currentOffset;
-                            currentOffset += cStroke;
-                            
-                            const fOffset = -currentOffset;
-                            currentOffset += fStroke;
-                            
-                            const fiOffset = -currentOffset;
-
-                            return (
-                              <>
-                                <circle cx="150" cy="150" r="120" fill="none" stroke="#222" strokeWidth="20" />
-                                <circle cx="150" cy="150" r="120" fill="none" stroke="#8B5CF6" strokeWidth="20" 
-                                  strokeDasharray={`${isChartLoaded ? pStroke : 0} ${circ}`} strokeDashoffset={pOffset} className="transition-all duration-1000 ease-out" />
-                                <circle cx="150" cy="150" r="120" fill="none" stroke="#F97316" strokeWidth="20" 
-                                  strokeDasharray={`${isChartLoaded ? cStroke : 0} ${circ}`} strokeDashoffset={cOffset} className="transition-all duration-1000 ease-out delay-100" />
-                                <circle cx="150" cy="150" r="120" fill="none" stroke="#10B981" strokeWidth="20" 
-                                  strokeDasharray={`${isChartLoaded ? fStroke : 0} ${circ}`} strokeDashoffset={fOffset} className="transition-all duration-1000 ease-out delay-200" />
-                                <circle cx="150" cy="150" r="120" fill="none" stroke="#FFB084" strokeWidth="20" 
-                                  strokeDasharray={`${isChartLoaded ? fiStroke : 0} ${circ}`} strokeDashoffset={fiOffset} className="transition-all duration-1000 ease-out delay-300" />
-                              </>
-                            );
-                          })()}
-                        </svg>
-                        
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-4xl font-bold text-white font-mono tracking-tight">
-                            {(getTotalPurchasedCalories() || calorieProfile.total).toLocaleString()}
-                          </span>
-                          <span className="text-xs text-gray-400 font-bold tracking-widest mt-1">
-                            {getTotalPurchasedCalories() > 0 && getTotalPurchasedCalories() !== calorieProfile.total ? "PROBAE KCAL" : "KCAL"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {getTotalPurchasedCalories() > 0 && getTotalPurchasedCalories() !== calorieProfile.total && (
-                        <div className="mb-6 text-center">
-                          <p className="text-gray-400 text-sm">
-                            Your total daily requirement is <span className="text-white font-bold">{calorieProfile.total.toLocaleString()} kcal</span>.<br/>
-                            You are purchasing <span className="text-white font-bold">{getTotalPurchasedCalories().toLocaleString()} kcal</span> from us.
-                          </p>
-                        </div>
-                      )}
-
-                      {(() => {
-                        const scaleFactor = (getTotalPurchasedCalories() || calorieProfile.total) / calorieProfile.total;
-                        const p = Math.round(calorieProfile.protein * scaleFactor);
-                        const c = Math.round(calorieProfile.carbs * scaleFactor);
-                        const f = Math.round(calorieProfile.fat * scaleFactor);
-                        const fi = Math.round(calorieProfile.fiber * scaleFactor);
-                        return (
-                          <div className="w-full max-w-md grid grid-cols-2 bg-[#151515] rounded-2xl border border-gray-800/60 overflow-hidden">
-                            <div className="p-6 border-b border-r border-gray-800/60">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]" />
-                                <span className="text-sm text-gray-300">Protein</span>
-                              </div>
-                              <div className="text-xl font-bold text-white font-mono">{p}g</div>
-                            </div>
-                            <div className="p-6 border-b border-gray-800/60">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2.5 h-2.5 rounded-full bg-[#F97316]" />
-                                <span className="text-sm text-gray-300">Carbs</span>
-                              </div>
-                              <div className="text-xl font-bold text-white font-mono">{c}g</div>
-                            </div>
-                            <div className="p-6 border-r border-gray-800/60">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
-                                <span className="text-sm text-gray-300">Fat</span>
-                              </div>
-                              <div className="text-xl font-bold text-white font-mono">{f}g</div>
-                            </div>
-                            <div className="p-6">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2.5 h-2.5 rounded-full bg-[#FFB084]" />
-                                <span className="text-sm text-gray-300">Fiber</span>
-                              </div>
-                              <div className="text-xl font-bold text-white font-mono">{fi}g</div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                )}
-
-                {/* Selected Plan Summary */}
-                {selectedPlan && (
-                  <div className="mb-16">
-                    <h3 className="text-2xl font-bold text-white mb-8 text-center font-headline">Your Selected Plan</h3>
-                    <div className="max-w-md mx-auto">
-                      {plans.filter(p => p._id === selectedPlan).map((plan) => {
-                        const isCore = plan.category === "Core";
-                        const bgColor = isCore ? "bg-[#4CAF50]" : "bg-[#8A3FD1]";
-                        const textColor = isCore ? "text-gray-900" : "text-yellow-950";
-                        const labelColor = isCore ? "text-gray-500" : "text-yellow-900";
-                        const boxColor = isCore ? "bg-white" : "bg-[#FFD700]";
-
-                        return (
-                          <div key={plan._id} className={`relative rounded-3xl p-8 border-2 border-transparent ${bgColor}`}>
-                            <h3 className="text-4xl font-bold text-white mb-2 mt-2">{plan.name}</h3>
-                            <p className="text-white/90 text-sm mb-8">{plan.category} Plan - {plan.duration} ({getTotalDeliveredDays(plan.duration, plan.days)} Days)</p>
-                            
-                            <div className="bg-white/20 rounded-2xl p-6 mb-8 backdrop-blur-sm">
-                              <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest text-center mb-2">Per Meal Average</p>
-                              <h4 className="text-5xl font-bold text-white text-center mb-6">
-                                {getDynamicCalsPerMeal()} <span className="text-2xl font-normal">kcal</span>
-                              </h4>
-                              
-                              <div className="grid grid-cols-4 gap-2 mb-6">
-                                <div className={`${boxColor} rounded-xl p-2 text-center`}>
-                                  <p className={`text-[10px] font-bold uppercase ${labelColor}`}>Protein</p>
-                                  <p className={`font-bold ${textColor}`}>
-                                    {isCore ? getDynamicMacroPerMeal('protein') : Math.round(getDynamicMacroPerMeal('protein') * 1.2)}g
-                                  </p>
-                                </div>
-                                <div className="bg-white rounded-xl p-2 text-center">
-                                  <p className="text-[10px] font-bold text-gray-500 uppercase">Carbs</p>
-                                  <p className="font-bold text-gray-900">
-                                    {isCore ? getDynamicMacroPerMeal('carbs') : Math.round(getDynamicMacroPerMeal('carbs') * 0.9)}g
-                                  </p>
-                                </div>
-                                <div className="bg-white rounded-xl p-2 text-center">
-                                  <p className="text-[10px] font-bold text-gray-500 uppercase">Fats</p>
-                                  <p className="font-bold text-gray-900">{getDynamicMacroPerMeal('fat')}g</p>
-                                </div>
-                                <div className="bg-white rounded-xl p-2 text-center">
-                                  <p className="text-[10px] font-bold text-gray-500 uppercase">Fiber</p>
-                                  <p className="font-bold text-gray-900">10g</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {(() => {
-                              const prices = getPlanDynamicPrices(plan);
-                              return (
-                                <div className="flex items-end gap-3">
-                                  <span className="text-5xl font-bold text-white">₹{prices.discounted}</span>
-                                  {(plan.totalPrice > (plan.discountPrice || 0) && plan.discountPrice > 0) && (
-                                    <span className="text-lg text-white/60 line-through mb-1">₹{prices.total}</span>
-                                  )}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Bowls Summary */}
-                {selectedPlan && (
-                  <div className="mb-12">
-                    <h3 className="text-2xl font-bold text-white mb-8 text-center font-headline">Your Bowls</h3>
-                    <div className="space-y-12">
-                      {[...formData.mealSlots].sort((a, b) => {
-                        const order: Record<string, number> = { "B-FAST": 1, "LUNCH": 2, "DINNER": 3 };
-                        return (order[a] || 99) - (order[b] || 99);
-                      }).map(slot => {
-                        const plan = plans.find(p => p._id === selectedPlan);
-                        
-                        let typeCode = slot;
-                        if (slot === 'B-FAST') typeCode = 'B';
-                        if (slot === 'LUNCH') typeCode = 'L';
-                        if (slot === 'DINNER') typeCode = 'D';
-
-                        const selection = plan?.selections.find((s: any) => s.type === typeCode);
-                        const bowls = selection ? selection.bowls : [];
-
-                        return (
-                          <div key={slot}>
-                            <div className="flex items-center gap-3 mb-6">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                slot === 'B-FAST' ? 'bg-[#8B5CF6]/20 text-[#8B5CF6]' : 
-                                slot === 'LUNCH' ? 'bg-[#10B981]/20 text-[#10B981]' : 
-                                'bg-[#F97316]/20 text-[#F97316]'
-                              }`}>
-                                {slot === 'B-FAST' && <Sun className="w-4 h-4" />}
-                                {slot === 'LUNCH' && <Utensils className="w-4 h-4" />}
-                                {slot === 'DINNER' && <Moon className="w-4 h-4" />}
-                              </div>
-                              <h4 className="text-xl font-bold text-white tracking-wide">{slot}</h4>
-                            </div>
-                            
-                            {bowls.length > 0 ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {bowls.map((bowl: any) => (
-                                  <div key={bowl._id} className="bg-[#151515] rounded-2xl p-4 border border-gray-800/60 transition-colors">
-                                      <div className="w-full h-32 bg-[#222] rounded-xl mb-4 overflow-hidden relative">
-                                        {bowl.imageId?.url ? (
-                                          <img src={bowl.imageId.url} alt={bowl.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                          <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                                            <span className="text-gray-600 text-xs uppercase font-bold tracking-widest">{bowl.category}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    {(() => {
-                                      const stats = getDynamicBowlStats(bowl, slot);
-                                      return (
-                                        <>
-                                          <div className="flex justify-between items-start mb-3">
-                                            <h5 className="font-bold text-gray-200 pr-2 leading-tight">{bowl.name}</h5>
-                                            <span className="text-sm font-bold text-white bg-white/10 px-2 py-0.5 rounded">₹{stats.price}</span>
-                                          </div>
-                                          <div className="flex flex-wrap items-center gap-2 mb-3">
-                                            <span className="text-[10px] font-bold text-black bg-[#FFD700] px-2 py-1 rounded">{stats.calories} kcal</span>
-                                            <span className="text-[10px] font-bold text-gray-400 bg-gray-800 px-2 py-1 rounded">{stats.weight}g</span>
-                                          </div>
-                                          <div className="grid grid-cols-4 gap-1 mb-3">
-                                            <div className="bg-[#222] p-1.5 rounded text-center">
-                                              <p className="text-[8px] text-gray-500 uppercase">Pro</p>
-                                              <p className="text-[10px] font-bold text-white">{stats.macros.protein}g</p>
-                                            </div>
-                                            <div className="bg-[#222] p-1.5 rounded text-center">
-                                              <p className="text-[8px] text-gray-500 uppercase">Carb</p>
-                                              <p className="text-[10px] font-bold text-white">{stats.macros.carbs}g</p>
-                                            </div>
-                                            <div className="bg-[#222] p-1.5 rounded text-center">
-                                              <p className="text-[8px] text-gray-500 uppercase">Fat</p>
-                                              <p className="text-[10px] font-bold text-white">{stats.macros.fat}g</p>
-                                            </div>
-                                            <div className="bg-[#222] p-1.5 rounded text-center">
-                                              <p className="text-[8px] text-gray-500 uppercase">Fib</p>
-                                              <p className="text-[10px] font-bold text-white">{stats.macros.fiber}g</p>
-                                            </div>
-                                          </div>
-                                          <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed mb-3">{bowl.ingredients?.slice(0,4).join(", ")}...</p>
-                                          
-                                          {bowl.dips && bowl.dips.length > 1 && (
-                                            <div className="mt-auto border-t border-gray-800/60 pt-3">
-                                              <div className="flex items-center justify-between">
-                                                <div className="flex flex-col">
-                                                  <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Dip Choice</span>
-                                                  <span className="text-xs text-white font-medium truncate max-w-[100px]">
-                                                    {customizedDips[bowl._id] || "Not Selected"}
-                                                  </span>
-                                                </div>
-                                                <button 
-                                                  onClick={() => setCustomizingBowl(bowl)}
-                                                  className="text-[10px] font-bold uppercase tracking-widest bg-[#FFD700] hover:bg-white text-black px-3 py-1.5 rounded transition-colors shadow-sm"
-                                                >
-                                                  Customize
-                                                </button>
-                                              </div>
-                                            </div>
-                                          )}
-                                          {bowl.dips && bowl.dips.length === 1 && (
-                                            <div className="mt-auto border-t border-gray-800/60 pt-3">
-                                              <div className="flex flex-col">
-                                                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Included Dip</span>
-                                                <span className="text-xs text-white font-medium">{bowl.dips[0]}</span>
-                                              </div>
-                                            </div>
-                                          )}
-                                        </>
-                                      );
-                                    })()}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-gray-500 text-sm italic">No bowls available for this slot in the selected plan.</p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="text-center mt-16 pt-8 border-t border-gray-800">
-                  <Link href="/menu" className="inline-flex items-center gap-2 bg-[#FFD700] hover:bg-white text-black px-12 py-4 rounded-xl font-bold transition-colors">
-                    Go to Dashboard
-                    <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link 
+                    href="/"
+                    className="px-8 py-3.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold text-sm transition-colors"
+                  >
+                    Return Home
+                  </Link>
+                  <Link 
+                    href="/menu"
+                    className="px-8 py-3.5 bg-[#F97316] hover:bg-white hover:text-[#F97316] text-white rounded-xl font-bold text-sm transition-colors border border-[#F97316]"
+                  >
+                    Explore Today&apos;s Menu
                   </Link>
                 </div>
               </div>
@@ -2053,58 +1946,7 @@ export default function OnboardingPage() {
           </div>
         </div>
       </div>
-
-      {/* Customize Dip Modal */}
-      {customizingBowl && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-[#151515] border border-gray-800 rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl relative"
-          >
-            <button 
-              onClick={() => setCustomizingBowl(null)}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-white mb-2">Select your Dip</h3>
-              <p className="text-sm text-gray-400">Choose a dip for your {customizingBowl.name}</p>
-            </div>
-            <div className="space-y-3 mb-6">
-              {customizingBowl.dips?.map((dip: string) => {
-                const isSelected = customizedDips[customizingBowl._id] === dip;
-                return (
-                  <button
-                    key={dip}
-                    onClick={() => {
-                      setCustomizedDips(prev => ({ ...prev, [customizingBowl._id]: dip }));
-                      if (step === 6) {
-                        fetch('/api/onboarding/update-dips', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ bowlId: customizingBowl._id, selectedDip: dip })
-                        }).catch(err => console.error("Failed to update dip", err));
-                      }
-                      setCustomizingBowl(null);
-                    }}
-                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${
-                      isSelected 
-                        ? 'bg-[#FFD700]/10 border-[#FFD700] text-white' 
-                        : 'bg-gray-800/30 border-gray-800 text-gray-300 hover:border-gray-600 hover:bg-gray-800/50'
-                    }`}
-                  >
-                    <span className="font-medium">{dip}</span>
-                    {isSelected && <Check className="w-5 h-5 text-[#FFD700]" />}
-                  </button>
-                );
-              })}
-            </div>
-          </motion.div>
-        </div>
-      )}
-      </div>
-    </>
+    </div>
+  </>
   );
 }

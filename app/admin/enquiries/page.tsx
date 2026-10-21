@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, MessageSquareText, RefreshCw, X } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, ChevronLeft, ChevronRight, Eye, RefreshCw } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { BowlLoader } from "@/components/admin/BowlLoader";
@@ -60,19 +61,9 @@ export default function EnquiriesPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [previewItem, setPreviewItem] = useState<EnquiryItem | null>(null);
   const [statusFilter, setStatusFilter] = useState<"" | EnquiryStatus>("");
   const [error, setError] = useState("");
   const totalPages = Math.max(1, Math.ceil(total / 20));
-
-  useEffect(() => {
-    if (!previewItem) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPreviewItem(null);
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [previewItem]);
 
   const loadEnquiries = useCallback(async () => {
     setLoading(true);
@@ -145,7 +136,9 @@ export default function EnquiriesPage() {
                   <article key={item.ulid} className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
                     <div className="flex min-w-0 items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h2 className="break-words font-bold text-neutral-900">{item.name}</h2>
+                        <Link href={`/admin/enquiries/${item.ulid}`} className="break-words font-bold text-neutral-900 hover:text-[#6A0FAD] transition">
+                          {item.name}
+                        </Link>
                         <p className="mt-1 break-words text-sm text-neutral-600">{item.plan_interest || "Custom bowl"}</p>
                       </div>
                       <span className="shrink-0 pt-0.5 text-xs text-neutral-500">{item.created_at ? new Date(item.created_at).toLocaleDateString() : "—"}</span>
@@ -153,9 +146,12 @@ export default function EnquiriesPage() {
                     <div className="mt-3 rounded-xl bg-neutral-50 p-3">
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-xs font-bold uppercase tracking-wide text-neutral-400">Message</span>
-                        <button type="button" onClick={() => setPreviewItem(item)} disabled={!item.message?.trim()} className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-[#6A0FAD] transition hover:text-[#4f0b82] disabled:cursor-not-allowed disabled:text-neutral-400">
-                          <MessageSquareText className="h-3.5 w-3.5" /> {item.message?.trim() ? "Preview message" : "No message"}
-                        </button>
+                        <Link
+                          href={`/admin/enquiries/${item.ulid}`}
+                          className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-[#6A0FAD] transition hover:text-[#4f0b82]"
+                        >
+                          <Eye className="h-3.5 w-3.5" /> Preview details
+                        </Link>
                       </div>
                       <p className="mt-2 line-clamp-2 break-words text-sm leading-relaxed text-neutral-600">{item.message?.trim() || "The customer did not include a message."}</p>
                     </div>
@@ -183,16 +179,21 @@ export default function EnquiriesPage() {
                   <tbody className="divide-y divide-neutral-100">
                     {items.map((item) => (
                       <tr key={item.ulid} className="align-middle transition-colors hover:bg-neutral-50/70">
-                        <td className="px-3 py-4 xl:px-4"><p className="truncate font-semibold text-neutral-900" title={item.name}>{item.name}</p></td>
+                        <td className="px-3 py-4 xl:px-4">
+                          <Link href={`/admin/enquiries/${item.ulid}`} className="block truncate font-semibold text-neutral-900 hover:text-[#6A0FAD] transition" title={item.name}>
+                            {item.name}
+                          </Link>
+                        </td>
                         <td className="px-3 py-4 xl:px-4"><a href={`tel:${item.phone}`} className="block truncate text-sm text-neutral-700 hover:text-[#6A0FAD]" title={item.phone}>{item.phone}</a></td>
                         <td className="px-3 py-4 xl:px-4"><span className="block truncate text-sm text-neutral-600" title={item.email || "—"}>{item.email || "—"}</span></td>
                         <td className="px-3 py-4 xl:px-4"><span className="block truncate text-sm text-neutral-700" title={item.plan_interest || "Custom bowl"}>{item.plan_interest || "Custom bowl"}</span></td>
                         <td className="px-3 py-4 xl:px-4">
-                          {item.message?.trim() ? (
-                            <button type="button" onClick={() => setPreviewItem(item)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#6A0FAD]/8 px-2.5 py-2 text-xs font-bold text-[#6A0FAD] transition hover:bg-[#6A0FAD]/15">
-                              <MessageSquareText className="h-3.5 w-3.5" /> Preview
-                            </button>
-                          ) : <span className="text-xs text-neutral-400">No message</span>}
+                          <Link
+                            href={`/admin/enquiries/${item.ulid}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-[#6A0FAD]/8 px-2.5 py-2 text-xs font-bold text-[#6A0FAD] transition hover:bg-[#6A0FAD]/15"
+                          >
+                            <Eye className="h-3.5 w-3.5" /> Preview
+                          </Link>
                         </td>
                         <td className="px-3 py-4 text-center align-middle xl:px-4">
                           <div className="flex justify-center">
@@ -217,27 +218,6 @@ export default function EnquiriesPage() {
           </div>
         </div>
       </div>
-      {previewItem && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-neutral-950/50 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) setPreviewItem(null); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="enquiry-message-title" className="my-auto w-full max-w-xl overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl">
-            <header className="flex items-start justify-between gap-4 border-b border-neutral-100 px-5 py-4 sm:px-6">
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#6A0FAD]">Enquiry message</p>
-                <h2 id="enquiry-message-title" className="mt-1 truncate text-lg font-extrabold text-neutral-900">Message from {previewItem.name}</h2>
-                <p className="mt-1 text-sm text-neutral-500">{previewItem.plan_interest || "Custom bowl enquiry"}</p>
-              </div>
-              <button type="button" aria-label="Close message preview" onClick={() => setPreviewItem(null)} className="shrink-0 rounded-full bg-neutral-100 p-2 text-neutral-600 transition hover:bg-neutral-200"><X className="h-4 w-4" /></button>
-            </header>
-            <div className="max-h-[60vh] overflow-y-auto px-5 py-5 sm:px-6">
-              <p className="whitespace-pre-wrap break-words rounded-2xl bg-neutral-50 p-4 text-sm leading-7 text-neutral-700 sm:p-5">{previewItem.message?.trim() || "The customer did not include a message."}</p>
-              <div className="mt-4 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-neutral-500">{previewItem.created_at ? new Date(previewItem.created_at).toLocaleString() : "Date unavailable"}</span>
-                <div className="flex flex-wrap gap-3"><a href={`tel:${previewItem.phone}`} className="font-semibold text-[#6A0FAD] hover:underline">{previewItem.phone}</a>{previewItem.email && <a href={`mailto:${previewItem.email}`} className="max-w-full break-all font-semibold text-[#6A0FAD] hover:underline">{previewItem.email}</a>}</div>
-              </div>
-            </div>
-          </section>
-        </div>
-      )}
     </div>
   );
 }

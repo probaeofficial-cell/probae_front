@@ -12,6 +12,9 @@
   --color-lab-white: #f5f5f5;
   --color-solar-gold: #ffd700;
   --color-active-orange: #ff751f;
+  --color-primary: #16a34a;
+  --color-secondary: #6a0fad;
+  --color-tertiary: #f97316;
 }
 
 /* ─── Tailwind v4 Theme ──────────────────────────────────────────── */
@@ -26,6 +29,9 @@
   --color-lab-white: #f5f5f5;
   --color-solar-gold: #ffd700;
   --color-active-orange: #ff751f;
+  --color-primary: #16a34a;
+  --color-secondary: #6a0fad;
+  --color-tertiary: #f97316;
 
   /* Register font families so font-poppins / font-plus-jakarta work */
   --font-poppins: var(--font-poppins), "Poppins", system-ui, sans-serif;
@@ -57,11 +63,16 @@ body {
   height: 100%;
 }
 
-/* Landing page: restore normal scrolling */
-body.landing-page {
-  overflow-x: hidden;
-  overflow-y: auto;
-  height: auto;
+/* Landing & onboarding pages: restore normal scrolling */
+html.landing-page,
+body.landing-page,
+html:has(#onboarding-root),
+body:has(#onboarding-root) {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: 100% !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 /* ─── Custom Scrollbar ───────────────────────────────────────────── */

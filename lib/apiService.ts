@@ -125,15 +125,17 @@ const parseError = async (response: Response, endpoint?: string): Promise<never>
     // If response is not JSON, fallback to the standard HTTP status message
   }
 
-  // Intercept 401 status codes and redirect to login page if not already there (skip for login endpoints)
+  // Intercept 401 status codes and redirect to login page if on admin or delivery route (skip for customer pages)
   if (response.status === 401 && !endpoint?.startsWith("/auth/login")) {
     clearTokens();
     if (typeof window !== "undefined") {
-      const isDeliveryPath = window.location.pathname.startsWith("/delivery");
-      const loginUrl = isDeliveryPath ? "/delivery/login" : "/admin/login";
-      if (!window.location.pathname.startsWith(loginUrl)) {
-        window.location.href = loginUrl;
+      const pathname = window.location.pathname;
+      if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
+        window.location.href = "/admin/login";
+      } else if (pathname.startsWith("/delivery") && !pathname.startsWith("/delivery/login")) {
+        window.location.href = "/delivery/login";
       }
+      // Public customer paths (/onboarding, /menu, /plans, /) are never redirected!
     }
   }
 
@@ -212,10 +214,11 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
           clearTokens();
           onTokenRefreshed(null); 
           if (typeof window !== "undefined") {
-            const isDeliveryPath = window.location.pathname.startsWith("/delivery");
-            const loginUrl = isDeliveryPath ? "/delivery/login" : "/admin/login";
-            if (!window.location.pathname.startsWith(loginUrl)) {
-              window.location.href = loginUrl;
+            const pathname = window.location.pathname;
+            if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
+              window.location.href = "/admin/login";
+            } else if (pathname.startsWith("/delivery") && !pathname.startsWith("/delivery/login")) {
+              window.location.href = "/delivery/login";
             }
           }
           throw new ApiError("Session expired. Please log in again.", 401);
@@ -895,6 +898,13 @@ export const endpoints = {
     },
   },
   public: {
+    calculateCalories: async (data: any): Promise<any> => {
+      try {
+        return await api.post<any>('/public/calculate-calories', data);
+      } catch {
+        return await api.post<any>('/customers/calculate-calories', data);
+      }
+    },
     getMenu: async (page = 1, limit = 10, meal_type = ''): Promise<any> => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (meal_type) params.set('meal_type', meal_type);
@@ -918,8 +928,15 @@ export const endpoints = {
       if (status) params.set('status', status);
       return await api.get<any>(`/enquiries?${params.toString()}`);
     },
+    get: async (ulid: string): Promise<any> => {
+      return await api.get<any>(`/enquiries/${ulid}`);
+    },
     updateStatus: async (ulid: string, status: string): Promise<any> => {
       return await api.patch<any>(`/enquiries/${ulid}/status`, { status });
     },
   },
 };
+
+// Export dedicated customer-side API client & endpoints
+export { customerApi, customerEndpoints } from "./customerApiService";
+
