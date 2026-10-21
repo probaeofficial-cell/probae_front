@@ -190,22 +190,24 @@ export default function ExpenseDashboardPage() {
                 const maxCategoryVal = Math.max(1, ...chartData.flatMap(d => Object.values(d.categories).length > 0 ? Object.values(d.categories) : [0]));
                 const len = chartData.length;
                 
-                const getX = (index: number) => len === 1 ? 50 : (index / (len - 1)) * 100;
+                const getX = (index: number) => len <= 1 ? 50 : ((index + 0.5) / len) * 100;
                 const getY = (val: number) => 100 - ((val / maxCategoryVal) * 90); // 10% padding top
                 
                 return (
                   <div className="w-full h-full relative">
-                    <svg className="w-full h-full overflow-visible absolute inset-0 z-10 pointer-events-none" preserveAspectRatio="none">
-                      {data.category_metrics.map(cat => {
-                        const points = chartData.map((d, i) => `${getX(i)},${getY(d.categories[cat.ulid] || 0)}`).join(" ");
-                        return (
-                          <polyline key={cat.ulid} points={points} fill="none" stroke={catColors[cat.ulid]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                        );
-                      })}
-                    </svg>
+                    <div className="absolute inset-0 pb-8 w-full h-full z-10 pointer-events-none">
+                      <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
+                        {data.category_metrics.map(cat => {
+                          const points = chartData.map((d, i) => `${getX(i)},${getY(d.categories[cat.ulid] || 0)}`).join(" ");
+                          return (
+                            <polyline key={cat.ulid} points={points} fill="none" stroke={catColors[cat.ulid]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                          );
+                        })}
+                      </svg>
+                    </div>
                     
                     {/* Hover Regions */}
-                    <div className="absolute inset-0 flex w-full h-full">
+                    <div className="absolute inset-0 flex w-full h-full pb-8">
                       {chartData.map((d, i) => (
                         <div key={i} className="flex-1 h-full group relative flex justify-center cursor-crosshair">
                           <div className="w-[1px] h-full bg-neutral-200 opacity-0 group-hover:opacity-100 transition-opacity"></div>
