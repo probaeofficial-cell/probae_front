@@ -306,13 +306,14 @@ export const endpoints = {
   },
   globalTransactions: {
     delete: (ulid: string) => api.del(`/transactions/${ulid}`),
-    list: (params: { page?: number, limit?: number, transaction_type?: string, date_from?: string, date_to?: string }) => {
+    list: (params: { page?: number, limit?: number, transaction_type?: string, date_from?: string, date_to?: string, search?: string }) => {
       const q = new URLSearchParams();
       if (params.page) q.append('page', params.page.toString());
       if (params.limit) q.append('limit', params.limit.toString());
       if (params.transaction_type) q.append('transaction_type', params.transaction_type);
       if (params.date_from) q.append('date_from', params.date_from);
       if (params.date_to) q.append('date_to', params.date_to);
+      if (params.search) q.append('search', params.search);
       return api.get(`/transactions?${q.toString()}`);
     },
     dailySummary: (dateFrom?: string, dateTo?: string) => {
@@ -774,8 +775,8 @@ export const endpoints = {
     transactions: {
     logPayment: (customerUlid: string, payload: { amount: number, method: string, description: string, transaction_date?: string, payment_to?: string }) => 
       api.post(`/customers/${customerUlid}/transactions`, payload),
-    list: (customerUlid: string, page: number = 1) => 
-      api.get(`/customers/${customerUlid}/transactions?page=${page}`),
+    list: (customerUlid: string, page: number = 1, transaction_type?: string) => 
+      api.get(`/customers/${customerUlid}/transactions?page=${page}${transaction_type ? `&transaction_type=${encodeURIComponent(transaction_type)}` : ''}`),
     listGlobal: (params: any) => {
       const p = new URLSearchParams();
       if (params.page) p.append("page", params.page.toString());

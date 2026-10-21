@@ -84,6 +84,8 @@ export default function WalletAndTransactionsPage() {
   const [filterType, setFilterType] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [totalDepositAmount, setTotalDepositAmount] = useState(0);
+  const [totalDebitAmount, setTotalDebitAmount] = useState(0);
   
   const fetchSummary = useCallback(async () => {
     try {
@@ -111,6 +113,8 @@ export default function WalletAndTransactionsPage() {
       }) as any;
       setTransactions(data.transactions || []);
       setTotalCount(data.total_count || 0);
+      setTotalDepositAmount(data.total_deposit_amount || 0);
+      setTotalDebitAmount(data.total_debit_amount || 0);
     } catch (e) {
       console.error(e);
       showToast("Failed to fetch transactions", "error");
@@ -270,7 +274,25 @@ export default function WalletAndTransactionsPage() {
           <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden flex flex-col shrink-0">
             <div className="p-6 border-b border-neutral-100 bg-neutral-50/50 flex flex-col xl:flex-row justify-between items-center gap-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full xl:w-auto">
-                <h2 className="text-lg font-black text-neutral-900">Ledger History</h2>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h2 className="text-lg font-black text-neutral-900">Ledger History</h2>
+                  
+                  {/* Aggregate badge next to Ledger History - shown strictly based on filter */}
+                  {filterType === "DEPOSIT" && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-green-50 border border-green-200/80 text-green-700 text-xs font-bold shadow-xs">
+                      <ArrowDown className="w-3.5 h-3.5 text-green-600" />
+                      <span className="text-[10px] uppercase font-semibold text-green-600">Deposits:</span>
+                      <span>₹{Math.abs(totalDepositAmount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </span>
+                  )}
+                  {filterType === "DEBIT" && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-red-50 border border-red-200/80 text-red-700 text-xs font-bold shadow-xs">
+                      <ArrowUp className="w-3.5 h-3.5 text-red-600" />
+                      <span className="text-[10px] uppercase font-semibold text-red-600">Debits:</span>
+                      <span>₹{Math.abs(totalDebitAmount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </span>
+                  )}
+                </div>
                 
                 {/* 3 Tabs: All Transactions | Deposits | Debits */}
                 <div className="relative flex bg-neutral-200/70 p-1 rounded-2xl w-full sm:w-[420px]">
