@@ -127,8 +127,30 @@ export default function OnboardingPage() {
   });
 
   const getTotalPurchasedCalories = () => {
-    return Object.values(formData.mealCalories).reduce((sum, val) => sum + val, 0);
+    const total = Object.values(formData.mealCalories).reduce((sum, val) => sum + val, 0);
+    if (calorieProfile?.total && total > calorieProfile.total) {
+      return calorieProfile.total;
+    }
+    return total;
   };
+
+  // Safety guard: ensure purchased calories never exceed calculated daily target
+  useEffect(() => {
+    if (calorieProfile?.total && calorieProfile.total > 0) {
+      const currentTotal = Object.values(formData.mealCalories).reduce((sum, val) => sum + val, 0);
+      if (currentTotal > calorieProfile.total) {
+        setFormData((prev) => ({
+          ...prev,
+          mealCalories: distributeCaloriesAcrossSlots(
+            prev.mealSlots,
+            calorieProfile.total,
+            prev.mealCalories,
+            prev.lockedMeals
+          )
+        }));
+      }
+    }
+  }, [calorieProfile?.total]);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -163,19 +185,42 @@ export default function OnboardingPage() {
             // If user is at Step 5 or 6, they need the `plans` array loaded to view them!
             if (data.onboardingStep >= 5 && data.planDuration && data.planFrequency && data.mealSlots) {
               try {
-                const plansRes = await fetch('/api/onboarding/plans', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    duration: data.planDuration, 
-                    frequency: data.planFrequency,
-                    mealSlots: data.mealSlots 
-                  })
+                const plansData = await customerEndpoints.getFilteredPlans({
+                  duration: data.planDuration,
+                  frequency: data.planFrequency,
+                  mealSlots: data.mealSlots,
                 });
-                const plansData = await plansRes.json();
-                if (plansData.success && plansData.plans) {
-                  setPlans(plansData.plans);
+                let fetched = (plansData && plansData.success && Array.isArray(plansData.plans)) ? plansData.plans : [];
+                if (data.mealSlots && data.mealSlots.length > 0 && fetched.length > 0) {
+                  const normTarget = new Set(
+                    data.mealSlots.map((s: string) => {
+                      const lower = s.toLowerCase();
+                      if (lower.includes("fast") || lower.includes("break")) return "breakfast";
+                      if (lower.includes("lunch")) return "lunch";
+                      if (lower.includes("din")) return "dinner";
+                      if (lower.includes("snack")) return "snack";
+                      return lower;
+                    })
+                  );
+                  fetched = fetched.filter((p: any) => {
+                    const planSlots = new Set(
+                      (p.included_meal_slots || []).map((s: string) => {
+                        const lower = s.toLowerCase();
+                        if (lower.includes("fast") || lower.includes("break")) return "breakfast";
+                        if (lower.includes("lunch")) return "lunch";
+                        if (lower.includes("din")) return "dinner";
+                        if (lower.includes("snack")) return "snack";
+                        return lower;
+                      })
+                    );
+                    if (planSlots.size !== normTarget.size) return false;
+                    for (const s of normTarget) {
+                      if (!planSlots.has(s)) return false;
+                    }
+                    return true;
+                  });
                 }
+                setPlans(fetched);
               } catch (err) {
                 console.error("Failed to load plans on mount", err);
               }
@@ -191,6 +236,62 @@ export default function OnboardingPage() {
     fetchProfile();
   }, []);
 
+  const distributeCaloriesAcrossSlots = (
+    slots: string[],
+    targetTotal: number,
+    currentCalories: Record<string, number> = {},
+    lockedMeals: Record<string, boolean> = {}
+  ): Record<string, number> => {
+    if (slots.length === 0) return {};
+    if (slots.length === 1) {
+      return { [slots[0]]: targetTotal };
+    }
+
+    const unlockedSlots = slots.filter((s) => !lockedMeals[s]);
+    const lockedSlots = slots.filter((s) => lockedMeals[s]);
+
+    const newCalories: Record<string, number> = {};
+
+    // If all slots are locked or no unlocked slots, distribute evenly
+    if (unlockedSlots.length === 0) {
+      const perSlot = Math.floor(targetTotal / slots.length);
+      let rem = targetTotal;
+      slots.forEach((s, idx) => {
+        if (idx === slots.length - 1) {
+          newCalories[s] = rem;
+        } else {
+          newCalories[s] = perSlot;
+          rem -= perSlot;
+        }
+      });
+      return newCalories;
+    }
+
+    // Preserve locked slots (clamped so they don't exceed targetTotal minus minimums for unlocked)
+    let lockedSum = 0;
+    lockedSlots.forEach((s) => {
+      const maxValForLocked = Math.max(100, targetTotal - unlockedSlots.length * 100);
+      const val = Math.max(100, Math.min(maxValForLocked, currentCalories[s] || 100));
+      newCalories[s] = val;
+      lockedSum += val;
+    });
+
+    // Distribute remaining budget among unlocked slots
+    let remaining = Math.max(unlockedSlots.length * 100, targetTotal - lockedSum);
+    const perUnlocked = Math.floor(remaining / unlockedSlots.length);
+
+    unlockedSlots.forEach((s, idx) => {
+      if (idx === unlockedSlots.length - 1) {
+        newCalories[s] = remaining;
+      } else {
+        newCalories[s] = perUnlocked;
+        remaining -= perUnlocked;
+      }
+    });
+
+    return newCalories;
+  };
+
   const updateField = (field: string, value: any) => {
     if (field === "goal" && value === "Muscle Gain") {
       if (formData.activityLevel === "Sedentary" || formData.activityLevel === "Lightly Active") {
@@ -201,14 +302,35 @@ export default function OnboardingPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleDurationChange = (d: "WEEKLY" | "MONTHLY") => {
+    setFormData((prev) => {
+      let newFreq = prev.planFrequency;
+      if (d === "MONTHLY") {
+        if (prev.planFrequency === "5 DAYS" || prev.planFrequency === "22 DAYS") newFreq = "22 DAYS";
+        else if (prev.planFrequency === "6 DAYS" || prev.planFrequency === "26 DAYS") newFreq = "26 DAYS";
+        else newFreq = "30 DAYS";
+      } else {
+        if (prev.planFrequency === "22 DAYS" || prev.planFrequency === "5 DAYS") newFreq = "5 DAYS";
+        else if (prev.planFrequency === "26 DAYS" || prev.planFrequency === "6 DAYS") newFreq = "6 DAYS";
+        else newFreq = "7 DAYS";
+      }
+      return { ...prev, planDuration: d, planFrequency: newFreq };
+    });
+  };
+
   const toggleArrayField = (field: "dietaryPreferences" | "allergies" | "mealSlots", value: string) => {
     setFormData((prev) => {
       const current = prev[field] as string[];
       if (current.includes(value)) {
         const newArray = current.filter(item => item !== value);
         if (field === "mealSlots") {
-          const newCalories = { ...prev.mealCalories };
-          delete newCalories[value];
+          const maxTarget = calorieProfile?.total || 2000;
+          const newCalories = distributeCaloriesAcrossSlots(
+            newArray,
+            maxTarget,
+            prev.mealCalories,
+            prev.lockedMeals
+          );
           return { ...prev, [field]: newArray, mealCalories: newCalories };
         }
         return { ...prev, [field]: newArray };
@@ -220,12 +342,13 @@ export default function OnboardingPage() {
         }
         const newArray = [...current, value];
         if (field === "mealSlots") {
-          const newCalories = { ...prev.mealCalories };
-          if (calorieProfile?.total) {
-            newCalories[value] = Math.round(calorieProfile.total / 3);
-          } else {
-            newCalories[value] = 500;
-          }
+          const maxTarget = calorieProfile?.total || 2000;
+          const newCalories = distributeCaloriesAcrossSlots(
+            newArray,
+            maxTarget,
+            prev.mealCalories,
+            prev.lockedMeals
+          );
           return { ...prev, [field]: newArray, mealCalories: newCalories };
         }
         return { ...prev, [field]: newArray };
@@ -235,42 +358,43 @@ export default function OnboardingPage() {
 
   const handleMealCalorieChange = (slotId: string, newValue: number) => {
     setFormData((prev) => {
-      const newCalories = { ...prev.mealCalories };
-      let validValue = newValue;
+      const maxTargetTotal = calorieProfile?.total || 2000;
+      const otherSlots = prev.mealSlots.filter((s) => s !== slotId);
+      const unlockedOtherSlots = otherSlots.filter((s) => !prev.lockedMeals[s]);
 
-      if (prev.mealSlots.length > 1) {
-        // Auto-balance logic for multiple meals
-        const unlockedSlots = prev.mealSlots.filter(s => s !== slotId && !prev.lockedMeals[s]);
-        const currentSumOfUnlocked = unlockedSlots.reduce((sum, s) => sum + (newCalories[s] || 0), 0);
-        const minPossibleSumOfUnlocked = unlockedSlots.length * 100;
-        
-        const maxIncrease = currentSumOfUnlocked - minPossibleSumOfUnlocked;
-        const currentVal = newCalories[slotId] || 0;
-        
-        validValue = Math.min(newValue, currentVal + maxIncrease);
-        validValue = Math.max(100, Math.min(calorieProfile?.total || 3000, validValue));
-        
+      const newCalories = { ...prev.mealCalories };
+
+      if (unlockedOtherSlots.length > 0) {
+        // Auto-balance against other unlocked slots so total never exceeds maxTargetTotal
+        const currentSumOfUnlocked = unlockedOtherSlots.reduce((sum, s) => sum + (newCalories[s] || 100), 0);
+        const minPossibleSumOfUnlocked = unlockedOtherSlots.length * 100;
+        const maxIncrease = Math.max(0, currentSumOfUnlocked - minPossibleSumOfUnlocked);
+
+        const currentVal = newCalories[slotId] || 100;
+        let validValue = Math.min(newValue, currentVal + maxIncrease);
+        validValue = Math.max(100, Math.min(maxTargetTotal, validValue));
+
         const diff = validValue - currentVal;
         newCalories[slotId] = validValue;
 
-        if (unlockedSlots.length > 0) {
-          const diffPerSlot = Math.round(diff / unlockedSlots.length);
+        if (diff !== 0) {
           let remainingDiff = diff;
-          
-          for (let i = 0; i < unlockedSlots.length; i++) {
-            const s = unlockedSlots[i];
-            const adjustment = (i === unlockedSlots.length - 1) ? remainingDiff : diffPerSlot;
-            const adjustedValue = Math.max(100, (newCalories[s] || 0) - adjustment);
-            const actualAdjustment = (newCalories[s] || 0) - adjustedValue;
-            
+          const diffPerSlot = Math.round(diff / unlockedOtherSlots.length);
+
+          for (let i = 0; i < unlockedOtherSlots.length; i++) {
+            const s = unlockedOtherSlots[i];
+            const adjustment = i === unlockedOtherSlots.length - 1 ? remainingDiff : diffPerSlot;
+            const adjustedValue = Math.max(100, (newCalories[s] || 100) - adjustment);
+            const actualAdjustment = (newCalories[s] || 100) - adjustedValue;
             newCalories[s] = adjustedValue;
             remainingDiff -= actualAdjustment;
           }
         }
       } else {
-        // Only 1 slot: it can be adjusted independently up to total
-        validValue = Math.max(100, Math.min(calorieProfile?.total || 3000, newValue));
-        newCalories[slotId] = validValue;
+        // Only 1 slot active (or all others locked): cannot exceed maxTargetTotal
+        const otherSum = otherSlots.reduce((sum, s) => sum + (newCalories[s] || 0), 0);
+        const maxForThisSlot = Math.max(100, maxTargetTotal - otherSum);
+        newCalories[slotId] = Math.max(100, Math.min(maxForThisSlot, newValue));
       }
 
       return { ...prev, mealCalories: newCalories };
@@ -281,30 +405,22 @@ export default function OnboardingPage() {
     let newTotal = parseInt(newTotalStr) || 0;
     
     // Validation: Cannot exceed calorie profile total
-    const maxAllowed = calorieProfile?.total || 3000;
+    const maxAllowed = calorieProfile?.total || 2000;
     if (newTotal > maxAllowed) {
       newTotal = maxAllowed;
     }
+    const minAllowed = Math.max(100, formData.mealSlots.length * 100);
+    if (newTotal < minAllowed && newTotalStr !== "") {
+      newTotal = minAllowed;
+    }
 
     setFormData((prev) => {
-      const newCalories = { ...prev.mealCalories };
-      const oldTotal = Object.values(newCalories).reduce((sum, val) => sum + val, 0) || 1;
-      
-      let remaining = newTotal;
-      const slots = prev.mealSlots;
-      
-      for (let i = 0; i < slots.length; i++) {
-        const slot = slots[i];
-        if (i === slots.length - 1) {
-          newCalories[slot] = remaining; // last slot takes the remainder
-        } else {
-          const ratio = (newCalories[slot] || 0) / oldTotal;
-          const assigned = Math.round(newTotal * ratio);
-          newCalories[slot] = assigned;
-          remaining -= assigned;
-        }
-      }
-      
+      const newCalories = distributeCaloriesAcrossSlots(
+        prev.mealSlots,
+        newTotal,
+        prev.mealCalories,
+        prev.lockedMeals
+      );
       return { ...prev, mealCalories: newCalories };
     });
   };
@@ -366,19 +482,17 @@ export default function OnboardingPage() {
 
       if (calProfile) {
         setCalorieProfile(calProfile);
-        setFormData(prev => {
-          const newCalories = { ...prev.mealCalories };
-          if (prev.mealSlots.length > 0) {
-            const perSlot = Math.round(calProfile.total / (prev.mealSlots.length || 1));
-            prev.mealSlots.forEach((slot) => {
-              if (!newCalories[slot] || newCalories[slot] === 500) {
-                newCalories[slot] = perSlot;
-              }
-            });
-          }
+        setFormData((prev) => {
+          const slots = prev.mealSlots.length > 0 ? prev.mealSlots : ["LUNCH"];
           return {
             ...prev,
-            mealCalories: newCalories
+            mealSlots: slots,
+            mealCalories: distributeCaloriesAcrossSlots(
+              slots,
+              calProfile.total,
+              prev.mealCalories,
+              prev.lockedMeals
+            ),
           };
         });
         setStep(3); // Go to Calorie Profile
@@ -468,7 +582,39 @@ export default function OnboardingPage() {
         mealSlots: formData.mealSlots,
       });
 
-      const fetchedPlans = (data && data.success && Array.isArray(data.plans)) ? data.plans : [];
+      let fetchedPlans = (data && data.success && Array.isArray(data.plans)) ? data.plans : [];
+
+      // Strict client-side filter: only keep plans whose included_meal_slots match formData.mealSlots
+      if (formData.mealSlots && formData.mealSlots.length > 0 && fetchedPlans.length > 0) {
+        const normTarget = new Set(
+          formData.mealSlots.map(s => {
+            const lower = s.toLowerCase();
+            if (lower.includes("fast") || lower.includes("break")) return "breakfast";
+            if (lower.includes("lunch")) return "lunch";
+            if (lower.includes("din")) return "dinner";
+            if (lower.includes("snack")) return "snack";
+            return lower;
+          })
+        );
+        fetchedPlans = fetchedPlans.filter((p: any) => {
+          const planSlots = new Set(
+            (p.included_meal_slots || []).map((s: string) => {
+              const lower = s.toLowerCase();
+              if (lower.includes("fast") || lower.includes("break")) return "breakfast";
+              if (lower.includes("lunch")) return "lunch";
+              if (lower.includes("din")) return "dinner";
+              if (lower.includes("snack")) return "snack";
+              return lower;
+            })
+          );
+          if (planSlots.size !== normTarget.size) return false;
+          for (const s of normTarget) {
+            if (!planSlots.has(s)) return false;
+          }
+          return true;
+        });
+      }
+
       setPlans(fetchedPlans);
 
       if (fetchedPlans.length > 0) {
@@ -1331,8 +1477,8 @@ export default function OnboardingPage() {
                         className="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-primary rounded-full transition-transform duration-300 ease-out"
                         style={{ transform: formData.planDuration === "WEEKLY" ? "translateX(0)" : "translateX(100%)" }}
                      />
-                     <button type="button" onClick={() => updateField("planDuration", "WEEKLY")} className={`relative z-10 flex-1 py-3 text-xs font-bold tracking-widest rounded-full transition-colors duration-300 ${formData.planDuration === "WEEKLY" ? "text-white" : "text-gray-400 hover:text-white"}`}>WEEKLY</button>
-                     <button type="button" onClick={() => updateField("planDuration", "MONTHLY")} className={`relative z-10 flex-1 py-3 text-xs font-bold tracking-widest rounded-full transition-colors duration-300 ${formData.planDuration === "MONTHLY" ? "text-white" : "text-gray-400 hover:text-white"}`}>MONTHLY</button>
+                     <button type="button" onClick={() => handleDurationChange("WEEKLY")} className={`relative z-10 flex-1 py-3 text-xs font-bold tracking-widest rounded-full transition-colors duration-300 ${formData.planDuration === "WEEKLY" ? "text-white" : "text-gray-400 hover:text-white"}`}>WEEKLY</button>
+                     <button type="button" onClick={() => handleDurationChange("MONTHLY")} className={`relative z-10 flex-1 py-3 text-xs font-bold tracking-widest rounded-full transition-colors duration-300 ${formData.planDuration === "MONTHLY" ? "text-white" : "text-gray-400 hover:text-white"}`}>MONTHLY</button>
                   </div>
                   
                   <div className="mt-3 px-3 py-1 bg-[#10B981]/10 border border-[#10B981] text-[#10B981] text-[10px] font-bold rounded-full uppercase tracking-widest transition-all duration-300 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
@@ -1344,23 +1490,48 @@ export default function OnboardingPage() {
                 <div>
                   <h3 className="text-[11px] font-bold text-[#E6D0BA]/80 uppercase tracking-widest mb-4">Frequency</h3>
                   <div className="relative flex p-1 bg-[#151515] rounded-2xl border border-gray-800/60">
-                    {/* Sliding Pill */}
-                    <div 
-                       className={`absolute inset-y-1 left-1 w-[calc(33.333%-2.66px)] rounded-xl transition-all duration-300 ease-out ${
-                         formData.planFrequency === "5 DAYS" ? "bg-[#4CAF50] shadow-[0_0_15px_rgba(76,175,80,0.3)]" :
-                         formData.planFrequency === "6 DAYS" ? "bg-[#EAB308] shadow-[0_0_15px_rgba(234,179,8,0.3)]" :
-                         "bg-[#F97316] shadow-[0_0_15px_rgba(249,115,22,0.3)]"
-                       }`}
-                       style={{ 
-                         transform: formData.planFrequency === "5 DAYS" ? "translateX(0)" : 
-                                    formData.planFrequency === "6 DAYS" ? "translateX(100%)" : "translateX(200%)" 
-                       }}
-                    />
-                    {["5 DAYS", "6 DAYS", "7 DAYS"].map(freq => (
-                      <button key={freq} type="button" onClick={() => updateField("planFrequency", freq)} className={`relative z-10 flex-1 py-4 text-sm font-bold tracking-wider rounded-xl transition-colors duration-300 ${formData.planFrequency === freq ? "text-white" : "text-gray-400 hover:text-white"}`}>
-                        {freq}
-                      </button>
-                    ))}
+                    {(() => {
+                      const currentFrequencies = formData.planDuration === "MONTHLY"
+                        ? [
+                            { id: "22 DAYS", label: "22 DAYS", sub: "5 Days / wk" },
+                            { id: "26 DAYS", label: "26 DAYS", sub: "6 Days / wk" },
+                            { id: "30 DAYS", label: "30 DAYS", sub: "7 Days / wk" },
+                          ]
+                        : [
+                            { id: "5 DAYS", label: "5 DAYS", sub: "5 Days / wk" },
+                            { id: "6 DAYS", label: "6 DAYS", sub: "6 Days / wk" },
+                            { id: "7 DAYS", label: "7 DAYS", sub: "7 Days / wk" },
+                          ];
+
+                      const selectedFreqIndex = Math.max(0, currentFrequencies.findIndex(f => f.id === formData.planFrequency));
+
+                      return (
+                        <>
+                          {/* Sliding Pill */}
+                          <div 
+                             className={`absolute inset-y-1 left-1 w-[calc(33.333%-2.66px)] rounded-xl transition-all duration-300 ease-out ${
+                               selectedFreqIndex === 0 ? "bg-[#4CAF50] shadow-[0_0_15px_rgba(76,175,80,0.3)]" :
+                               selectedFreqIndex === 1 ? "bg-[#EAB308] shadow-[0_0_15px_rgba(234,179,8,0.3)]" :
+                               "bg-[#F97316] shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+                             }`}
+                             style={{ 
+                               transform: `translateX(${selectedFreqIndex * 100}%)`
+                             }}
+                          />
+                          {currentFrequencies.map(freq => (
+                            <button
+                              key={freq.id}
+                              type="button"
+                              onClick={() => updateField("planFrequency", freq.id)}
+                              className={`relative z-10 flex-1 py-3 px-2 text-center rounded-xl transition-colors duration-300 ${formData.planFrequency === freq.id ? "text-white" : "text-gray-400 hover:text-white"}`}
+                            >
+                              <span className="block text-sm font-bold tracking-wider">{freq.label}</span>
+                              <span className="block text-[10px] opacity-75 font-medium">{freq.sub}</span>
+                            </button>
+                          ))}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -1413,6 +1584,8 @@ export default function OnboardingPage() {
                       <div className="relative flex items-center justify-center group">
                         <input
                           type="number"
+                          min={Math.max(100, formData.mealSlots.length * 100)}
+                          max={calorieProfile?.total || 3000}
                           value={getTotalPurchasedCalories() || ""}
                           onChange={(e) => handleTotalCalorieChange(e.target.value)}
                           className="w-48 bg-transparent text-white text-4xl font-black font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-xl transition-all hover:bg-white/5 py-2"
@@ -1440,6 +1613,10 @@ export default function OnboardingPage() {
                       }).map((slotId) => {
                         const isLocked = formData.lockedMeals[slotId];
                         const showLock = formData.mealSlots.length > 1;
+                        const otherSlotsMinSum = formData.mealSlots
+                          .filter((s) => s !== slotId)
+                          .reduce((sum, s) => sum + (formData.lockedMeals[s] ? (formData.mealCalories[s] || 100) : 100), 0);
+                        const slotMax = Math.max(100, (calorieProfile?.total || 2000) - otherSlotsMinSum);
                         return (
                           <div key={slotId} className="flex flex-col gap-2">
                             <div className="flex justify-between items-center">
@@ -1463,7 +1640,7 @@ export default function OnboardingPage() {
                             <input 
                               type="range" 
                               min="100" 
-                              max={calorieProfile?.total || 3000} 
+                              max={slotMax} 
                               step="10"
                               value={formData.mealCalories?.[slotId] || 0}
                               onChange={(e) => handleMealCalorieChange(slotId, parseInt(e.target.value))}
@@ -1878,7 +2055,7 @@ export default function OnboardingPage() {
                   Plan Locked In!
                 </h2>
                 <p className="text-gray-300 text-base md:text-lg mb-8 leading-relaxed max-w-lg mx-auto">
-                  Our team will connect with you at <span className="text-[#FFD700] font-bold">{formData.phone}</span> within 24 hours to confirm your delivery address and schedule.
+                  Our team will connect with you at <span className="text-[#FFD700] font-bold">{formData.phone}</span> within 24 hours to confirm your delivery address,meal plan and schedule.
                 </p>
 
                 {/* Summary Card */}

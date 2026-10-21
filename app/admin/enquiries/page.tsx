@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronLeft, ChevronRight, Eye, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Eye, RefreshCw, Trash2 } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { BowlLoader } from "@/components/admin/BowlLoader";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { endpoints } from "@/lib/apiService";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -63,6 +64,15 @@ export default function EnquiriesPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"" | EnquiryStatus>("");
   const [error, setError] = useState("");
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    item: EnquiryItem | null;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    item: null,
+    isDeleting: false,
+  });
   const totalPages = Math.max(1, Math.ceil(total / 20));
 
   const loadEnquiries = useCallback(async () => {
@@ -93,6 +103,21 @@ export default function EnquiriesPage() {
       setError(updateError instanceof Error ? updateError.message : "Could not update enquiry status.");
     } finally {
       setUpdating(null);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteModal.item) return;
+    setDeleteModal((prev) => ({ ...prev, isDeleting: true }));
+    setError("");
+    try {
+      await endpoints.enquiries.delete(deleteModal.item.ulid);
+      setDeleteModal({ isOpen: false, item: null, isDeleting: false });
+      await loadEnquiries();
+    } catch (delError: unknown) {
+      console.error("Failed to delete enquiry:", delError);
+      setError(delError instanceof Error ? delError.message : "Could not delete enquiry.");
+      setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
     }
   }
 
@@ -160,7 +185,18 @@ export default function EnquiriesPage() {
                       {item.email ? <a href={`mailto:${item.email}`} className="break-all text-neutral-700 hover:text-[#6A0FAD]">{item.email}</a> : <span className="text-neutral-400">No email provided</span>}
                     </div>
                     <div className="mt-4 flex items-center justify-between gap-3 border-t border-neutral-100 pt-3">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Status</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Status</span>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteModal({ isOpen: true, item, isDeleting: false })}
+                          className="inline-flex items-center justify-center rounded-lg p-1.5 text-neutral-400 transition hover:bg-red-50 hover:text-red-600"
+                          title="Delete enquiry"
+                          aria-label={`Delete enquiry from ${item.name}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                       <EnquiryStatusSelect item={item} disabled={updating === item.ulid} onChange={(status) => void updateStatus(item.ulid, status)} />
                     </div>
                   </article>
@@ -170,10 +206,28 @@ export default function EnquiriesPage() {
               {/* Fixed column widths and centered status control keep desktop rows aligned. */}
               <div className="hidden overflow-x-auto rounded-xl bg-white xl:block">
                 <table className="w-full table-fixed text-left">
-                  <colgroup><col className="w-[16%]" /><col className="w-[12%]" /><col className="w-[16%]" /><col className="w-[16%]" /><col className="w-[12%]" /><col className="w-[14%]" /><col className="w-[14%]" /></colgroup>
+                  <colgroup>
+                    <col className="w-[15%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[11%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[8%]" />
+                  </colgroup>
                   <thead className="sticky top-0 z-10 bg-neutral-50">
                     <tr className="border-b border-neutral-100">
-                      {["Name", "Phone", "Email", "Plan Interest", "Message", "Status", "Date"].map((label) => <th key={label} className={`px-3 py-4 text-xs font-bold uppercase tracking-wider text-neutral-500 xl:px-4 ${label === "Status" || label === "Date" ? "text-center" : "text-left"}`}>{label}</th>)}
+                      {["Name", "Phone", "Email", "Plan Interest", "Message", "Status", "Date", "Action"].map((label) => (
+                        <th
+                          key={label}
+                          className={`px-3 py-4 text-xs font-bold uppercase tracking-wider text-neutral-500 xl:px-4 ${
+                            label === "Status" || label === "Date" || label === "Action" ? "text-center" : "text-left"
+                          }`}
+                        >
+                          {label}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
@@ -201,6 +255,17 @@ export default function EnquiriesPage() {
                           </div>
                         </td>
                         <td className="px-3 py-4 text-center align-middle text-sm text-neutral-600 xl:px-4">{item.created_at ? new Date(item.created_at).toLocaleDateString() : "—"}</td>
+                        <td className="px-3 py-4 text-center align-middle xl:px-4">
+                          <button
+                            type="button"
+                            onClick={() => setDeleteModal({ isOpen: true, item, isDeleting: false })}
+                            className="inline-flex items-center justify-center rounded-lg p-2 text-neutral-400 transition hover:bg-red-50 hover:text-red-600"
+                            title="Delete enquiry"
+                            aria-label={`Delete enquiry from ${item.name}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -218,6 +283,26 @@ export default function EnquiriesPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, item: null, isDeleting: false })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Enquiry"
+        message={
+          deleteModal.item ? (
+            <span>
+              Are you sure you want to delete the enquiry from{" "}
+              <strong className="text-emerald-500">{deleteModal.item.name}</strong>? This action cannot be undone.
+            </span>
+          ) : (
+            "Are you sure you want to delete this enquiry?"
+          )
+        }
+        confirmText="Delete"
+        type="delete"
+        isLoading={deleteModal.isDeleting}
+      />
     </div>
   );
 }

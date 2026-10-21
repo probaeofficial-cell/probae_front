@@ -934,6 +934,9 @@ export const endpoints = {
     updateStatus: async (ulid: string, status: string): Promise<any> => {
       return await api.patch<any>(`/enquiries/${ulid}/status`, { status });
     },
+    delete: async (ulid: string): Promise<any> => {
+      return await api.del<any>(`/enquiries/${ulid}`);
+    },
   },
 };
 

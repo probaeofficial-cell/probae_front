@@ -28,10 +28,12 @@ import {
   Scale,
   Award,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { BowlLoader } from "@/components/admin/BowlLoader";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { endpoints } from "@/lib/apiService";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -314,6 +316,8 @@ export default function EnquiryDetailPage() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [showRawMessage, setShowRawMessage] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadEnquiry = useCallback(async () => {
     if (!ulid) return;
@@ -367,6 +371,20 @@ export default function EnquiryDetailPage() {
     navigator.clipboard.writeText(summary);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleDeleteEnquiry = async () => {
+    if (!enquiry) return;
+    setIsDeleting(true);
+    try {
+      await endpoints.enquiries.delete(enquiry.ulid);
+      setIsDeleteOpen(false);
+      router.push("/admin/enquiries");
+    } catch (err: unknown) {
+      console.error("Failed to delete enquiry:", err);
+      alert(err instanceof Error ? err.message : "Failed to delete enquiry");
+      setIsDeleting(false);
+    }
   };
 
   if (authLoading) {
@@ -457,6 +475,13 @@ export default function EnquiryDetailPage() {
               title="Refresh"
             >
               <RefreshCw className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsDeleteOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-600 shadow-sm transition hover:bg-red-100"
+            >
+              <Trash2 className="h-4 w-4" /> Delete
             </button>
           </div>
         </div>
@@ -974,6 +999,22 @@ export default function EnquiryDetailPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleDeleteEnquiry}
+        title="Delete Enquiry"
+        message={
+          <span>
+            Are you sure you want to delete the enquiry from{" "}
+            <strong className="text-emerald-500">{enquiry.name}</strong>? This action cannot be undone.
+          </span>
+        }
+        confirmText="Delete"
+        type="delete"
+        isLoading={isDeleting}
+      />
     </div>
   );
 }
