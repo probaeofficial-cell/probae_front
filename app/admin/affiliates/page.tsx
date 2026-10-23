@@ -15,7 +15,7 @@ import {
   TrendingUp,
   TrendingDown,
   ExternalLink,
-  Scale,
+  Clock,
 } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -34,6 +34,9 @@ export default function AffiliatesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Period filter for the table: "this_month" | "all_time"
+  const [period, setPeriod] = useState<"this_month" | "all_time">("this_month");
+
   // Modals state
   const [isAffiliateModalOpen, setIsAffiliateModalOpen] = useState(false);
   const [isAssignReferralModalOpen, setIsAssignReferralModalOpen] = useState(false);
@@ -41,14 +44,16 @@ export default function AffiliatesPage() {
 
   const [previewAffiliateUlid, setPreviewAffiliateUlid] = useState<string | null>(null);
 
-  const fetchAffiliates = async (pageNum: number) => {
+  const fetchAffiliates = async (pageNum: number, overridePeriod?: string) => {
     setLoading(true);
+    const activePeriod = overridePeriod || period;
     try {
       const res = await endpoints.customers.list({
         page: pageNum,
         limit: 10,
         is_affiliate: true,
         search,
+        period: activePeriod,
       });
       const data = res as any;
       if (data.success) {
@@ -76,6 +81,12 @@ export default function AffiliatesPage() {
       fetchAffiliates(page);
     }
   }, [page]);
+
+  const handlePeriodToggle = (p: "this_month" | "all_time") => {
+    setPeriod(p);
+    setPage(1);
+    fetchAffiliates(1, p);
+  };
 
   // Aggregate stats from current list
   const totalReferralsSum = affiliates.reduce((acc, a) => acc + (a.referral_count || 0), 0);
@@ -118,7 +129,9 @@ export default function AffiliatesPage() {
                 <DollarSign className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Total Received</p>
+                <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                  Total Received ({period === "this_month" ? "This Month" : "All Time"})
+                </p>
                 <p className="text-2xl font-black text-[#16A34A]">
                   ₹{Number(totalReceivedSum).toLocaleString("en-IN", { minimumFractionDigits: 0 })}
                 </p>
@@ -126,14 +139,40 @@ export default function AffiliatesPage() {
             </div>
           </div>
 
-          {/* Action Row */}
+          {/* Action Row & Period Filter */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4 shrink-0">
-            <ProbaeSearch
-              value={search}
-              onChange={setSearch}
-              placeholder="Search affiliates by name, phone or email..."
-              isLoading={loading}
-            />
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              <ProbaeSearch
+                value={search}
+                onChange={setSearch}
+                placeholder="Search affiliates by name, phone or email..."
+                isLoading={loading}
+              />
+
+              {/* Table Period Selector */}
+              <div className="flex items-center gap-1 bg-neutral-100 p-1 rounded-2xl border border-neutral-200/60">
+                <button
+                  onClick={() => handlePeriodToggle("this_month")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    period === "this_month"
+                      ? "bg-white text-neutral-900 shadow-sm"
+                      : "text-neutral-500 hover:text-neutral-800"
+                  }`}
+                >
+                  This Month
+                </button>
+                <button
+                  onClick={() => handlePeriodToggle("all_time")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    period === "all_time"
+                      ? "bg-white text-neutral-900 shadow-sm"
+                      : "text-neutral-500 hover:text-neutral-800"
+                  }`}
+                >
+                  All Time
+                </button>
+              </div>
+            </div>
 
             <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
               <button
@@ -170,10 +209,10 @@ export default function AffiliatesPage() {
                     Referrals
                   </th>
                   <th className="px-4 py-3.5 text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                    Affiliate Food Cost
+                    Affiliate Food Cost ({period === "this_month" ? "Month" : "All"})
                   </th>
                   <th className="px-4 py-3.5 text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                    Total Received
+                    Total Received ({period === "this_month" ? "Month" : "All"})
                   </th>
                   <th className="px-4 py-3.5 text-xs font-bold text-neutral-500 uppercase tracking-wider text-center">
                     Net Balance
@@ -265,7 +304,7 @@ export default function AffiliatesPage() {
                           <p className="font-black text-[#16A34A]">
                             ₹{Number(totalRec).toLocaleString("en-IN", { minimumFractionDigits: 0 })}
                           </p>
-                          <p className="text-[10px] text-neutral-400">Total customer deposits</p>
+                          <p className="text-[10px] text-neutral-400">Deposits in window</p>
                         </td>
 
                         {/* Net Balance / ROI */}

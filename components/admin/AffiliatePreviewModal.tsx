@@ -19,7 +19,8 @@ import {
   Trash2,
   DollarSign,
   AlertCircle,
-  CheckCircle2,
+  Clock,
+  Info,
 } from "lucide-react";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
@@ -43,16 +44,26 @@ export function AffiliatePreviewModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Period Filter: "this_month" | "current_plan" | "all_time" | "custom"
+  const [period, setPeriod] = useState<"this_month" | "current_plan" | "all_time" | "custom">("this_month");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [customerToUnlink, setCustomerToUnlink] = useState<any>(null);
   const [unlinkLoading, setUnlinkLoading] = useState(false);
 
-  const fetchPreview = async () => {
+  const fetchPreview = async (overridePeriod?: string) => {
     if (!affiliateUlid) return;
     setLoading(true);
     setError("");
+    const activePeriod = overridePeriod || period;
     try {
-      const res = await endpoints.customers.getAffiliatePreview(affiliateUlid);
+      const res = await endpoints.customers.getAffiliatePreview(affiliateUlid, {
+        period: activePeriod,
+        date_from: activePeriod === "custom" ? dateFrom || undefined : undefined,
+        date_to: activePeriod === "custom" ? dateTo || undefined : undefined,
+      });
       setData(res);
     } catch (err: any) {
       console.error("Failed to fetch affiliate preview", err);
@@ -68,9 +79,14 @@ export function AffiliatePreviewModal({
     } else {
       setData(null);
     }
-  }, [isOpen, affiliateUlid]);
+  }, [isOpen, affiliateUlid, period]);
 
   if (!isOpen) return null;
+
+  const handlePeriodChange = (newPeriod: "this_month" | "current_plan" | "all_time" | "custom") => {
+    setPeriod(newPeriod);
+    fetchPreview(newPeriod);
+  };
 
   const handleUnlink = async () => {
     if (!customerToUnlink || !affiliateUlid) return;
@@ -91,6 +107,7 @@ export function AffiliatePreviewModal({
   const costs = data?.costs;
   const referralsSummary = data?.referrals_summary;
   const referrals = data?.referrals || [];
+  const filterMeta = data?.filter;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -150,18 +167,112 @@ export function AffiliatePreviewModal({
           </div>
         </div>
 
+        {/* Filter Navigation Bar */}
+        <div className="bg-white border-b border-neutral-200 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 bg-neutral-100 p-1 rounded-2xl">
+            <button
+              onClick={() => handlePeriodChange("this_month")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                period === "this_month"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-800"
+              }`}
+            >
+              This Month
+            </button>
+            <button
+              onClick={() => handlePeriodChange("current_plan")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                period === "current_plan"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-800"
+              }`}
+            >
+              Current Plan
+            </button>
+            <button
+              onClick={() => handlePeriodChange("all_time")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                period === "all_time"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-800"
+              }`}
+            >
+              All Time
+            </button>
+            <button
+              onClick={() => handlePeriodChange("custom")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                period === "custom"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-800"
+              }`}
+            >
+              Custom Range
+            </button>
+          </div>
+
+          {period === "custom" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="text-xs px-2.5 py-1.5 border border-neutral-200 rounded-xl bg-white"
+              />
+              <span className="text-xs text-neutral-400">to</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="text-xs px-2.5 py-1.5 border border-neutral-200 rounded-xl bg-white"
+              />
+              <button
+                onClick={() => fetchPreview("custom")}
+                className="px-3 py-1.5 bg-[#6A0FAD] text-white text-xs font-bold rounded-xl"
+              >
+                Apply
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 text-xs text-neutral-500">
+            <Clock className="w-3.5 h-3.5 text-[#6A0FAD]" />
+            <span>
+              Window: <strong className="text-neutral-800">{filterMeta?.label || "This Month"}</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* Informative Explanation of Cost Calculation */}
+        <div className="px-6 py-2 bg-purple-50/60 border-b border-purple-100/60 flex items-center gap-2 text-[11px] text-purple-900/80 shrink-0">
+          <Info className="w-3.5 h-3.5 text-[#6A0FAD] shrink-0" />
+          <span>
+            {period === "this_month" &&
+              "Showing food orders fulfilled this month in IST vs. cash deposits received from referrals this month."}
+            {period === "current_plan" &&
+              "Showing the active plan subscription cost (Fixed vs Raw+Pack) vs. referral deposits received during this plan duration."}
+            {period === "all_time" &&
+              "Showing lifetime historical food orders & plans consumed vs. all deposits ever received from referred customers."}
+            {period === "custom" &&
+              "Showing affiliate food costs and referral deposits received within the selected date window."}
+          </span>
+        </div>
+
         {/* Content Body */}
         {loading ? (
           <div className="p-16 flex flex-col items-center justify-center space-y-4">
             <BowlLoader className="w-10 h-10 text-[#6A0FAD]" />
-            <p className="text-sm font-semibold text-neutral-500">Calculating affiliate costs & referrals...</p>
+            <p className="text-sm font-semibold text-neutral-500">
+              Calculating costs & referrals for {filterMeta?.label || period}...
+            </p>
           </div>
         ) : error ? (
           <div className="p-12 text-center space-y-3">
             <AlertCircle className="w-10 h-10 text-red-500 mx-auto" />
             <p className="text-sm font-bold text-neutral-800">{error}</p>
             <button
-              onClick={fetchPreview}
+              onClick={() => fetchPreview()}
               className="px-4 py-2 bg-neutral-900 text-white rounded-xl text-xs font-bold"
             >
               Retry
@@ -175,7 +286,7 @@ export function AffiliatePreviewModal({
               <div className="bg-white rounded-2xl p-4 border border-neutral-200/80 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                    Affiliate Food Cost
+                    Affiliate Food Cost ({filterMeta?.period === "current_plan" ? "Per Plan" : "Period Cost"})
                   </span>
                   <div className="w-7 h-7 rounded-lg bg-orange-100 text-[#F97316] flex items-center justify-center">
                     <Utensils className="w-3.5 h-3.5" />
@@ -278,7 +389,7 @@ export function AffiliatePreviewModal({
                       </p>
                     </div>
                     <span className="text-xs font-semibold px-2.5 py-1 bg-neutral-100 rounded-full text-neutral-600">
-                      Orders + Plan
+                      {period === "current_plan" ? "Per Plan Breakdown" : "Period Order Cost"}
                     </span>
                   </div>
 
@@ -289,7 +400,7 @@ export function AffiliatePreviewModal({
                         <div className="w-6 h-6 rounded-lg bg-purple-200/60 text-[#6A0FAD] flex items-center justify-center">
                           <Layers className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-xs font-bold text-purple-900">Fixed Cost Component</span>
+                        <span className="text-xs font-bold text-purple-900">Fixed Price Component</span>
                       </div>
                       <span className="text-base font-black text-[#6A0FAD]">
                         ₹{Number(costs?.combined?.fixed_price || 0).toFixed(2)}
@@ -330,29 +441,77 @@ export function AffiliatePreviewModal({
                     Cost Sources Breakdown
                   </h4>
 
-                  {/* Plan Subscription */}
-                  <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                  {/* Plan Subscriptions in Window */}
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-neutral-400" />
+                      <span className="text-xs font-bold text-neutral-700 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-[#6A0FAD]" />
+                        Plans in {filterMeta?.label || "Window"} ({costs?.plan_cost?.plans?.length || (costs?.plan_cost?.has_plan ? 1 : 0)})
+                      </span>
+                      {costs?.plan_cost?.total_bowls ? (
+                        <span className="text-[10px] text-neutral-400 font-medium">
+                          {costs.plan_cost.total_bowls} scheduled meals total
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {costs?.plan_cost?.plans && costs.plan_cost.plans.length > 0 ? (
+                      costs.plan_cost.plans.map((p: any, idx: number) => (
+                        <div
+                          key={p.ulid || idx}
+                          className="p-3 bg-neutral-50 rounded-xl border border-neutral-100 flex items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-bold text-neutral-900 truncate">{p.name}</p>
+                              {p.is_active ? (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 shrink-0">
+                                  Active
+                                </span>
+                              ) : p.is_expired ? (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 shrink-0">
+                                  Expired in Month
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-neutral-100 text-neutral-600 shrink-0">
+                                  {p.status}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-neutral-500 mt-0.5">
+                              {p.start_date ? new Date(p.start_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "—"}
+                              {" → "}
+                              {p.end_date ? new Date(p.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "Ongoing"}
+                              {p.total_bowls_allocated ? ` • ${p.total_bowls_allocated} meals` : ""}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs font-bold text-neutral-900">
+                              ₹{Number(p.total_price_paid || 0).toLocaleString("en-IN", { minimumFractionDigits: 0 })}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-100 flex items-center justify-between">
                         <div>
                           <p className="text-xs font-bold text-neutral-900">
-                            {costs?.plan_cost?.has_plan ? costs.plan_cost.plan_name : "No Active Plan"}
+                            {costs?.plan_cost?.has_plan ? costs.plan_cost.plan_name : "No Plan in Period"}
                           </p>
                           <p className="text-[10px] text-neutral-500">
-                            {costs?.plan_cost?.total_bowls || 0} scheduled meals
+                            {costs?.plan_cost?.total_bowls || 0} scheduled meals in plan
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-bold text-neutral-900">
+                            ₹{Number(costs?.plan_cost?.total_price || 0).toFixed(2)}
+                          </p>
+                          <p className="text-[10px] text-neutral-500">
+                            Fixed: ₹{Number(costs?.plan_cost?.fixed_price || 0).toFixed(0)} | Raw: ₹{Number(costs?.plan_cost?.raw_and_packaging_price || 0).toFixed(0)}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs font-bold text-neutral-900">
-                          ₹{Number(costs?.plan_cost?.total_price || 0).toFixed(2)}
-                        </p>
-                        <p className="text-[10px] text-neutral-500">
-                          Fixed: ₹{Number(costs?.plan_cost?.fixed_price || 0).toFixed(0)} | Raw: ₹{Number(costs?.plan_cost?.raw_and_packaging_price || 0).toFixed(0)}
-                        </p>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Executed Orders */}
@@ -363,7 +522,7 @@ export function AffiliatePreviewModal({
                         <div>
                           <p className="text-xs font-bold text-neutral-900">Executed Daily Orders</p>
                           <p className="text-[10px] text-neutral-500">
-                            {costs?.orders_cost?.orders_count || 0} orders fulfilled
+                            {costs?.orders_cost?.orders_count || 0} orders in this window
                           </p>
                         </div>
                       </div>
@@ -405,13 +564,13 @@ export function AffiliatePreviewModal({
                 <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-sm flex items-center justify-between">
                   <div>
                     <p className="text-xs text-white/80 font-bold uppercase tracking-wider">
-                      Total Money Received from Referrals
+                      Total Money Received from Referrals ({filterMeta?.label || period})
                     </p>
                     <p className="text-2xl font-black mt-1">
                       ₹{Number(referralsSummary?.total_received || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs text-white/90 mt-1">
-                      Across {referralsSummary?.total_orders_count || 0} delivered meal orders (₹{Number(referralsSummary?.total_delivered_revenue || 0).toFixed(0)} order volume)
+                      Across {referralsSummary?.total_orders_count || 0} delivered meal orders (₹{Number(referralsSummary?.total_delivered_revenue || 0).toFixed(0)} volume in window)
                     </p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
@@ -470,9 +629,22 @@ export function AffiliatePreviewModal({
                                   {ref.status}
                                 </span>
                               </div>
-                              <p className="text-xs text-neutral-500 truncate">
-                                {ref.phone} • Plan: {ref.active_plan_name || "None"}
-                              </p>
+                              <div className="text-xs text-neutral-500 flex items-center gap-1.5 flex-wrap">
+                                <span>{ref.phone}</span>
+                                <span>•</span>
+                                <span>Plan:</span>
+                                {ref.plan_status === "EXPIRED" || ref.active_plan_name?.includes("(Expired)") ? (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                    {ref.active_plan_name}
+                                  </span>
+                                ) : ref.plan_status === "ACTIVE" ? (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {ref.active_plan_name}
+                                  </span>
+                                ) : (
+                                  <span className="text-neutral-400">{ref.active_plan_name || "None"}</span>
+                                )}
+                              </div>
                             </div>
                           </div>
 

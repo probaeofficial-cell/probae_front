@@ -290,6 +290,10 @@ The central operations screen features:
     - Aggregates total cash deposits/payments received from customers registered under this affiliate.
     - Lists all individual referred customers, active plans, order volumes, and individual payment totals.
     - Provides one-click action to unassign or assign new customers.
+  - **Period Filtering & Plan Overlap Tracking (`This Month`)**:
+    - When filtered to "This Month", plans are not restricted to current active status.
+    - Both plans that are currently **active** and those that **expired within the current month** are displayed with respective status badges (`Active` green, `Expired in Month` amber).
+    - Their costs and meal counts are accounted for in both the affiliate's own food cost and in the referred customers' plan status indicators.
   - **Net Balance & ROI**:
     - Direct equation: `Total Received from Referrals - Total Affiliate Food Cost = Net Profit Margin`.
 

@@ -822,6 +822,9 @@ export const endpoints = {
       if (params?.search) p.append("search", params.search);
       if (params?.is_affiliate !== undefined) p.append("is_affiliate", params.is_affiliate.toString());
       if (params?.plan_id) p.append("plan_id", params.plan_id.toString());
+      if (params?.period) p.append("period", params.period);
+      if (params?.date_from) p.append("date_from", params.date_from);
+      if (params?.date_to) p.append("date_to", params.date_to);
       if (params?.category) p.append("category", params.category);
       if (params?.duration) p.append("duration", params.duration);
       if (params?.days) p.append("days", params.days.toString());
@@ -855,7 +858,13 @@ export const endpoints = {
     legacyOrder: async (ulid: string, data: any) => await api.post(`/orders/customers/${ulid}/legacy-order`, data),
     updateLegacyOrder: async (ulid: string, orderUlid: string, data: any) => await api.put(`/orders/customers/${ulid}/legacy-order/${orderUlid}`, data),
     deleteLegacyOrder: async (ulid: string, orderUlid: string) => await api.delete(`/orders/customers/${ulid}/legacy-order/${orderUlid}`),
-    getAffiliatePreview: async (ulid: string): Promise<any> => await api.get(`/customers/affiliates/${ulid}/preview`),
+    getAffiliatePreview: async (ulid: string, params?: { period?: string; date_from?: string; date_to?: string }): Promise<any> => {
+      const p = new URLSearchParams();
+      if (params?.period) p.append("period", params.period);
+      if (params?.date_from) p.append("date_from", params.date_from);
+      if (params?.date_to) p.append("date_to", params.date_to);
+      return await api.get(`/customers/affiliates/${ulid}/preview?${p.toString()}`);
+    },
     assignReferral: async (affiliateUlid: string, customerUlid: string): Promise<any> =>
       await api.post(`/customers/affiliates/${affiliateUlid}/assign-referral`, { customer_ulid: customerUlid }),
     unassignReferral: async (affiliateUlid: string, customerUlid: string): Promise<any> =>
@@ -871,6 +880,9 @@ export const endpoints = {
       if (params?.search) p.append("search", params.search);
       if (params?.is_affiliate !== undefined) p.append("is_affiliate", params.is_affiliate.toString());
       if (params?.plan_id) p.append("plan_id", params.plan_id.toString());
+      if (params?.period) p.append("period", params.period);
+      if (params?.date_from) p.append("date_from", params.date_from);
+      if (params?.date_to) p.append("date_to", params.date_to);
       if (params?.category) p.append("category", params.category);
       if (params?.duration) p.append("duration", params.duration);
       if (params?.days) p.append("days", params.days.toString());
