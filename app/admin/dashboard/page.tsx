@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Header } from "@/components/admin/Header";
-import { TrendingUp, TrendingDown, ArrowUpRight, MoreHorizontal, Check, X, Phone, ArrowRight, ChevronDown, AlertTriangle, Settings } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Scale, MoreHorizontal, Check, X, Phone, ArrowRight, ChevronDown, AlertTriangle, Settings } from "lucide-react";
 
 // ─── Tiny sparkline SVG ───────────────────────────────────────────────────────
 function Sparkline({
@@ -673,66 +673,126 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Column 2: Customer Call (Elongated) */}
+            {/* Column 2: Monthly Financial Balance (Profit, Revenue, Expenses) */}
             <div
-              className="relative rounded-3xl overflow-hidden min-h-[390px] h-full shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer cell-fade-in"
+              className="bg-white border border-neutral-200/80 rounded-3xl p-5 sm:p-6 flex flex-col justify-between min-h-[390px] h-full shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cell-fade-in"
               style={{ animationDelay: "550ms" }}
             >
-              {/* Header overlaid on top of photo */}
-              <div className="absolute top-0 left-0 right-0 z-10 p-5">
-                <p className="text-white font-bold text-lg leading-tight drop-shadow-md">Customer Call</p>
-                <p className="text-white/80 text-xs mt-0.5 drop-shadow-sm">Facebook Leads</p>
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-[#6A0FAD]/10 text-[#6A0FAD] flex items-center justify-center font-bold">
+                    <Scale className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-neutral-900 leading-tight">Monthly Financial Balance</h3>
+                    <p className="text-[10px] text-neutral-400 font-medium">IST Indian Standard Time</p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-600 uppercase tracking-wider">
+                  {data?.monthly_financials?.month_name || "This Month"}
+                </span>
               </div>
 
-              {/* Full-bleed photo */}
-              {/* <img
-                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&h=520&q=80"
-                alt="Customer with headset"
-                className="w-full h-full object-cover object-top absolute inset-0"
-                style={{ minHeight: "390px" }}
-              /> */}
+              {/* ── Section 1 (Top Half): Total Profit This Month ── */}
+              <div className="bg-gradient-to-br from-[#6A0FAD] to-[#510b85] rounded-2xl p-4 sm:p-5 text-white my-3 shadow-md relative overflow-hidden">
+                {/* Decorative background glow */}
+                <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none" />
 
-              {/* Purple gradient overlay on top portion */}
-              {/* <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(180deg, rgba(124,38,217,0.75) 0%, rgba(124,38,217,0.4) 35%, transparent 60%)",
-                }}
-              /> */}
-
-              {/* Bottom white info panel pinned to bottom */}
-              <div className="absolute bottom-0 left-0 right-0 z-10 bg-white rounded-t-3xl px-4 pt-4 pb-4 shadow-2xl">
-                {/* Name + label */}
-                <div className="flex flex-col items-center mb-3">
-                  <p className="text-neutral-900 font-bold text-base leading-tight">John kelvin</p>
-                  <span className="text-neutral-400 text-[10px] font-semibold mt-0.5">Premium customer</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white/80 uppercase tracking-wider">
+                    Total Profit (This Month)
+                  </span>
+                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                    {data?.monthly_financials?.profit_margin_pct || 0}% Margin
+                  </span>
                 </div>
 
-                {/* Buttons */}
-                <div className="flex items-center justify-between gap-3">
-                  <button
-                    onClick={() => setCallAccepted(true)}
-                    className={`flex-1 text-xs font-bold px-4 py-2.5 rounded-full flex items-center justify-center gap-1.5 transition-all duration-200 ${
-                      callAccepted === true
-                        ? "bg-emerald-500 text-white scale-95"
-                        : "bg-[#7c26d9] text-white hover:bg-[#6b1fc4] hover:scale-[1.02]"
-                    }`}
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    Accept
-                  </button>
-                  <button
-                    onClick={() => setCallAccepted(false)}
-                    className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                      callAccepted === false
-                        ? "bg-red-500 border-red-500 text-white scale-95"
-                        : "border-neutral-200 text-neutral-400 hover:text-red-500 hover:border-red-400 hover:scale-105"
-                    }`}
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                <div className="flex items-baseline gap-2 mt-2">
+                  <span className="text-2xl sm:text-3xl font-black tracking-tight">
+                    ₹{(data?.monthly_financials?.profit || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
                 </div>
+
+                {/* Profit visual split bar */}
+                <div className="mt-3">
+                  <div className="flex justify-between items-center text-[10px] text-white/70 font-semibold mb-1">
+                    <span>Net Retained Margin</span>
+                    <span>
+                      {(data?.monthly_financials?.revenue || 0) > 0
+                        ? `${Math.min(100, Math.max(0, Math.round(((data?.monthly_financials?.profit || 0) / data.monthly_financials.revenue) * 100)))}% of Revenue`
+                        : "0%"}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-black/20 rounded-full overflow-hidden flex">
+                    <div
+                      style={{
+                        width: `${
+                          (data?.monthly_financials?.revenue || 0) > 0
+                            ? Math.min(100, Math.max(0, ((data?.monthly_financials?.profit || 0) / data.monthly_financials.revenue) * 100))
+                            : 0
+                        }%`,
+                      }}
+                      className="bg-emerald-400 h-full rounded-full transition-all duration-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Sections 2 & 3 (Bottom Half): Revenue & Expenses ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                {/* Section 2: Total Revenue (Includes Fixed Cost) */}
+                <div className="bg-[#f8f5fb] border border-[#6A0FAD]/15 rounded-2xl p-3.5 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1">
+                        <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" /> Revenue
+                      </span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    </div>
+                    <p className="text-base sm:text-lg font-black text-neutral-900 mt-0.5">
+                      ₹{(data?.monthly_financials?.revenue || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  {/* Fixed Cost Note */}
+                  <div className="mt-2.5 pt-2 border-t border-[#6A0FAD]/10 text-[10px] text-neutral-600 font-semibold leading-tight">
+                    <span className="text-neutral-400">Fixed Cost:</span>{" "}
+                    <span className="text-[#6A0FAD] font-bold">
+                      ₹{(data?.monthly_financials?.fixed_cost || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>{" "}
+                    included
+                  </div>
+                </div>
+
+                {/* Section 3: Total Expenses */}
+                <div className="bg-red-50/40 border border-red-100 rounded-2xl p-3.5 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1">
+                        <ArrowUpRight className="w-3.5 h-3.5 text-red-600" /> Expenses
+                      </span>
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                    </div>
+                    <p className="text-base sm:text-lg font-black text-red-600 mt-0.5">
+                      ₹{(data?.monthly_financials?.expense || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  {/* Expense sub-note */}
+                  <div className="mt-2.5 pt-2 border-t border-red-100 text-[10px] text-neutral-500 font-semibold leading-tight">
+                    Operating & material costs
+                  </div>
+                </div>
+              </div>
+
+              {/* Balance Summary Equation Strip */}
+              <div className="bg-neutral-50 border border-neutral-200/80 rounded-xl px-3.5 py-2 flex items-center justify-between text-[11px] font-bold text-neutral-600">
+                <span className="flex items-center gap-1.5 text-neutral-700">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Revenue − Expense = Profit</span>
+                </span>
+                <span className="text-emerald-700 font-black">
+                  Balanced
+                </span>
               </div>
             </div>
 
