@@ -541,5 +541,7 @@ export interface ExpenseCategory {
   ulid: string;
   name: string;
   description?: string;
+  requirement?: string | null;
+  monthly_budget?: number;
   is_active?: boolean;
 }

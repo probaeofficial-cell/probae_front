@@ -26,7 +26,7 @@ export default function ExpenseCategoriesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   
-  const [formData, setFormData] = useState({ name: "", description: "", monthly_budget: 0.0, is_active: true });
+  const [formData, setFormData] = useState({ name: "", description: "", requirement: "", monthly_budget: 0.0, is_active: true });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -62,10 +62,22 @@ export default function ExpenseCategoriesPage() {
   const handleOpenModal = (cat: any = null) => {
     if (cat) {
       setEditingCategory(cat);
-      setFormData({ name: cat.name, description: cat.description || "", monthly_budget: cat.monthly_budget || 0, is_active: cat.is_active });
+      setFormData({
+        name: cat.name,
+        description: cat.description || "",
+        requirement: cat.requirement || "",
+        monthly_budget: cat.monthly_budget || 0,
+        is_active: cat.is_active,
+      });
     } else {
       setEditingCategory(null);
-      setFormData({ name: "", description: "", monthly_budget: 0.0, is_active: true });
+      setFormData({
+        name: "",
+        description: "",
+        requirement: "",
+        monthly_budget: 0.0,
+        is_active: true,
+      });
     }
     setIsModalOpen(true);
   };
@@ -124,6 +136,7 @@ export default function ExpenseCategoriesPage() {
                 <tr className="border-b border-neutral-100 bg-neutral-50/50">
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Name</th>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Description</th>
+                  <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Requirement</th>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Monthly Budget</th>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase">Status</th>
                   <th className="py-4 px-6 text-xs font-bold text-neutral-500 uppercase text-right">Actions</th>
@@ -134,6 +147,15 @@ export default function ExpenseCategoriesPage() {
                   <tr key={c.ulid} className="hover:bg-neutral-50/30 transition-colors">
                     <td className="py-4 px-6 font-bold text-neutral-900">{c.name}</td>
                     <td className="py-4 px-6 text-sm text-neutral-500">{c.description || "-"}</td>
+                    <td className="py-4 px-6 text-sm text-neutral-600 font-medium">
+                      {c.requirement ? (
+                        <span className="inline-block max-w-[240px] truncate" title={c.requirement}>
+                          {c.requirement}
+                        </span>
+                      ) : (
+                        <span className="text-neutral-400">—</span>
+                      )}
+                    </td>
                     <td className="py-4 px-6 text-sm font-black text-neutral-700">₹{c.monthly_budget?.toFixed(2) || "0.00"}</td>
                     <td className="py-4 px-6">
                       {c.is_active ? <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-black bg-green-50 text-green-700"><CheckCircle className="w-3.5 h-3.5" /> Active</span> : <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-black bg-neutral-100 text-neutral-600"><XCircle className="w-3.5 h-3.5" /> Inactive</span>}
@@ -189,6 +211,10 @@ export default function ExpenseCategoriesPage() {
               <div>
                 <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Description</label>
                 <textarea value={formData.description} onChange={e => setFormData(p => ({...p, description: e.target.value}))} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD]" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Requirement</label>
+                <textarea placeholder="e.g. Receipt needed, prior approval, vendor contract..." value={formData.requirement} onChange={e => setFormData(p => ({...p, requirement: e.target.value}))} rows={2} className="w-full bg-[#f8f5fb] border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 focus:border-[#6A0FAD] resize-none" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Monthly Budget (₹)</label>

@@ -120,6 +120,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
     roles: ["ADMIN"],
     subItems: {
       dashboard: { label: "Dashboard", dotColor: "bg-purple-500", path: "/admin/expenses/dashboard" },
+      settlements: { label: "User Settlements", dotColor: "bg-emerald-500", path: "/admin/expenses/settlements" },
       categories: { label: "Categories", dotColor: "bg-orange-500", path: "/admin/expenses/categories" },
       logs: { label: "Expense Logs", dotColor: "bg-red-500", path: "/admin/expenses/logs" },
     },

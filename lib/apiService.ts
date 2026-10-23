@@ -301,7 +301,22 @@ export const endpoints = {
     create: (payload: any) => api.post('/expenses', payload),
     bulkCreate: (payload: any) => api.post('/expenses/bulk', payload),
     update: (ulid: string, payload: any) => api.put(`/expenses/${ulid}`, payload),
-    del: (ulid: string) => api.del(`/expenses/${ulid}`)
+    del: (ulid: string) => api.del(`/expenses/${ulid}`),
+    getSettlements: (params?: { date_from?: string; date_to?: string; search?: string }) => {
+      const q = new URLSearchParams();
+      if (params?.date_from) q.append('date_from', params.date_from);
+      if (params?.date_to) q.append('date_to', params.date_to);
+      if (params?.search) q.append('search', params.search);
+      return api.get(`/expenses/settlements?${q.toString()}`);
+    },
+    getSettlementDetails: (recipientName: string, params?: { date_from?: string; date_to?: string; limit?: number }) => {
+      const q = new URLSearchParams();
+      q.append('recipient_name', recipientName);
+      if (params?.date_from) q.append('date_from', params.date_from);
+      if (params?.date_to) q.append('date_to', params.date_to);
+      if (params?.limit) q.append('limit', params.limit.toString());
+      return api.get(`/expenses/settlements/details?${q.toString()}`);
+    }
   },
   dashboard: {
     financials: (params: { start_date: string, end_date: string }) => api.get(`/dashboard/financials?start_date=${params.start_date}&end_date=${params.end_date}`),
