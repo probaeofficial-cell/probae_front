@@ -70,6 +70,7 @@ export default function PlanPriceCalculatorPage() {
   // Overrides & Preferences
   const [goal, setGoal] = useState<string>("MAINTENANCE");
   const [manualCalorieTarget, setManualCalorieTarget] = useState<number | "">("");
+  const [slotCalories, setSlotCalories] = useState<Record<string, number | "">>({});
   const [includeDelivery, setIncludeDelivery] = useState<boolean>(true);
   const [discountPct, setDiscountPct] = useState<number>(0);
   const [calculationNotes, setCalculationNotes] = useState<string>("");
@@ -125,15 +126,135 @@ export default function PlanPriceCalculatorPage() {
     return () => clearTimeout(handler);
   }, [logsSearch]);
 
+  // ── Helper: Active Meal Slots in Current Mode ─────────────────────────────
+  const activeMealSlots = useMemo(() => {
+    if (planMode === "STANDARD") {
+      if (selectedPlanTier?.included_meal_slots && selectedPlanTier.included_meal_slots.length > 0) {
+        return selectedPlanTier.included_meal_slots as string[];
+      }
+      return ["Lunch", "Dinner"];
+    }
+    return customSlots && customSlots.length > 0 ? customSlots : ["Lunch", "Dinner"];
+  }, [planMode, selectedPlanTier, customSlots]);
+
+  // ── Helper: Case-Insensitive Customer Slot Calorie Lookup ──────────────────
+  const getCustomerSlotCalorie = useCallback((cust: any, slotName: string): number | null => {
+    if (!cust || !slotName) return null;
+    const clean = slotName.trim().toLowerCase();
+
+    // 1. Check in cust.calorie_profile.mealCalories or meal_calories or slots
+    const cp = cust.calorie_profile;
+    if (cp && typeof cp === "object") {
+      for (const nestedKey of ["mealCalories", "meal_calories", "slots", "mealSlots", "meal_slots"]) {
+        const nested = cp[nestedKey];
+        if (nested && typeof nested === "object") {
+          if (nested[slotName] !== undefined && Number(nested[slotName]) > 0) {
+            return Number(nested[slotName]);
+          }
+          for (const [k, v] of Object.entries(nested)) {
+            if (k.trim().toLowerCase() === clean && Number(v) > 0) {
+              return Number(v);
+            }
+          }
+        }
+      }
+
+      // 2. Check directly in cust.calorie_profile (e.g. { lunch: 850, dinner: 600, Lunch: 850 })
+      if (cp[slotName] !== undefined && Number(cp[slotName]) > 0) {
+        return Number(cp[slotName]);
+      }
+      for (const [k, v] of Object.entries(cp)) {
+        const kClean = k.trim().toLowerCase();
+        if (
+          (kClean === clean || kClean === `${clean}_calories` || kClean === `${clean}_cals` || kClean === `target_${clean}`) &&
+          Number(v) > 0
+        ) {
+          return Number(v);
+        }
+      }
+    }
+
+    // 3. Check directly on cust (top-level properties)
+    if (cust[slotName] !== undefined && Number(cust[slotName]) > 0) {
+      return Number(cust[slotName]);
+    }
+    for (const [k, v] of Object.entries(cust)) {
+      const kClean = k.trim().toLowerCase();
+      if (
+        (kClean === clean || kClean === `${clean}_calories` || kClean === `${clean}_cals`) &&
+        Number(v) > 0
+      ) {
+        return Number(v);
+      }
+    }
+
+    // 4. Check in cust.meal_schedules or cust.custom_schedule
+    for (const schedKey of ["meal_schedules", "custom_schedule", "mealSchedules"]) {
+      const sched = cust[schedKey];
+      if (Array.isArray(sched)) {
+        const match = sched.find((ms: any) => 
+          (ms.meal_slot || "").trim().toLowerCase() === clean && Number(ms.custom_calories) > 0
+        );
+        if (match) return Number(match.custom_calories);
+      }
+    }
+
+    return null;
+  }, []);
+
   // ── Sync Customer Profile on Selection ────────────────────────────────────
-  const handleSelectCustomer = (cust: any) => {
+  const handleSelectCustomer = async (cust: any) => {
     setSelectedCustomer(cust);
-    if (cust) {
-      if (cust.goal) setGoal(cust.goal);
-      if (cust.include_delivery !== undefined) setIncludeDelivery(Boolean(cust.include_delivery));
-      const dailyTarget = cust.calorie_profile?.probaeTarget || cust.calorie_profile?.total || cust.calorie_profile?.tdee;
-      if (dailyTarget) {
-        setManualCalorieTarget(dailyTarget);
+    if (!cust) return;
+
+    let fullCust = cust;
+    if (cust.ulid) {
+      try {
+        const detailRes: any = await endpoints.customers.get(cust.ulid);
+        if (detailRes && (detailRes.ulid || detailRes.id)) {
+          fullCust = { ...cust, ...detailRes };
+          setSelectedCustomer(fullCust);
+        }
+      } catch (e) {
+        console.warn("Could not fetch full customer detail", e);
+      }
+    }
+
+    if (fullCust.goal) setGoal(fullCust.goal);
+    if (fullCust.include_delivery !== undefined) setIncludeDelivery(Boolean(fullCust.include_delivery));
+
+    const newSlotCals: Record<string, number | ""> = {};
+    let totalAssigned = 0;
+    let hasCustomSlotCal = false;
+
+    activeMealSlots.forEach(slot => {
+      const cVal = getCustomerSlotCalorie(fullCust, slot);
+      if (cVal !== null && cVal > 0) {
+        newSlotCals[slot] = cVal;
+        totalAssigned += cVal;
+        hasCustomSlotCal = true;
+      }
+    });
+
+    if (hasCustomSlotCal) {
+      // Use the exact assigned calories from the customer
+      activeMealSlots.forEach(slot => {
+        if (newSlotCals[slot] === undefined) {
+          newSlotCals[slot] = 500;
+          totalAssigned += 500;
+        }
+      });
+      setSlotCalories(newSlotCals);
+      setManualCalorieTarget(totalAssigned);
+    } else {
+      const customerDailyTarget = fullCust.calorie_profile?.probaeTarget || fullCust.calorie_profile?.total || fullCust.calorie_profile?.tdee;
+      if (customerDailyTarget) {
+        const perMeal = Math.round(Number(customerDailyTarget) / Math.max(1, activeMealSlots.length));
+        activeMealSlots.forEach(slot => {
+          newSlotCals[slot] = perMeal;
+        });
+        setSlotCalories(newSlotCals);
+        setManualCalorieTarget(customerDailyTarget);
       }
     }
   };
@@ -141,6 +262,8 @@ export default function PlanPriceCalculatorPage() {
   const handleClearCustomer = () => {
     setSelectedCustomerId(0);
     setSelectedCustomer(null);
+    setSlotCalories({});
+    setManualCalorieTarget("");
   };
 
   // ── Plan Tier Selection ───────────────────────────────────────────────────
@@ -148,6 +271,93 @@ export default function PlanPriceCalculatorPage() {
     setSelectedPlanTier(tier);
     if (tier && tier.discount_percentage !== undefined) {
       setDiscountPct(Number(tier.discount_percentage) || 0);
+    }
+    const tierSlots = tier?.included_meal_slots && tier.included_meal_slots.length > 0 
+      ? tier.included_meal_slots 
+      : ["Lunch", "Dinner"];
+    setSlotCalories(prev => {
+      const next = { ...prev };
+      tierSlots.forEach((slot: string) => {
+        const custVal = getCustomerSlotCalorie(selectedCustomer, slot);
+        if (custVal !== null && custVal > 0) {
+          next[slot] = custVal;
+        } else if (!next[slot]) {
+          next[slot] = 500;
+        }
+      });
+      return next;
+    });
+  };
+
+  // ── Auto-sync slot calories when active slots change ───────────────────────
+  useEffect(() => {
+    setSlotCalories(prev => {
+      const next = { ...prev };
+      let changed = false;
+      activeMealSlots.forEach(slot => {
+        if (next[slot] === undefined || next[slot] === "") {
+          const custVal = getCustomerSlotCalorie(selectedCustomer, slot);
+          if (custVal !== null && custVal > 0) {
+            next[slot] = custVal;
+            changed = true;
+          } else {
+            next[slot] = 500;
+            changed = true;
+          }
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [activeMealSlots, selectedCustomer, getCustomerSlotCalorie]);
+
+  // ── Per-Slot Calorie Editing Handlers ──────────────────────────────────────
+  const handleSlotCalorieChange = (slot: string, val: number | "") => {
+    setSlotCalories(prev => {
+      const updated = { ...prev, [slot]: val };
+      const sum = activeMealSlots.reduce((acc, s) => {
+        const v = updated[s];
+        return acc + (typeof v === "number" ? v : 0);
+      }, 0);
+      setManualCalorieTarget(sum > 0 ? sum : "");
+      return updated;
+    });
+  };
+
+  const handleResetSlotsToCustomer = () => {
+    if (!selectedCustomer) return;
+    const newSlotCals: Record<string, number | ""> = {};
+    let totalAssigned = 0;
+    activeMealSlots.forEach(slot => {
+      const cVal = getCustomerSlotCalorie(selectedCustomer, slot);
+      if (cVal !== null && cVal > 0) {
+        newSlotCals[slot] = cVal;
+        totalAssigned += cVal;
+      } else {
+        newSlotCals[slot] = 500;
+        totalAssigned += 500;
+      }
+    });
+    setSlotCalories(newSlotCals);
+    setManualCalorieTarget(totalAssigned);
+  };
+
+  const handleSplitDailyEvenly = () => {
+    const daily = Number(manualCalorieTarget) || 1600;
+    const perMeal = Math.round(daily / Math.max(1, activeMealSlots.length));
+    const newSlotCals: Record<string, number | ""> = {};
+    activeMealSlots.forEach(slot => {
+      newSlotCals[slot] = perMeal;
+    });
+    setSlotCalories(newSlotCals);
+  };
+
+  const handleDailyCalorieChange = (val: number | "") => {
+    setManualCalorieTarget(val);
+    if (typeof val === "number" && val > 0) {
+      const perMeal = Math.round(val / Math.max(1, activeMealSlots.length));
+      const updated: Record<string, number> = {};
+      activeMealSlots.forEach(s => { updated[s] = perMeal; });
+      setSlotCalories(updated);
     }
   };
 
@@ -308,21 +518,41 @@ export default function PlanPriceCalculatorPage() {
 
       if (goal) payload.goal = goal;
 
-      if (manualCalorieTarget) {
-        const targetNum = Number(manualCalorieTarget);
-        const slotsToDivide = planMode === "STANDARD" 
-          ? (selectedPlanTier?.included_meal_slots || ["Lunch", "Dinner"])
-          : customSlots;
-        const perMeal = Math.round(targetNum / Math.max(1, slotsToDivide.length));
-        const mealCalories: Record<string, number> = {};
-        slotsToDivide.forEach((s: string) => {
-          mealCalories[s.toLowerCase()] = perMeal;
-        });
+      // Prepare calorie profile with individual per-meal slot targets
+      const targetNum = Number(manualCalorieTarget) || 0;
+      const mealCalories: Record<string, number> = {};
+      let totalFromSlots = 0;
 
+      activeMealSlots.forEach((slot: string) => {
+        let val = typeof slotCalories[slot] === "number" && slotCalories[slot] > 0
+          ? Number(slotCalories[slot]) 
+          : 0;
+        if (!val || val <= 0) {
+          const custVal = getCustomerSlotCalorie(selectedCustomer, slot);
+          if (custVal !== null && custVal > 0) {
+            val = custVal;
+          }
+        }
+        if (val > 0) {
+          mealCalories[slot] = val;
+          mealCalories[slot.toLowerCase()] = val;
+          totalFromSlots += val;
+        }
+      });
+
+      if (totalFromSlots > 0) {
+        payload.calorie_profile = {
+          total: totalFromSlots,
+          probaeTarget: totalFromSlots,
+          mealCalories,
+          mealSlots: activeMealSlots
+        };
+      } else if (targetNum > 0) {
         payload.calorie_profile = {
           total: targetNum,
           probaeTarget: targetNum,
-          mealCalories
+          mealCalories: {},
+          mealSlots: activeMealSlots
         };
       }
 
@@ -360,6 +590,9 @@ export default function PlanPriceCalculatorPage() {
     selectedCustomer, 
     goal, 
     manualCalorieTarget, 
+    slotCalories,
+    activeMealSlots,
+    getCustomerSlotCalorie,
     includeDelivery, 
     discountPct, 
     customPlanName, 
@@ -548,6 +781,25 @@ export default function PlanPriceCalculatorPage() {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
+      {/* Global high-contrast text selection style */}
+      <style jsx global>{`
+        ::selection {
+          background-color: #6A0FAD !important;
+          color: #ffffff !important;
+        }
+        ::-moz-selection {
+          background-color: #6A0FAD !important;
+          color: #ffffff !important;
+        }
+        input::selection, textarea::selection {
+          background-color: #6A0FAD !important;
+          color: #ffffff !important;
+        }
+        input::-moz-selection, textarea::-moz-selection {
+          background-color: #6A0FAD !important;
+          color: #ffffff !important;
+        }
+      `}</style>
       <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-y-auto">
         <Header />
         
@@ -1010,31 +1262,39 @@ export default function PlanPriceCalculatorPage() {
                 3. Macro Target & Financial Overrides
               </h3>
 
+              {/* Top Row: Total Calorie Target & Goal Strategy */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-black text-neutral-800">
-                      Calorie Target (kcal / day)
+                      Total Daily Calories (kcal)
                     </label>
                     {(selectedCustomer?.calorie_profile?.probaeTarget || selectedCustomer?.calorie_profile?.total) && (
                       <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
-                        Customer: {selectedCustomer.calorie_profile.probaeTarget || selectedCustomer.calorie_profile.total} kcal/day
+                        Customer: {selectedCustomer.calorie_profile.probaeTarget || selectedCustomer.calorie_profile.total} kcal
                       </span>
                     )}
                   </div>
                   <input
                     type="number"
                     value={manualCalorieTarget}
-                    onChange={(e) => setManualCalorieTarget(e.target.value ? parseInt(e.target.value) : "")}
+                    onChange={(e) => handleDailyCalorieChange(e.target.value ? parseInt(e.target.value) : "")}
                     placeholder="e.g. 1800"
-                    style={{ color: "#171717" }}
+                    style={{ color: "#171717", caretColor: "#6A0FAD" }}
                     className="w-full h-11 text-base px-3.5 py-2 border-2 border-neutral-300 rounded-xl bg-white font-black text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-neutral-400 placeholder:font-normal"
                   />
-                  {manualCalorieTarget && (
-                    <p className="text-[11px] text-neutral-500 font-medium mt-1">
-                      Daily: <strong className="text-purple-700">{manualCalorieTarget} kcal/day</strong> (~{Math.round(Number(manualCalorieTarget) / Math.max(1, (planMode === "STANDARD" ? (selectedPlanTier?.included_meal_slots?.length || 2) : customSlots.length)))} kcal per meal)
-                    </p>
-                  )}
+                  <div className="flex items-center justify-between text-[11px] text-neutral-500 font-medium mt-1">
+                    <span>
+                      Sum of slots: <strong className="text-purple-700">{manualCalorieTarget || 0} kcal</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSplitDailyEvenly}
+                      className="text-[10px] font-bold text-[#6A0FAD] hover:underline"
+                    >
+                      Split Evenly Across Slots
+                    </button>
+                  </div>
                 </div>
 
                 <div>
@@ -1051,6 +1311,89 @@ export default function PlanPriceCalculatorPage() {
                     <option value="FAT_LOSS" className="text-neutral-900 font-semibold">Fat Loss</option>
                     <option value="MUSCLE_GAIN" className="text-neutral-900 font-semibold">Muscle Gain</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Per-Meal Slot Calorie Allocation Section */}
+              <div className="pt-3 border-t border-neutral-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-black text-neutral-900 flex items-center gap-1.5">
+                      <Utensils className="w-3.5 h-3.5 text-[#6A0FAD]" />
+                      Selected Calorie Per Meal Slot
+                    </label>
+                    <span className="text-[11px] text-neutral-500 font-medium">
+                      Bowls in each slot scale directly to that slot's target calorie
+                    </span>
+                  </div>
+
+                  {selectedCustomer?.calorie_profile?.mealCalories && (
+                    <button
+                      type="button"
+                      onClick={handleResetSlotsToCustomer}
+                      className="text-xs font-bold text-[#6A0FAD] bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
+                      title="Reset meal slot targets to customer's saved profile"
+                    >
+                      <RotateCcw className="w-3 h-3" /> Reset to Customer
+                    </button>
+                  )}
+                </div>
+
+                {/* Grid of Meal Slot Calorie Inputs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {activeMealSlots.map((slot: string) => {
+                    const custVal = getCustomerSlotCalorie(selectedCustomer, slot);
+                    const currentVal = slotCalories[slot] ?? "";
+                    const daily = Number(manualCalorieTarget) || 0;
+                    const pct = daily > 0 && typeof currentVal === "number" ? Math.round((currentVal / daily) * 100) : null;
+
+                    return (
+                      <div
+                        key={slot}
+                        className="p-3 bg-white rounded-xl border border-neutral-200/90 shadow-2xs space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 text-xs font-black">
+                            {slot}
+                          </span>
+                          {custVal !== null && (
+                            <button
+                              type="button"
+                              onClick={() => handleSlotCalorieChange(slot, custVal)}
+                              className="text-[10px] font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-1.5 py-0.5 rounded transition-colors"
+                              title="Click to apply customer's saved target"
+                            >
+                              Customer: {custVal} kcal
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="100"
+                            max="3000"
+                            step="25"
+                            value={currentVal}
+                            onChange={(e) => handleSlotCalorieChange(slot, e.target.value ? parseInt(e.target.value) : "")}
+                            placeholder="e.g. 750"
+                            style={{ color: "#171717", caretColor: "#6A0FAD" }}
+                            className="w-full h-10 text-sm px-3 pr-14 py-1.5 border-2 border-neutral-300 rounded-xl bg-white font-black text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-neutral-400 placeholder:font-normal"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400 pointer-events-none">
+                            kcal
+                          </span>
+                        </div>
+
+                        {pct !== null && (
+                          <div className="flex items-center justify-between text-[10px] text-neutral-500 font-medium">
+                            <span>Share of day:</span>
+                            <span className="font-bold text-purple-800">{pct}%</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1321,7 +1664,9 @@ export default function PlanPriceCalculatorPage() {
 
                             <td className="px-4 py-3 text-center">
                               <span className="font-black text-neutral-900">{Math.round(item.scaled_calories || 0)}</span>
-                              <span className="text-[10px] text-neutral-400 block">kcal</span>
+                              <span className="text-[10px] text-neutral-400 block">
+                                kcal {item.target_calories ? `(target ${Math.round(item.target_calories)})` : ""}
+                              </span>
                             </td>
 
                             <td className="px-4 py-3 text-center">
