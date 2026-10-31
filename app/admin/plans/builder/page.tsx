@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { Header } from "@/components/admin/Header";
-import { Plus, Search, Edit2, Trash2, Copy, Eye, X } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Copy, Eye, X, Calculator } from "lucide-react";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { endpoints } from "@/lib/apiService";
@@ -162,12 +162,21 @@ export default function PlanTierList() {
               <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Plan Tiers</h1>
               <p className="text-sm font-medium text-neutral-500 mt-1">Manage subscription packages and rules</p>
             </div>
-            <ProbaeButton 
-              onClick={() => router.push("/admin/plans/builder/new")} 
-              className="!w-auto flex items-center gap-2 h-[48px]"
-            >
-              <Plus className="w-4 h-4" /> Create New Tier
-            </ProbaeButton>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push("/admin/plans/calculator")}
+                className="px-4 h-[48px] rounded-2xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-[#6A0FAD] text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+              >
+                <Calculator className="w-4 h-4" />
+                Price Calculator
+              </button>
+              <ProbaeButton 
+                onClick={() => router.push("/admin/plans/builder/new")} 
+                className="!w-auto flex items-center gap-2 h-[48px]"
+              >
+                <Plus className="w-4 h-4" /> Create New Tier
+              </ProbaeButton>
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center shrink-0 bg-white p-4 rounded-3xl border border-neutral-200">

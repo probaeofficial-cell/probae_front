@@ -155,7 +155,6 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
 
   // Inject Access Token
   const token = getAccessToken();
-  console.log(token);
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
@@ -248,7 +247,32 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
     }
 
     return response.json();
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    if (error?.name === "AbortError") {
+      throw new ApiError("Request was aborted", 499);
+    }
+
+    // Gracefully handle network disconnects, CORS preflight blocks, or server down
+    const isNetworkFailure =
+      error?.name === "TypeError" ||
+      error?.message?.includes("fetch") ||
+      error?.message?.includes("NetworkError") ||
+      error?.message?.includes("Failed to fetch") ||
+      error?.message?.includes("Load failed");
+
+    if (isNetworkFailure) {
+      console.warn(`[Network Warning] Could not reach backend at ${url}:`, error?.message || error);
+      throw new ApiError(
+        "Unable to connect to the backend server. Please check your network connection and ensure the API server is running.",
+        0,
+        { originalError: error?.message || String(error), url }
+      );
+    }
+
     throw error;
   }
 }
@@ -894,6 +918,19 @@ export const endpoints = {
     update: async (ulid: string, data: any) => await api.patch(`/plans/tiers/${ulid}`, data),
     delete: async (ulid: string) => await api.del(`/plans/tiers/${ulid}`),
     triggerDailyOrders: async (targetDay: string = 'tomorrow') => await api.post(`/plans/trigger-daily-orders?target_day=${targetDay}`, {}),
+    calculate: async (payload: any) => await api.post("/plans/calculate", payload),
+    saveCalculation: async (payload: any) => await api.post("/plans/calculations", payload),
+    listCalculations: async (params?: { page?: number; limit?: number; search?: string; plan_type?: string; customer_id?: number }) => {
+      const p = new URLSearchParams();
+      if (params?.page) p.append("page", params.page.toString());
+      if (params?.limit) p.append("limit", params.limit.toString());
+      if (params?.search) p.append("search", params.search);
+      if (params?.plan_type) p.append("plan_type", params.plan_type);
+      if (params?.customer_id) p.append("customer_id", params.customer_id.toString());
+      return await api.get(`/plans/calculations?${p.toString()}`);
+    },
+    getCalculation: async (ulid: string) => await api.get(`/plans/calculations/${ulid}`),
+    deleteCalculation: async (ulid: string) => await api.del(`/plans/calculations/${ulid}`),
   },
   menuBlueprints: {
     get: async (durationType: string, mealSlot: string, planCategory: string = 'Core') => await api.get(`/plans/blueprints?duration_type=${durationType}&meal_slot=${mealSlot}&plan_category=${planCategory}`),

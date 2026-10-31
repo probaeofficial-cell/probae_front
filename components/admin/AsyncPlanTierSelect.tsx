@@ -8,10 +8,11 @@ import { endpoints } from "@/lib/apiService";
 interface AsyncPlanTierSelectProps {
   value: string | "";
   onChange: (ulid: string) => void;
+  onSelectFull?: (plan: any) => void;
   selectedPlan?: any;
 }
 
-export default function AsyncPlanTierSelect({ value, onChange, selectedPlan }: AsyncPlanTierSelectProps) {
+export default function AsyncPlanTierSelect({ value, onChange, onSelectFull, selectedPlan }: AsyncPlanTierSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<any[]>([]);
@@ -141,6 +142,7 @@ export default function AsyncPlanTierSelect({ value, onChange, selectedPlan }: A
                 key={(opt.ulid || opt._id)}
                 onClick={() => {
                   onChange((opt.ulid || opt._id));
+                  if (onSelectFull) onSelectFull(opt);
                   setIsOpen(false);
                   setSearch("");
                 }}

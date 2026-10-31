@@ -297,7 +297,20 @@ The central operations screen features:
   - **Net Balance & ROI**:
     - Direct equation: `Total Received from Referrals - Total Affiliate Food Cost = Net Profit Margin`.
 
-### 6.5 Public Web Experience (`/`, `/menu`, `/plans`)
+### 6.5 Plan Price Calculator & Quotation Tool (`/admin/plans/calculator`)
+- **Customer & Plan Selection**:
+  - Paginated customer selector (`AsyncCustomerSelect`) with profile snapshot (Goal, Calorie Target, Per-Meal Targets, Delivery distance & preference).
+  - Mode toggle:
+    - **Standard Plan Tier**: Paginated plan tier dropdown (`AsyncPlanTierSelect`) with duration, category, days, and included meal slots.
+    - **Custom Plan Builder**: Custom days (5, 20, 24, etc.), meal slot checkboxes, and slot-by-slot bowl selection using `AsyncBowlSelect`.
+- **Live Calculation & Bowls Matrix**:
+  - Automatically calculates final rounded-to-9 price, average price per bowl, kitchen fixed overhead, raw ingredient cost, packaging cost, and delivery charge.
+  - Interactive scaled bowls matrix table with macro breakdown (P/C/F), per-bowl cost breakdown, and one-click "Customize Ingredients" modal (`BowlCustomizerModal`) to edit recipe weights on the fly.
+- **Saved Calculation Logs / Quotation History**:
+  - Save calculation entry with custom notes for admin record-keeping and audit.
+  - Paginated logs table rendered below the calculator with IST timestamps, search, plan type filters, detail inspection modal, one-click "Reload into Calculator", and delete actions.
+
+### 6.6 Public Web Experience (`/`, `/menu`, `/plans`)
 - **Nutritional Menu (`/menu`)**:
   - Live filtering by dietary type (High Protein, Keto, Balanced, Vegan).
   - Dynamic calorie range slider.

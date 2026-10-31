@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, ChevronLeft, ChevronRight, Eye, Edit, Trash2, Search, Copy } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Eye, Edit, Trash2, Search, Copy, Calculator } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -109,10 +109,19 @@ export default function PlansPage() {
             onChange={setSearchQuery}
             placeholder="Search plans..."
            isLoading={isLoading} />
-          <ProbaeButton onClick={() => router.push("/admin/plans/builder/new")} className="w-full sm:w-auto shrink-0">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Plan
-          </ProbaeButton>
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <button
+              onClick={() => router.push("/admin/plans/calculator")}
+              className="px-4 py-2.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-[#6A0FAD] text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 w-full sm:w-auto"
+            >
+              <Calculator className="w-4 h-4" />
+              Price Calculator
+            </button>
+            <ProbaeButton onClick={() => router.push("/admin/plans/builder/new")} className="w-full sm:w-auto shrink-0">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Plan
+            </ProbaeButton>
+          </div>
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-2xl pt-2 pb-6 px-6 sm:pt-2 sm:pb-8 sm:px-8">

@@ -46,6 +46,30 @@
   box-sizing: border-box;
 }
 
+/* ─── Global Selection Styling ─────────────────────────────────────── */
+::selection {
+  background-color: #6a0fad;
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background-color: #6a0fad;
+  color: #ffffff;
+}
+
+/* Ensure form controls on light backgrounds stay crisp & high-contrast */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  color: #171717;
+}
+
+input::selection,
+textarea::selection {
+  background-color: #6a0fad;
+  color: #ffffff;
+}
+
 html,
 body {
   margin: 0;

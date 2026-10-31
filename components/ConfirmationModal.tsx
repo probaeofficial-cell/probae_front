@@ -6,7 +6,8 @@ export type ModalType = "success" | "warning" | "delete" | "info" | "error";
 
 export interface ConfirmationModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
+  onCancel?: () => void;
   onConfirm?: () => void;
   title: string;
   message: React.ReactNode;
@@ -57,6 +58,7 @@ const typeConfig = {
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   isOpen,
   onClose,
+  onCancel,
   onConfirm,
   title,
   message,
@@ -67,6 +69,11 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 }) => {
   const [isRendered, setIsRendered] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+
+  const handleClose = () => {
+    if (onCancel) onCancel();
+    if (onClose) onClose();
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -85,12 +92,12 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen && !isLoading) {
-        onClose();
+        handleClose();
       }
     };
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [isOpen, onClose, isLoading]);
+  }, [isOpen, isLoading, onCancel, onClose]);
 
   if (!isRendered) return null;
 
@@ -106,7 +113,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-        onClick={() => !isLoading && onClose()}
+        onClick={() => !isLoading && handleClose()}
         aria-hidden="true"
       />
 
@@ -121,7 +128,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       >
         {/* Close button */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           disabled={isLoading}
           className="absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
         >
@@ -156,7 +163,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <button
             type="button"
             className="inline-flex justify-center rounded-xl border border-white/20 bg-transparent px-4 py-2 text-sm font-medium text-[var(--color-lab-white)] hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-[var(--color-pro-purple)] focus:ring-offset-2 focus:ring-offset-[var(--color-carbon-black)] transition-all disabled:opacity-50"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isLoading}
           >
             {cancelText}
