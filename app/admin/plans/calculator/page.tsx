@@ -1000,7 +1000,7 @@ export default function PlanPriceCalculatorPage() {
                       value={customPlanName}
                       onChange={(e) => setCustomPlanName(e.target.value)}
                       placeholder="e.g. VIP Corporate 24-Day Fat Loss"
-                      style={{ color: "#171717" }}
+                      style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A", caretColor: "#6A0FAD" }}
                       className="w-full h-11 text-sm px-3.5 py-2 border-2 border-neutral-300 rounded-xl bg-white font-bold text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-neutral-400 placeholder:font-normal"
                     />
                   </div>
@@ -1016,7 +1016,7 @@ export default function PlanPriceCalculatorPage() {
                         max="90"
                         value={customDays}
                         onChange={(e) => setCustomDays(parseInt(e.target.value) || 1)}
-                        style={{ color: "#171717" }}
+                        style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A", caretColor: "#6A0FAD" }}
                         className="w-full h-11 text-base px-3.5 py-2 border-2 border-neutral-300 rounded-xl bg-white font-black text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all"
                       />
                     </div>
@@ -1275,14 +1275,22 @@ export default function PlanPriceCalculatorPage() {
                       </span>
                     )}
                   </div>
-                  <input
-                    type="number"
-                    value={manualCalorieTarget}
-                    onChange={(e) => handleDailyCalorieChange(e.target.value ? parseInt(e.target.value) : "")}
-                    placeholder="e.g. 1800"
-                    style={{ color: "#171717", caretColor: "#6A0FAD" }}
-                    className="w-full h-11 text-base px-3.5 py-2 border-2 border-neutral-300 rounded-xl bg-white font-black text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-neutral-400 placeholder:font-normal"
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="500"
+                      max="10000"
+                      step="50"
+                      value={manualCalorieTarget}
+                      onChange={(e) => handleDailyCalorieChange(e.target.value ? parseInt(e.target.value) : "")}
+                      placeholder="e.g. 1800"
+                      style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A", caretColor: "#6A0FAD" }}
+                      className="w-full h-11 text-base px-3.5 pr-14 py-2 border-2 border-neutral-300 rounded-xl bg-white font-black text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-neutral-400 placeholder:font-normal"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400 pointer-events-none">
+                      kcal
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between text-[11px] text-neutral-500 font-medium mt-1">
                     <span>
                       Sum of slots: <strong className="text-purple-700">{manualCalorieTarget || 0} kcal</strong>
@@ -1304,7 +1312,7 @@ export default function PlanPriceCalculatorPage() {
                   <select
                     value={goal}
                     onChange={(e) => setGoal(e.target.value)}
-                    style={{ color: "#171717" }}
+                    style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A" }}
                     className="w-full h-11 text-sm px-3.5 py-2 border-2 border-neutral-300 rounded-xl bg-white font-bold text-neutral-900 focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all cursor-pointer"
                   >
                     <option value="MAINTENANCE" className="text-neutral-900 font-semibold">Maintenance</option>
@@ -1377,7 +1385,7 @@ export default function PlanPriceCalculatorPage() {
                             value={currentVal}
                             onChange={(e) => handleSlotCalorieChange(slot, e.target.value ? parseInt(e.target.value) : "")}
                             placeholder="e.g. 750"
-                            style={{ color: "#171717", caretColor: "#6A0FAD" }}
+                            style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A", caretColor: "#6A0FAD" }}
                             className="w-full h-10 text-sm px-3 pr-14 py-1.5 border-2 border-neutral-300 rounded-xl bg-white font-black text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-neutral-400 placeholder:font-normal"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400 pointer-events-none">
@@ -1601,7 +1609,7 @@ export default function PlanPriceCalculatorPage() {
                     value={calculationNotes}
                     onChange={(e) => setCalculationNotes(e.target.value)}
                     placeholder="Add calculation notes or client reference (e.g. 'Customized quote for John - extra chicken requested')..."
-                    style={{ color: "#171717" }}
+                    style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A" }}
                     className="w-full h-11 text-sm px-4 py-2 border-2 border-neutral-300 rounded-xl bg-white font-bold text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-neutral-400 placeholder:font-normal"
                   />
 

@@ -48,26 +48,48 @@
 
 /* ─── Global Selection Styling ─────────────────────────────────────── */
 ::selection {
-  background-color: #6a0fad;
-  color: #ffffff;
+  background-color: #6a0fad !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 ::-moz-selection {
-  background-color: #6a0fad;
-  color: #ffffff;
+  background-color: #6a0fad !important;
+  color: #ffffff !important;
+}
+
+*::selection {
+  background-color: #6a0fad !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 /* Ensure form controls on light backgrounds stay crisp & high-contrast */
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
-  color: #171717;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  accent-color: #6a0fad;
 }
 
-input::selection,
+input:not([type="checkbox"]):not([type="radio"])::selection,
 textarea::selection {
-  background-color: #6a0fad;
-  color: #ffffff;
+  background-color: #6a0fad !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Normalize number inputs across WebKit and Gecko to prevent native OS selection clipping */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 html,
