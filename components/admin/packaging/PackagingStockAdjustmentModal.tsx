@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function PackagingStockAdjustmentModal({ component, onClose, onSuccess }: Props) {
-  const [adjustment, setAdjustment] = useState(0);
+  const [adjustment, setAdjustment] = useState<number | "">(0);
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,11 +35,12 @@ export function PackagingStockAdjustmentModal({ component, onClose, onSuccess }:
   };
 
   const handleSubmit = async () => {
-    if (adjustment === 0) return onClose();
+    const finalAdj = typeof adjustment === "number" ? adjustment : (parseInt(String(adjustment), 10) || 0);
+    if (finalAdj === 0) return onClose();
     setIsSubmitting(true);
     try {
       const updated = await endpoints.packaging.adjustComponentStock(component.ulid, {
-        quantity_change: adjustment,
+        quantity_change: finalAdj,
         description: description || undefined,
       });
       onSuccess(updated);
@@ -52,7 +53,8 @@ export function PackagingStockAdjustmentModal({ component, onClose, onSuccess }:
   };
 
   const currentStock = Number(component.current_stock || 0);
-  const totalStock = currentStock + adjustment;
+  const numericAdj = typeof adjustment === "number" ? adjustment : (parseInt(String(adjustment), 10) || 0);
+  const totalStock = currentStock + numericAdj;
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -117,29 +119,87 @@ export function PackagingStockAdjustmentModal({ component, onClose, onSuccess }:
           </div>
 
           {/* Adjustment Stepper */}
-          <div className="flex flex-col items-center gap-2 mt-2">
-            <label className="text-sm font-bold text-neutral-500">Adjust Quantity</label>
-            <div className="flex items-center gap-6">
+          <div className="flex flex-col items-center gap-3 mt-1">
+            <div className="flex items-center justify-between w-full">
+              <label className="text-xs font-black text-neutral-500 uppercase tracking-wider">
+                Adjust Quantity
+              </label>
+              <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+                Type directly or use + / -
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 sm:gap-4 w-full justify-center">
               <button
-                onClick={() => setAdjustment(prev => prev - 1)}
-                className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-600 hover:bg-neutral-200 active:scale-95 transition-all"
+                type="button"
+                onClick={() => setAdjustment(prev => (typeof prev === "number" ? prev : 0) - 1)}
+                className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-600 hover:bg-neutral-200 active:scale-95 transition-all shrink-0"
+                title="Decrease by 1"
               >
-                <Minus className="w-6 h-6" />
+                <Minus className="w-5 h-5" />
               </button>
-              <div className="flex items-baseline gap-1 min-w-[80px] justify-center">
-                <span className="text-4xl font-black text-neutral-800">{adjustment > 0 ? `+${adjustment}` : adjustment}</span>
-                <span className="text-xl font-bold text-neutral-400">pcs</span>
+
+              <div className="relative flex items-center justify-center flex-1 max-w-[220px]">
+                <input
+                  type="number"
+                  step="1"
+                  value={adjustment}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === "" || val === "-") {
+                      setAdjustment(val as any);
+                    } else {
+                      setAdjustment(parseInt(val, 10) || 0);
+                    }
+                  }}
+                  onFocus={e => e.target.select()}
+                  style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A", caretColor: "#6A0FAD" }}
+                  className="w-full h-14 text-center text-3xl font-black text-neutral-900 bg-neutral-50 hover:bg-neutral-100/70 focus:bg-white border-2 border-neutral-200 focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 rounded-2xl outline-none transition-all pr-12 pl-4"
+                  placeholder="0"
+                />
+                <span className="absolute right-4 text-xs font-black text-neutral-400 pointer-events-none select-none uppercase tracking-wider">
+                  pcs
+                </span>
               </div>
+
               <button
-                onClick={() => setAdjustment(prev => prev + 1)}
-                className="w-12 h-12 rounded-2xl bg-[#6b21a8] flex items-center justify-center text-white shadow-lg shadow-purple-500/30 hover:bg-[#581c87] active:scale-95 transition-all"
+                type="button"
+                onClick={() => setAdjustment(prev => (typeof prev === "number" ? prev : 0) + 1)}
+                className="w-12 h-12 rounded-2xl bg-[#6b21a8] flex items-center justify-center text-white shadow-lg shadow-purple-500/30 hover:bg-[#581c87] active:scale-95 transition-all shrink-0"
+                title="Increase by 1"
               >
-                <Plus className="w-6 h-6" />
+                <Plus className="w-5 h-5" />
               </button>
             </div>
-            <div className="text-lg font-bold mt-4 flex items-center justify-center gap-1.5">
-              <span className="text-neutral-400">Total Stock:</span>
-              <span className={totalStock < 0 ? "text-red-500 font-black" : "text-[#6b21a8] font-black"}>{totalStock}</span>
+
+            {/* Quick Adjustment Presets */}
+            <div className="flex flex-wrap items-center justify-center gap-1.5 w-full mt-0.5">
+              <span className="text-[10px] font-black text-neutral-400 mr-1 uppercase tracking-wider">Quick:</span>
+              {[10, 25, 50, 100, 200].map(amt => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setAdjustment(prev => (typeof prev === "number" ? prev : 0) + amt)}
+                  className="px-2.5 py-1 text-xs font-black text-[#6A0FAD] bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-all active:scale-95 shadow-2xs"
+                >
+                  +{amt}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setAdjustment(0)}
+                className="px-2.5 py-1 text-xs font-bold text-neutral-500 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 rounded-xl transition-all active:scale-95 ml-1"
+                title="Reset to 0"
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="text-sm font-bold mt-2 flex items-center justify-between p-3 rounded-2xl bg-neutral-50 w-full border border-neutral-200/80">
+              <span className="text-neutral-500 text-xs font-bold">Total Stock:</span>
+              <span className={`text-base font-black ${totalStock < 0 ? "text-red-600" : "text-[#6b21a8]"}`}>
+                {totalStock} pcs
+              </span>
             </div>
           </div>
 
