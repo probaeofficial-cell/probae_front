@@ -7,9 +7,11 @@ import { Save, Search, GripVertical, Plus, Trash2, Calendar, Coffee, Utensils } 
 import { endpoints } from "@/lib/apiService";
 import { ProbaeButton } from "@/components/ProbaeButton";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { getMediaUrl } from "@/lib/utils";
 
 
 export default function MenuBlueprintPage() {
+  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [durationType, setDurationType] = useState("WEEKLY");
   const [mealSlot, setMealSlot] = useState("lunch");
   const [planCategory, setPlanCategory] = useState("Core");
@@ -63,7 +65,13 @@ export default function MenuBlueprintPage() {
 
   const fetchInitialData = async () => {
     try {
-      const catRes: any = await endpoints.mealCategories.getMealCategories(1, 100);
+      const [catRes, settingsRes]: [any, any] = await Promise.all([
+        endpoints.mealCategories.getMealCategories(1, 100),
+        endpoints.settings.getSystemSettings().catch(() => ({ R2_BASE_URL: "" }))
+      ]);
+      if (settingsRes && settingsRes.R2_BASE_URL) {
+        setSystemSettings({ R2_BASE_URL: settingsRes.R2_BASE_URL });
+      }
       const categories = catRes.items || [];
       setMealCategories(categories);
       
@@ -305,7 +313,7 @@ export default function MenuBlueprintPage() {
                       <GripVertical className="w-5 h-5 text-neutral-300 mr-3 shrink-0 group-hover:text-neutral-500 transition-colors" />
                       <div className="w-10 h-10 rounded-lg bg-neutral-100 overflow-hidden shrink-0 mr-4">
                         {bowl.image_filename ? (
-                          <img src={`/uploads/${bowl.image_filename}`} className="w-full h-full object-cover" alt="" />
+                          <img src={getMediaUrl(systemSettings.R2_BASE_URL, bowl.image_filename) || ""} className="w-full h-full object-cover" alt={bowl.name} />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-neutral-400"><Coffee className="w-5 h-5"/></div>
                         )}
@@ -352,7 +360,7 @@ export default function MenuBlueprintPage() {
                     <div className="flex items-center min-w-0">
                       <div className="w-10 h-10 rounded-lg bg-neutral-100 overflow-hidden shrink-0 mr-3">
                         {b.image_filename ? (
-                          <img src={`/uploads/${b.image_filename}`} className="w-full h-full object-cover" alt="" />
+                          <img src={getMediaUrl(systemSettings.R2_BASE_URL, b.image_filename) || ""} className="w-full h-full object-cover" alt={b.name} />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-neutral-400"><Coffee className="w-4 h-4"/></div>
                         )}
