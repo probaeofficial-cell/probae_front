@@ -15,6 +15,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.probae.in/api/v
 // ─── Types & Interfaces ──────────────────────────────────────────────────────
 export interface FetchOptions extends Omit<RequestInit, "body"> {
   body?: any; // Allow passing objects to be automatically serialized to JSON
+  responseType?: "json" | "blob";
 }
 
 export interface FastAPIError {
@@ -246,6 +247,10 @@ async function fetchClient<T>(endpoint: string, options: FetchOptions = {}): Pro
       return null as any;
     }
 
+    if (options.responseType === "blob") {
+      return response.blob() as any;
+    }
+
     return response.json();
   } catch (error: any) {
     if (error instanceof ApiError) {
@@ -456,6 +461,19 @@ export const endpoints = {
       api.post(`/orders/${ulid}/confirm-cod`, {}),
     markDelivered: (ulid: string) =>
       api.post(`/orders/${ulid}/mark-delivered`, {}),
+    getBulkLegacySample: () =>
+      api.get<any>(`/orders/legacy-bulk/sample`),
+    downloadBulkLegacySampleCsv: () =>
+      api.get<Blob>(`/orders/legacy-bulk/sample?format=csv`, { responseType: "blob" }),
+    uploadBulkLegacyOrders: (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return api.post<any>(`/orders/legacy-bulk/upload`, formData);
+    },
+    getBulkLegacyJob: (jobId: string) =>
+      api.get<any>(`/orders/legacy-bulk/jobs/${jobId}`),
+    listBulkLegacyJobs: (limit: number = 15) =>
+      api.get<any>(`/orders/legacy-bulk/jobs?limit=${limit}`),
   },
 
   auth: {
