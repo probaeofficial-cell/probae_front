@@ -590,6 +590,9 @@ export const endpoints = {
     getBulkJob: async (jobId: string): Promise<any> => {
       return await api.get<any>(`/raw-materials/bulk/jobs/${jobId}`);
     },
+    cancelBulkJob: async (jobId: string): Promise<any> => {
+      return await api.post<any>(`/raw-materials/bulk/jobs/${jobId}/cancel`, {});
+    },
     listBulkJobs: async (limit: number = 15): Promise<any> => {
       return await api.get<any>(`/raw-materials/bulk/jobs?limit=${limit}`);
     },

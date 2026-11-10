@@ -79,7 +79,7 @@ type BulkRawMaterialJob = {
   uploaded_by: string;
   created_at: string;
   updated_at: string;
-  status: "QUEUED" | "VALIDATING" | "IMPORTING" | "COMPLETED" | "VALIDATION_FAILED" | "FAILED";
+  status: "QUEUED" | "VALIDATING" | "IMPORTING" | "COMPLETED" | "VALIDATION_FAILED" | "FAILED" | "CANCELLED";
   phase: string;
   message: string;
   total_rows: number;
@@ -137,6 +137,8 @@ export default function BulkRawMaterialsUploadPage() {
   const [activeJob, setActiveJob] = useState<BulkRawMaterialJob | null>(null);
   const [recentJobs, setRecentJobs] = useState<BulkRawMaterialJob[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [queuedSeconds, setQueuedSeconds] = useState(0);
   const [errorFilter, setErrorFilter] = useState("");
 
   const [activeRefTab, setActiveRefTab] = useState<"lookup" | "columns" | "history">("lookup");
@@ -228,6 +230,23 @@ export default function BulkRawMaterialsUploadPage() {
 
     return () => clearInterval(interval);
   }, [activeJob?.job_id, activeJob?.status, fetchJobById, fetchRecentJobs, fetchSampleData]);
+
+  useEffect(() => {
+    if (activeJob?.status !== "QUEUED" || !activeJob?.created_at) {
+      setQueuedSeconds(0);
+      return;
+    }
+    const computeElapsed = () => {
+      const createdMs = Date.parse(activeJob.created_at);
+      if (Number.isNaN(createdMs)) return 0;
+      return Math.max(0, Math.floor((Date.now() - createdMs) / 1000));
+    };
+    setQueuedSeconds(computeElapsed());
+    const timer = setInterval(() => {
+      setQueuedSeconds(computeElapsed());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [activeJob?.job_id, activeJob?.status, activeJob?.created_at]);
 
   const handleDownloadXlsxTemplate = () => {
     if (!sampleData) return;
@@ -415,6 +434,37 @@ export default function BulkRawMaterialsUploadPage() {
     }
   };
 
+  const handleCancelActiveJob = async () => {
+    if (!activeJob?.job_id || isCancelling) return;
+    setIsCancelling(true);
+    try {
+      const res = await endpoints.rawMaterials.cancelBulkJob(activeJob.job_id);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(ACTIVE_JOB_STORAGE_KEY);
+      }
+      if (res?.job) {
+        setActiveJob(res.job);
+      } else {
+        setActiveJob(null);
+      }
+      fetchRecentJobs();
+    } catch {
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(ACTIVE_JOB_STORAGE_KEY);
+      }
+      setActiveJob(null);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleDismissJobPanel = () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(ACTIVE_JOB_STORAGE_KEY);
+    }
+    setActiveJob(null);
+  };
+
   const qLower = refSearch.trim().toLowerCase();
   const filteredCategories = (sampleData?.categories || []).filter((c) =>
     !qLower || c.name.toLowerCase().includes(qLower)
@@ -467,6 +517,12 @@ export default function BulkRawMaterialsUploadPage() {
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
             <AlertTriangle className="w-3.5 h-3.5" /> Validation Failed (0 Saved)
+          </span>
+        );
+      case "CANCELLED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-neutral-100 text-neutral-600 border border-neutral-300">
+            <X className="w-3.5 h-3.5" /> Cancelled
           </span>
         );
       case "FAILED":
@@ -692,29 +748,55 @@ export default function BulkRawMaterialsUploadPage() {
               )}
 
               <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                <span className="text-xs text-neutral-500">
-                  Use <strong className="text-neutral-700">Categories_&_Vendors</strong> sheet inside the template to avoid typos.
-                </span>
-                <div className="w-full sm:w-auto sm:min-w-[230px]">
-                  <ProbaeButton
-                    type="button"
-                    onClick={handleStartUpload}
-                    disabled={!selectedFile || isUploading || isJobRunning(activeJob?.status)}
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Uploading &amp; Queuing...
-                      </>
-                    ) : isJobRunning(activeJob?.status) ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Celery Task Running...
-                      </>
-                    ) : (
-                      <>
-                        <Database className="w-4 h-4" /> Validate &amp; Import Raw Materials
-                      </>
-                    )}
-                  </ProbaeButton>
+                <div className="text-xs text-neutral-500">
+                  {isJobRunning(activeJob?.status) ? (
+                    <span className="text-amber-700 font-medium">
+                      Background Celery job active for{" "}
+                      <strong className="text-neutral-800">{activeJob?.filename || activeJob?.job_id}</strong>{" "}
+                      ({activeJob?.status}).{" "}
+                      {activeJob?.status === "QUEUED" && queuedSeconds >= 6
+                        ? "Worker has not picked it up yet — make sure Celery worker is restarted, or click Cancel / Reset."
+                        : "Removing a selected file will not stop an already-submitted job."}
+                    </span>
+                  ) : (
+                    <span>
+                      Use <strong className="text-neutral-700">Categories_&_Vendors</strong> sheet inside the template to avoid typos.
+                    </span>
+                  )}
+                </div>
+                <div className="w-full sm:w-auto flex flex-wrap items-center gap-2.5">
+                  {isJobRunning(activeJob?.status) && (
+                    <button
+                      type="button"
+                      onClick={handleCancelActiveJob}
+                      disabled={isCancelling}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100 disabled:opacity-50 transition cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      {isCancelling ? "Cancelling..." : "Cancel / Reset"}
+                    </button>
+                  )}
+                  <div className="sm:min-w-[230px]">
+                    <ProbaeButton
+                      type="button"
+                      onClick={handleStartUpload}
+                      disabled={!selectedFile || isUploading || isJobRunning(activeJob?.status)}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Uploading &amp; Queuing...
+                        </>
+                      ) : isJobRunning(activeJob?.status) ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Celery Task Running...
+                        </>
+                      ) : (
+                        <>
+                          <Database className="w-4 h-4" /> Validate &amp; Import Raw Materials
+                        </>
+                      )}
+                    </ProbaeButton>
+                  </div>
                 </div>
               </div>
             </div>
@@ -766,8 +848,42 @@ export default function BulkRawMaterialsUploadPage() {
                     <RefreshCw className={`w-3.5 h-3.5 ${isJobRunning(activeJob.status) ? "animate-spin" : ""}`} />
                     Refresh
                   </button>
+                  {isJobRunning(activeJob.status) ? (
+                    <button
+                      type="button"
+                      onClick={handleCancelActiveJob}
+                      disabled={isCancelling}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      {isCancelling ? "Cancelling..." : "Cancel Job"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleDismissJobPanel}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-500 hover:bg-neutral-50 cursor-pointer"
+                      title="Clear active job panel"
+                    >
+                      <X className="w-3.5 h-3.5" /> Dismiss
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {activeJob.status === "QUEUED" && queuedSeconds >= 6 && (
+                <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                  <div>
+                    <p className="font-bold">
+                      Still waiting in Celery queue ({queuedSeconds}s elapsed)
+                    </p>
+                    <p className="text-amber-800 mt-0.5">
+                      Ensure the Celery worker (<code className="bg-amber-100 px-1 py-0.5 rounded">celery -A app.core.celery_app worker</code>) is running and has been restarted after pulling the latest backend changes so it recognizes <code className="bg-amber-100 px-1 py-0.5 rounded">bulk_import_raw_materials</code>, or click <strong>Cancel Job</strong> to reset.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Progress Bars */}
               <div className="space-y-3">
