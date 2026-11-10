@@ -280,7 +280,6 @@ export default function BulkLegacyOrdersPage() {
       { wch: 13 },
       { wch: 32 },
       { wch: 28 },
-      { wch: 28 },
     ];
 
     const bowlRows: any[][] = [
@@ -293,7 +292,6 @@ export default function BulkLegacyOrdersPage() {
         "Active",
         "Base Cost (INR)",
         "Ready for Upload?",
-        "Bowl ULID",
       ],
       ...sampleData.bowls.map((b) => [
         b.code || "(No Code)",
@@ -304,7 +302,6 @@ export default function BulkLegacyOrdersPage() {
         b.status ? "YES" : "NO",
         b.base_cost,
         b.has_ingredients ? "YES" : "NO (Missing Ingredients)",
-        b.ulid,
       ]),
     ];
     const wsBowls = XLSX.utils.aoa_to_sheet(bowlRows);
@@ -317,7 +314,6 @@ export default function BulkLegacyOrdersPage() {
       { wch: 10 },
       { wch: 16 },
       { wch: 24 },
-      { wch: 28 },
     ];
 
     const instrRows: any[][] = [
@@ -1180,7 +1176,7 @@ export default function BulkLegacyOrdersPage() {
                                     )}
                                   </button>
                                 ) : (
-                                  <span className="text-neutral-400 italic">No code (use ULID)</span>
+                                  <span className="text-neutral-400 italic">No bowl code</span>
                                 )}
                               </td>
                               <td className="px-4 py-2.5 font-semibold text-neutral-800">{b.name}</td>
