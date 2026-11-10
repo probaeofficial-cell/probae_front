@@ -18,7 +18,7 @@ export default function SubscriptionsDashboard() {
   const [loading, setLoading] = useState(true);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   useEffect(() => {
-    api.get("/settings").then((res: any) => {
+    api.get("/settings/").then((res: any) => {
       if (res && res.R2_BASE_URL) setSystemSettings({ R2_BASE_URL: res.R2_BASE_URL });
     }).catch(() => {});
   }, []);

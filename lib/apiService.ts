@@ -736,7 +736,7 @@ export const endpoints = {
       if (sort) {
         query += `&sort=${encodeURIComponent(sort)}`;
       }
-      return await api.get<PaginatedVendors>(`/vendors${query}`);
+      return await api.get<PaginatedVendors>(`/vendors/${query}`);
     },
     getVendor: async (ulid: string): Promise<Vendor> => {
       return await api.get<Vendor>(`/vendors/${ulid}`);
@@ -783,13 +783,13 @@ export const endpoints = {
       if (sort) {
         query += `&sort=${encodeURIComponent(sort)}`;
       }
-      return await api.get<PaginatedPackaging>(`/packaging${query}`);
+      return await api.get<PaginatedPackaging>(`/packaging/${query}`);
     },
     getBundle: async (ulid: string): Promise<Packaging> => {
       return await api.get<Packaging>(`/packaging/${ulid}`);
     },
     createBundle: async (data: PackagingCreateInput): Promise<Packaging> => {
-      return await api.post<Packaging>("/packaging", data);
+      return await api.post<Packaging>("/packaging/", data);
     },
     updateBundle: async (ulid: string, data: PackagingUpdateInput): Promise<Packaging> => {
       return await api.put<Packaging>(`/packaging/${ulid}`, data);
@@ -937,7 +937,7 @@ export const endpoints = {
     sync: async (data: {duration_type: string, meal_slot: string, plan_category: string, bowl_ulids: string[]}) => await api.post("/plans/blueprints/sync", data)
   },
   notifications: {
-    get: () => api.get<{ notifications: any[]; unread_count: number }>("/notifications"),
+    get: () => api.get<{ notifications: any[]; unread_count: number }>("/notifications/"),
     markRead: (ulid: string) => api.patch(`/notifications/${ulid}/read`, {}),
     markAllRead: () => api.post("/notifications/mark-all-read", {}),
   },
@@ -959,7 +959,7 @@ export const endpoints = {
       return await api.get<Bowl>(`/bowls/${ulid}`);
     },
     createBowl: async (data: BowlCreateInput): Promise<Bowl> => {
-      return await api.post<Bowl>("/bowls/", data);
+      return await api.post<Bowl>("/bowls", data);
     },
     updateBowl: async (ulid: string, data: BowlUpdateInput): Promise<Bowl> => {
       return await api.put<Bowl>(`/bowls/${ulid}`, data);
