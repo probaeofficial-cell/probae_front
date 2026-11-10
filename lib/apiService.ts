@@ -576,6 +576,23 @@ export const endpoints = {
       let query = `?page=${page}&size=${size}`;
       return await api.get<import("./types").PaginatedCostLogs>(`/raw-materials/${ulid}/cost-logs${query}`);
     },
+    getBulkSample: async (): Promise<any> => {
+      return await api.get<any>("/raw-materials/bulk/sample");
+    },
+    downloadBulkSampleCsv: async (): Promise<Blob> => {
+      return await api.get<Blob>("/raw-materials/bulk/sample?format=csv", { responseType: "blob" });
+    },
+    uploadBulkRawMaterials: async (file: File): Promise<any> => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return await api.post<any>("/raw-materials/bulk/upload", formData);
+    },
+    getBulkJob: async (jobId: string): Promise<any> => {
+      return await api.get<any>(`/raw-materials/bulk/jobs/${jobId}`);
+    },
+    listBulkJobs: async (limit: number = 15): Promise<any> => {
+      return await api.get<any>(`/raw-materials/bulk/jobs?limit=${limit}`);
+    },
     purchases: {
       batchCreate: async (data: any[]) => {
         return await api.post<any[]>("/raw-materials/purchases/batch", data);

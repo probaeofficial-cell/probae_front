@@ -87,6 +87,7 @@ export type UnitType = "kg" | "l" | "g" | "ml";
 export interface RawMaterial {
   id: number;
   ulid: string;
+  item_code?: string | null;
   name: string;
   description?: string | null;
   price: number;
