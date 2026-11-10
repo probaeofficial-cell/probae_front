@@ -25,11 +25,7 @@ import {
   ChevronLeft,
   X,
   Plus,
-  ArrowRight,
-  Copy,
-  Repeat,
-  Table,
-  CheckCheck
+  ArrowRight
 } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -40,9 +36,10 @@ import AsyncCustomerSelect from "@/components/admin/AsyncCustomerSelect";
 import AsyncPlanTierSelect from "@/components/admin/AsyncPlanTierSelect";
 import AsyncBowlSelect from "@/components/admin/AsyncBowlSelect";
 import { BowlCustomizerModal, CustomIngredient } from "@/components/admin/BowlCustomizerModal";
-import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { endpoints } from "@/lib/apiService";
+import Link from "next/navigation";
 import { useRouter } from "next/navigation";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 const MEAL_SLOTS = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
@@ -63,14 +60,10 @@ export default function PlanPriceCalculatorPage() {
   const [customDays, setCustomDays] = useState<number>(20);
   const [customSlots, setCustomSlots] = useState<string[]>(["Lunch", "Dinner"]);
   const [customSchedule, setCustomSchedule] = useState<any[]>([]);
-  const [activeCustomDay, setActiveCustomDay] = useState<number>(1);
-  const [isAutoFilling, setIsAutoFilling] = useState<boolean>(false);
-  const [showScheduleMatrixModal, setShowScheduleMatrixModal] = useState<boolean>(false);
 
   // Overrides & Preferences
   const [goal, setGoal] = useState<string>("MAINTENANCE");
   const [manualCalorieTarget, setManualCalorieTarget] = useState<number | "">("");
-  const [slotCalories, setSlotCalories] = useState<Record<string, number | "">>({});
   const [includeDelivery, setIncludeDelivery] = useState<boolean>(true);
   const [discountPct, setDiscountPct] = useState<number>(0);
   const [calculationNotes, setCalculationNotes] = useState<string>("");
@@ -126,135 +119,14 @@ export default function PlanPriceCalculatorPage() {
     return () => clearTimeout(handler);
   }, [logsSearch]);
 
-  // ── Helper: Active Meal Slots in Current Mode ─────────────────────────────
-  const activeMealSlots = useMemo(() => {
-    if (planMode === "STANDARD") {
-      if (selectedPlanTier?.included_meal_slots && selectedPlanTier.included_meal_slots.length > 0) {
-        return selectedPlanTier.included_meal_slots as string[];
-      }
-      return ["Lunch", "Dinner"];
-    }
-    return customSlots && customSlots.length > 0 ? customSlots : ["Lunch", "Dinner"];
-  }, [planMode, selectedPlanTier, customSlots]);
-
-  // ── Helper: Case-Insensitive Customer Slot Calorie Lookup ──────────────────
-  const getCustomerSlotCalorie = useCallback((cust: any, slotName: string): number | null => {
-    if (!cust || !slotName) return null;
-    const clean = slotName.trim().toLowerCase();
-
-    // 1. Check in cust.calorie_profile.mealCalories or meal_calories or slots
-    const cp = cust.calorie_profile;
-    if (cp && typeof cp === "object") {
-      for (const nestedKey of ["mealCalories", "meal_calories", "slots", "mealSlots", "meal_slots"]) {
-        const nested = cp[nestedKey];
-        if (nested && typeof nested === "object") {
-          if (nested[slotName] !== undefined && Number(nested[slotName]) > 0) {
-            return Number(nested[slotName]);
-          }
-          for (const [k, v] of Object.entries(nested)) {
-            if (k.trim().toLowerCase() === clean && Number(v) > 0) {
-              return Number(v);
-            }
-          }
-        }
-      }
-
-      // 2. Check directly in cust.calorie_profile (e.g. { lunch: 850, dinner: 600, Lunch: 850 })
-      if (cp[slotName] !== undefined && Number(cp[slotName]) > 0) {
-        return Number(cp[slotName]);
-      }
-      for (const [k, v] of Object.entries(cp)) {
-        const kClean = k.trim().toLowerCase();
-        if (
-          (kClean === clean || kClean === `${clean}_calories` || kClean === `${clean}_cals` || kClean === `target_${clean}`) &&
-          Number(v) > 0
-        ) {
-          return Number(v);
-        }
-      }
-    }
-
-    // 3. Check directly on cust (top-level properties)
-    if (cust[slotName] !== undefined && Number(cust[slotName]) > 0) {
-      return Number(cust[slotName]);
-    }
-    for (const [k, v] of Object.entries(cust)) {
-      const kClean = k.trim().toLowerCase();
-      if (
-        (kClean === clean || kClean === `${clean}_calories` || kClean === `${clean}_cals`) &&
-        Number(v) > 0
-      ) {
-        return Number(v);
-      }
-    }
-
-    // 4. Check in cust.meal_schedules or cust.custom_schedule
-    for (const schedKey of ["meal_schedules", "custom_schedule", "mealSchedules"]) {
-      const sched = cust[schedKey];
-      if (Array.isArray(sched)) {
-        const match = sched.find((ms: any) => 
-          (ms.meal_slot || "").trim().toLowerCase() === clean && Number(ms.custom_calories) > 0
-        );
-        if (match) return Number(match.custom_calories);
-      }
-    }
-
-    return null;
-  }, []);
-
   // ── Sync Customer Profile on Selection ────────────────────────────────────
-  const handleSelectCustomer = async (cust: any) => {
+  const handleSelectCustomer = (cust: any) => {
     setSelectedCustomer(cust);
-    if (!cust) return;
-
-    let fullCust = cust;
-    if (cust.ulid) {
-      try {
-        const detailRes: any = await endpoints.customers.get(cust.ulid);
-        if (detailRes && (detailRes.ulid || detailRes.id)) {
-          fullCust = { ...cust, ...detailRes };
-          setSelectedCustomer(fullCust);
-        }
-      } catch (e) {
-        console.warn("Could not fetch full customer detail", e);
-      }
-    }
-
-    if (fullCust.goal) setGoal(fullCust.goal);
-    if (fullCust.include_delivery !== undefined) setIncludeDelivery(Boolean(fullCust.include_delivery));
-
-    const newSlotCals: Record<string, number | ""> = {};
-    let totalAssigned = 0;
-    let hasCustomSlotCal = false;
-
-    activeMealSlots.forEach(slot => {
-      const cVal = getCustomerSlotCalorie(fullCust, slot);
-      if (cVal !== null && cVal > 0) {
-        newSlotCals[slot] = cVal;
-        totalAssigned += cVal;
-        hasCustomSlotCal = true;
-      }
-    });
-
-    if (hasCustomSlotCal) {
-      // Use the exact assigned calories from the customer
-      activeMealSlots.forEach(slot => {
-        if (newSlotCals[slot] === undefined) {
-          newSlotCals[slot] = 500;
-          totalAssigned += 500;
-        }
-      });
-      setSlotCalories(newSlotCals);
-      setManualCalorieTarget(totalAssigned);
-    } else {
-      const customerDailyTarget = fullCust.calorie_profile?.probaeTarget || fullCust.calorie_profile?.total || fullCust.calorie_profile?.tdee;
-      if (customerDailyTarget) {
-        const perMeal = Math.round(Number(customerDailyTarget) / Math.max(1, activeMealSlots.length));
-        activeMealSlots.forEach(slot => {
-          newSlotCals[slot] = perMeal;
-        });
-        setSlotCalories(newSlotCals);
-        setManualCalorieTarget(customerDailyTarget);
+    if (cust) {
+      if (cust.goal) setGoal(cust.goal);
+      if (cust.include_delivery !== undefined) setIncludeDelivery(Boolean(cust.include_delivery));
+      if (cust.calorie_profile?.total || cust.calorie_profile?.probaeTarget) {
+        setManualCalorieTarget(cust.calorie_profile.total || cust.calorie_profile.probaeTarget);
       }
     }
   };
@@ -262,8 +134,6 @@ export default function PlanPriceCalculatorPage() {
   const handleClearCustomer = () => {
     setSelectedCustomerId(0);
     setSelectedCustomer(null);
-    setSlotCalories({});
-    setManualCalorieTarget("");
   };
 
   // ── Plan Tier Selection ───────────────────────────────────────────────────
@@ -271,93 +141,6 @@ export default function PlanPriceCalculatorPage() {
     setSelectedPlanTier(tier);
     if (tier && tier.discount_percentage !== undefined) {
       setDiscountPct(Number(tier.discount_percentage) || 0);
-    }
-    const tierSlots = tier?.included_meal_slots && tier.included_meal_slots.length > 0 
-      ? tier.included_meal_slots 
-      : ["Lunch", "Dinner"];
-    setSlotCalories(prev => {
-      const next = { ...prev };
-      tierSlots.forEach((slot: string) => {
-        const custVal = getCustomerSlotCalorie(selectedCustomer, slot);
-        if (custVal !== null && custVal > 0) {
-          next[slot] = custVal;
-        } else if (!next[slot]) {
-          next[slot] = 500;
-        }
-      });
-      return next;
-    });
-  };
-
-  // ── Auto-sync slot calories when active slots change ───────────────────────
-  useEffect(() => {
-    setSlotCalories(prev => {
-      const next = { ...prev };
-      let changed = false;
-      activeMealSlots.forEach(slot => {
-        if (next[slot] === undefined || next[slot] === "") {
-          const custVal = getCustomerSlotCalorie(selectedCustomer, slot);
-          if (custVal !== null && custVal > 0) {
-            next[slot] = custVal;
-            changed = true;
-          } else {
-            next[slot] = 500;
-            changed = true;
-          }
-        }
-      });
-      return changed ? next : prev;
-    });
-  }, [activeMealSlots, selectedCustomer, getCustomerSlotCalorie]);
-
-  // ── Per-Slot Calorie Editing Handlers ──────────────────────────────────────
-  const handleSlotCalorieChange = (slot: string, val: number | "") => {
-    setSlotCalories(prev => {
-      const updated = { ...prev, [slot]: val };
-      const sum = activeMealSlots.reduce((acc, s) => {
-        const v = updated[s];
-        return acc + (typeof v === "number" ? v : 0);
-      }, 0);
-      setManualCalorieTarget(sum > 0 ? sum : "");
-      return updated;
-    });
-  };
-
-  const handleResetSlotsToCustomer = () => {
-    if (!selectedCustomer) return;
-    const newSlotCals: Record<string, number | ""> = {};
-    let totalAssigned = 0;
-    activeMealSlots.forEach(slot => {
-      const cVal = getCustomerSlotCalorie(selectedCustomer, slot);
-      if (cVal !== null && cVal > 0) {
-        newSlotCals[slot] = cVal;
-        totalAssigned += cVal;
-      } else {
-        newSlotCals[slot] = 500;
-        totalAssigned += 500;
-      }
-    });
-    setSlotCalories(newSlotCals);
-    setManualCalorieTarget(totalAssigned);
-  };
-
-  const handleSplitDailyEvenly = () => {
-    const daily = Number(manualCalorieTarget) || 1600;
-    const perMeal = Math.round(daily / Math.max(1, activeMealSlots.length));
-    const newSlotCals: Record<string, number | ""> = {};
-    activeMealSlots.forEach(slot => {
-      newSlotCals[slot] = perMeal;
-    });
-    setSlotCalories(newSlotCals);
-  };
-
-  const handleDailyCalorieChange = (val: number | "") => {
-    setManualCalorieTarget(val);
-    if (typeof val === "number" && val > 0) {
-      const perMeal = Math.round(val / Math.max(1, activeMealSlots.length));
-      const updated: Record<string, number> = {};
-      activeMealSlots.forEach(s => { updated[s] = perMeal; });
-      setSlotCalories(updated);
     }
   };
 
@@ -378,119 +161,20 @@ export default function PlanPriceCalculatorPage() {
     if (!bowl) return;
     setCustomSchedule(prev => {
       const filtered = prev.filter(
-        item => !(Number(item.day_index) === Number(dayIndex) && item.meal_slot.toLowerCase() === mealSlot.toLowerCase())
+        item => !(item.day_index === dayIndex && item.meal_slot.toLowerCase() === mealSlot.toLowerCase())
       );
       return [
         ...filtered,
         {
-          day_index: Number(dayIndex),
+          day_index: dayIndex,
           meal_slot: mealSlot,
           bowl_ulid: bowl.ulid,
           bowl_name: bowl.name,
-          bowl_code: bowl.code,
-          bowl_price: bowl.price,
-          image_filename: bowl.image_filename,
           is_customized: false,
           custom_ingredients: []
         }
       ];
     });
-  };
-
-  const handleRemoveCustomBowl = (dayIndex: number, mealSlot: string) => {
-    setCustomSchedule(prev =>
-      prev.filter(
-        item => !(Number(item.day_index) === Number(dayIndex) && item.meal_slot.toLowerCase() === mealSlot.toLowerCase())
-      )
-    );
-  };
-
-  const handleCopyDayToAll = (sourceDay: number) => {
-    const sourceBowls = customSchedule.filter(item => Number(item.day_index) === Number(sourceDay));
-    if (sourceBowls.length === 0) {
-      alert(`Day ${sourceDay} has no bowls assigned yet. Please assign at least one bowl first.`);
-      return;
-    }
-    setCustomSchedule(prev => {
-      const keepSource = prev.filter(item => Number(item.day_index) === Number(sourceDay));
-      const newCopies: any[] = [];
-      for (let d = 1; d <= customDays; d++) {
-        if (d === sourceDay) continue;
-        sourceBowls.forEach(sb => {
-          newCopies.push({
-            ...sb,
-            day_index: d
-          });
-        });
-      }
-      return [...keepSource, ...newCopies];
-    });
-  };
-
-  const handleCopyDayToNext = (sourceDay: number) => {
-    if (sourceDay >= customDays) return;
-    const targetDay = sourceDay + 1;
-    const sourceBowls = customSchedule.filter(item => Number(item.day_index) === Number(sourceDay));
-    if (sourceBowls.length === 0) {
-      alert(`Day ${sourceDay} has no bowls assigned to copy.`);
-      return;
-    }
-    setCustomSchedule(prev => {
-      const filtered = prev.filter(item => Number(item.day_index) !== targetDay);
-      const copied = sourceBowls.map(sb => ({ ...sb, day_index: targetDay }));
-      return [...filtered, ...copied];
-    });
-    setActiveCustomDay(targetDay);
-  };
-
-  const handleAutoFillCustomSchedule = async () => {
-    setIsAutoFilling(true);
-    try {
-      const catRes: any = await endpoints.mealCategories.getMealCategories(1, 100);
-      const categories = catRes.items || [];
-      const newSchedule: any[] = [];
-
-      for (const slot of customSlots) {
-        const slotLower = slot.toLowerCase();
-        const cat = categories.find((c: any) => (c.slug || c.name).toLowerCase() === slotLower);
-        let bowlsForSlot: any[] = [];
-        if (cat) {
-          const bRes: any = await endpoints.bowls.getBowls(1, 50, undefined, undefined, cat.ulid);
-          bowlsForSlot = bRes.items || [];
-        } else {
-          const bRes: any = await endpoints.bowls.getBowls(1, 50);
-          bowlsForSlot = bRes.items || [];
-        }
-
-        if (bowlsForSlot.length > 0) {
-          for (let d = 1; d <= customDays; d++) {
-            const bowl = bowlsForSlot[(d - 1) % bowlsForSlot.length];
-            newSchedule.push({
-              day_index: d,
-              meal_slot: slot,
-              bowl_ulid: bowl.ulid,
-              bowl_name: bowl.name,
-              bowl_code: bowl.code,
-              bowl_price: bowl.price,
-              image_filename: bowl.image_filename,
-              is_customized: false,
-              custom_ingredients: []
-            });
-          }
-        }
-      }
-      setCustomSchedule(newSchedule);
-    } catch (err) {
-      console.error("Auto fill error", err);
-    } finally {
-      setIsAutoFilling(false);
-    }
-  };
-
-  const handleClearAllCustomSchedule = () => {
-    if (confirm("Are you sure you want to clear all mapped bowls from this custom schedule?")) {
-      setCustomSchedule([]);
-    }
   };
 
   // ── Execute Price Calculation ─────────────────────────────────────────────
@@ -518,41 +202,21 @@ export default function PlanPriceCalculatorPage() {
 
       if (goal) payload.goal = goal;
 
-      // Prepare calorie profile with individual per-meal slot targets
-      const targetNum = Number(manualCalorieTarget) || 0;
-      const mealCalories: Record<string, number> = {};
-      let totalFromSlots = 0;
+      if (manualCalorieTarget) {
+        const targetNum = Number(manualCalorieTarget);
+        const slotsToDivide = planMode === "STANDARD" 
+          ? (selectedPlanTier?.included_meal_slots || ["Lunch", "Dinner"])
+          : customSlots;
+        const perMeal = Math.round(targetNum / Math.max(1, slotsToDivide.length));
+        const mealCalories: Record<string, number> = {};
+        slotsToDivide.forEach((s: string) => {
+          mealCalories[s.toLowerCase()] = perMeal;
+        });
 
-      activeMealSlots.forEach((slot: string) => {
-        let val = typeof slotCalories[slot] === "number" && slotCalories[slot] > 0
-          ? Number(slotCalories[slot]) 
-          : 0;
-        if (!val || val <= 0) {
-          const custVal = getCustomerSlotCalorie(selectedCustomer, slot);
-          if (custVal !== null && custVal > 0) {
-            val = custVal;
-          }
-        }
-        if (val > 0) {
-          mealCalories[slot] = val;
-          mealCalories[slot.toLowerCase()] = val;
-          totalFromSlots += val;
-        }
-      });
-
-      if (totalFromSlots > 0) {
-        payload.calorie_profile = {
-          total: totalFromSlots,
-          probaeTarget: totalFromSlots,
-          mealCalories,
-          mealSlots: activeMealSlots
-        };
-      } else if (targetNum > 0) {
         payload.calorie_profile = {
           total: targetNum,
           probaeTarget: targetNum,
-          mealCalories: {},
-          mealSlots: activeMealSlots
+          mealCalories
         };
       }
 
@@ -590,9 +254,6 @@ export default function PlanPriceCalculatorPage() {
     selectedCustomer, 
     goal, 
     manualCalorieTarget, 
-    slotCalories,
-    activeMealSlots,
-    getCustomerSlotCalorie,
     includeDelivery, 
     discountPct, 
     customPlanName, 
@@ -781,25 +442,6 @@ export default function PlanPriceCalculatorPage() {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
-      {/* Global high-contrast text selection style */}
-      <style jsx global>{`
-        ::selection {
-          background-color: #6A0FAD !important;
-          color: #ffffff !important;
-        }
-        ::-moz-selection {
-          background-color: #6A0FAD !important;
-          color: #ffffff !important;
-        }
-        input::selection, textarea::selection {
-          background-color: #6A0FAD !important;
-          color: #ffffff !important;
-        }
-        input::-moz-selection, textarea::-moz-selection {
-          background-color: #6A0FAD !important;
-          color: #ffffff !important;
-        }
-      `}</style>
       <div className="p-4 sm:p-8 h-full rounded-tl-3xl shadow-[0_0_15px_rgba(0,0,0,0.05)] flex flex-col bg-white overflow-y-auto">
         <Header />
         
@@ -843,16 +485,16 @@ export default function PlanPriceCalculatorPage() {
             {/* Step 1: Customer Selection */}
             <div className="bg-[#FAFAFA] rounded-3xl p-5 border border-neutral-200/80 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black text-neutral-900 flex items-center gap-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-neutral-600 flex items-center gap-2">
                   <Users className="w-4 h-4 text-[#6A0FAD]" />
                   1. Select Customer (Paginated)
                 </h3>
                 {selectedCustomer && (
                   <button
                     onClick={handleClearCustomer}
-                    className="text-xs font-bold text-red-500 hover:text-red-700 transition-colors bg-red-50 px-2.5 py-1 rounded-lg"
+                    className="text-[11px] font-bold text-neutral-400 hover:text-red-500 transition-colors"
                   >
-                    Clear Customer
+                    Clear
                   </button>
                 )}
               </div>
@@ -866,62 +508,24 @@ export default function PlanPriceCalculatorPage() {
 
               {/* Customer Profile Pill */}
               {selectedCustomer ? (
-                <div className="p-4 bg-purple-50/90 border border-purple-200 rounded-2xl space-y-3 text-xs">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-black text-neutral-900">{selectedCustomer.name}</p>
-                      <p className="text-xs text-neutral-600 mt-0.5 font-medium">
-                        {selectedCustomer.phone} • Goal: <strong className="text-purple-800 font-bold">{selectedCustomer.goal || "Maintenance"}</strong>
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-purple-200/80 text-[#6A0FAD] border border-purple-300">
-                        {selectedCustomer?.calorie_profile?.probaeTarget || selectedCustomer?.calorie_profile?.total || selectedCustomer?.calorie_profile?.tdee || manualCalorieTarget
-                          ? `${(selectedCustomer?.calorie_profile?.probaeTarget || selectedCustomer?.calorie_profile?.total || selectedCustomer?.calorie_profile?.tdee || manualCalorieTarget).toLocaleString()} kcal / day`
-                          : "Custom Profile"}
-                      </span>
-                      <p className="text-[11px] text-neutral-500 font-semibold mt-1">
-                        {includeDelivery ? "Delivery Included" : "Pickup / No Delivery"}
-                      </p>
-                    </div>
+                <div className="p-3.5 bg-purple-50/70 border border-purple-100 rounded-2xl flex items-center justify-between text-xs">
+                  <div>
+                    <p className="font-bold text-neutral-900">{selectedCustomer.name}</p>
+                    <p className="text-[11px] text-neutral-500">{selectedCustomer.phone} • Goal: <strong className="text-purple-700">{selectedCustomer.goal || "Maintenance"}</strong></p>
                   </div>
-
-                  {/* Customer Calorie & Macro Breakdown Per Day */}
-                  <div className="pt-2.5 border-t border-purple-200/70 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider">Per-Day Target:</span>
-                      <span className="font-black text-[#6A0FAD] bg-white px-2 py-0.5 rounded-md border border-purple-200 text-xs">
-                        {selectedCustomer?.calorie_profile?.probaeTarget || selectedCustomer?.calorie_profile?.total || selectedCustomer?.calorie_profile?.tdee
-                          ? `${(selectedCustomer?.calorie_profile?.probaeTarget || selectedCustomer?.calorie_profile?.total || selectedCustomer?.calorie_profile?.tdee).toLocaleString()} kcal / day`
-                          : manualCalorieTarget ? `${manualCalorieTarget} kcal / day` : "Not set"}
-                      </span>
-                    </div>
-
-                    {(selectedCustomer?.calorie_profile?.protein || selectedCustomer?.calorie_profile?.carbs || selectedCustomer?.calorie_profile?.fat) && (
-                      <div className="flex items-center gap-1 text-[11px] font-semibold text-neutral-700 bg-white/70 px-2 py-0.5 rounded-md border border-purple-100">
-                        <span className="text-emerald-700 font-bold">P: {selectedCustomer.calorie_profile.protein}g</span> • 
-                        <span className="text-blue-700 font-bold">C: {selectedCustomer.calorie_profile.carbs}g</span> • 
-                        <span className="text-amber-700 font-bold">F: {selectedCustomer.calorie_profile.fat}g</span>
-                      </div>
-                    )}
+                  <div className="text-right">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 text-[#6A0FAD]">
+                      {manualCalorieTarget ? `${manualCalorieTarget} kcal` : "Custom Profile"}
+                    </span>
+                    <p className="text-[10px] text-neutral-400 mt-0.5">
+                      {includeDelivery ? "Delivery Included" : "Pickup / No Delivery"}
+                    </p>
                   </div>
-
-                  {/* Customer Per-Meal Slot Targets */}
-                  {selectedCustomer?.calorie_profile?.mealCalories && Object.keys(selectedCustomer.calorie_profile.mealCalories).length > 0 && (
-                    <div className="pt-2 border-t border-purple-200/50 flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-700">Per-Meal Calories:</span>
-                      {Object.entries(selectedCustomer.calorie_profile.mealCalories).map(([slot, cals]) => (
-                        <span key={slot} className="bg-white text-neutral-800 text-[11px] font-bold px-2 py-0.5 rounded-lg border border-purple-200 capitalize">
-                          {slot}: <span className="text-[#6A0FAD] font-black">{Number(cals)} kcal</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
               ) : (
-                <div className="p-3.5 bg-neutral-100/90 rounded-2xl border border-neutral-200 text-xs text-neutral-600 flex items-center gap-2.5">
-                  <Info className="w-4 h-4 text-neutral-500 shrink-0" />
-                  <span>Calculating as <strong>General Prospect / Unassigned</strong>. You can customize calorie targets manually below.</span>
+                <div className="p-3 bg-neutral-100/70 rounded-2xl border border-neutral-200/60 text-[11px] text-neutral-500 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-neutral-400 shrink-0" />
+                  <span>Calculating as <strong>General Prospect / Unassigned</strong>. You can customize calorie goals manually below.</span>
                 </div>
               )}
             </div>
@@ -929,25 +533,25 @@ export default function PlanPriceCalculatorPage() {
             {/* Step 2: Plan Selection & Mode Toggle */}
             <div className="bg-[#FAFAFA] rounded-3xl p-5 border border-neutral-200/80 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black text-neutral-900 flex items-center gap-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-neutral-600 flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-[#16A34A]" />
                   2. Plan Type & Configuration
                 </h3>
 
                 {/* Plan Mode Tabs */}
-                <div className="flex items-center bg-neutral-200/90 p-1 rounded-xl text-xs font-black">
+                <div className="flex items-center bg-neutral-200/80 p-0.5 rounded-xl text-[11px] font-bold">
                   <button
                     onClick={() => setPlanMode("STANDARD")}
-                    className={`px-3 py-1.5 rounded-lg transition-all ${
-                      planMode === "STANDARD" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900"
+                    className={`px-3 py-1 rounded-lg transition-all ${
+                      planMode === "STANDARD" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
                     }`}
                   >
                     Standard Tier
                   </button>
                   <button
                     onClick={() => setPlanMode("CUSTOM")}
-                    className={`px-3 py-1.5 rounded-lg transition-all ${
-                      planMode === "CUSTOM" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900"
+                    className={`px-3 py-1 rounded-lg transition-all ${
+                      planMode === "CUSTOM" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
                     }`}
                   >
                     Custom Builder
@@ -957,7 +561,7 @@ export default function PlanPriceCalculatorPage() {
 
               {planMode === "STANDARD" ? (
                 <div className="space-y-3">
-                  <label className="text-xs font-black text-neutral-800 block">
+                  <label className="text-xs font-bold text-neutral-600 block">
                     Choose Plan Tier (Paginated Search)
                   </label>
                   <AsyncPlanTierSelect
@@ -968,19 +572,19 @@ export default function PlanPriceCalculatorPage() {
                   />
 
                   {selectedPlanTier && (
-                    <div className="p-4 bg-white rounded-2xl border border-neutral-200 space-y-2 text-xs">
-                      <div className="flex items-center justify-between font-black text-neutral-900 text-sm">
+                    <div className="p-3 bg-white rounded-2xl border border-neutral-200/80 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between font-bold text-neutral-900">
                         <span>{selectedPlanTier.name}</span>
-                        <span className="text-purple-800 bg-purple-100 border border-purple-200 px-2.5 py-0.5 rounded-full text-xs font-bold">
+                        <span className="text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full text-[10px]">
                           {selectedPlanTier.category}
                         </span>
                       </div>
-                      <p className="text-xs text-neutral-600">
-                        Duration: <strong className="text-neutral-900">{selectedPlanTier.duration}</strong> • <strong className="text-neutral-900">{selectedPlanTier.days} Delivered Days</strong>
+                      <p className="text-[11px] text-neutral-500">
+                        Duration: <strong>{selectedPlanTier.duration}</strong> • <strong>{selectedPlanTier.days} Delivered Days</strong>
                       </p>
-                      <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-neutral-100">
+                      <div className="flex flex-wrap gap-1 mt-1 pt-1 border-t border-neutral-100">
                         {(selectedPlanTier.included_meal_slots || []).map((slot: string) => (
-                          <span key={slot} className="px-2.5 py-1 rounded-lg bg-neutral-100 border border-neutral-200 text-neutral-800 text-xs font-black">
+                          <span key={slot} className="px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 text-[10px] font-bold">
                             {slot}
                           </span>
                         ))}
@@ -992,7 +596,7 @@ export default function PlanPriceCalculatorPage() {
                 /* Custom Plan Builder Controls */
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-black text-neutral-800 block mb-1.5">
+                    <label className="text-xs font-bold text-neutral-600 block mb-1">
                       Custom Plan Title
                     </label>
                     <input
@@ -1000,15 +604,14 @@ export default function PlanPriceCalculatorPage() {
                       value={customPlanName}
                       onChange={(e) => setCustomPlanName(e.target.value)}
                       placeholder="e.g. VIP Corporate 24-Day Fat Loss"
-                      style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A", caretColor: "#6A0FAD" }}
-                      className="w-full h-11 text-sm px-3.5 py-2 border-2 border-neutral-300 rounded-xl bg-white font-bold text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-neutral-400 placeholder:font-normal"
+                      className="w-full text-xs px-3 py-2 border border-neutral-200 rounded-xl bg-white"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-black text-neutral-800 block mb-1.5">
-                        Delivered Days
+                      <label className="text-xs font-bold text-neutral-600 block mb-1">
+                        Days Count
                       </label>
                       <input
                         type="number"
@@ -1016,24 +619,20 @@ export default function PlanPriceCalculatorPage() {
                         max="90"
                         value={customDays}
                         onChange={(e) => setCustomDays(parseInt(e.target.value) || 1)}
-                        style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A", caretColor: "#6A0FAD" }}
-                        className="w-full h-11 text-base px-3.5 py-2 border-2 border-neutral-300 rounded-xl bg-white font-black text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all"
+                        className="w-full text-xs px-3 py-2 border border-neutral-200 rounded-xl bg-white font-bold"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-black text-neutral-800 block mb-1.5">
+                      <label className="text-xs font-bold text-neutral-600 block mb-1">
                         Quick Preset
                       </label>
-                      <div className="flex gap-1 h-11 items-center">
+                      <div className="flex gap-1">
                         {[5, 20, 24, 26].map(d => (
                           <button
                             key={d}
-                            type="button"
                             onClick={() => setCustomDays(d)}
-                            className={`flex-1 h-full text-xs font-black rounded-xl border transition-all flex items-center justify-center ${
-                              customDays === d 
-                                ? "bg-purple-600 border-purple-600 text-white shadow-sm" 
-                                : "bg-white border-neutral-300 text-neutral-700 hover:bg-neutral-100"
+                            className={`flex-1 py-1 text-[11px] font-bold rounded-lg border ${
+                              customDays === d ? "bg-purple-100 border-purple-300 text-[#6A0FAD]" : "bg-white border-neutral-200 text-neutral-600"
                             }`}
                           >
                             {d}d
@@ -1044,7 +643,7 @@ export default function PlanPriceCalculatorPage() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-black text-neutral-800 block mb-2">
+                    <label className="text-xs font-bold text-neutral-600 block mb-1.5">
                       Included Meal Slots
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -1053,15 +652,14 @@ export default function PlanPriceCalculatorPage() {
                         return (
                           <button
                             key={slot}
-                            type="button"
                             onClick={() => handleToggleSlot(slot)}
-                            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all border flex items-center gap-2 ${
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
                               isChecked
                                 ? "bg-[#6A0FAD] border-[#6A0FAD] text-white shadow-sm"
-                                : "bg-white border-neutral-300 text-neutral-700 hover:bg-neutral-100"
+                                : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50"
                             }`}
                           >
-                            {isChecked && <Check className="w-3.5 h-3.5" />}
+                            {isChecked && <Check className="w-3 h-3" />}
                             {slot}
                           </button>
                         );
@@ -1069,187 +667,21 @@ export default function PlanPriceCalculatorPage() {
                     </div>
                   </div>
 
-                  {/* Multi-Day Schedule & Bowl Assignment */}
-                  <div className="pt-3 border-t border-neutral-200 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-xs font-black text-neutral-900 block">
-                          Day Schedule ({customSchedule.length} / {customDays * customSlots.length} meals assigned)
-                        </span>
-                        <span className="text-[11px] text-neutral-500 font-medium">
-                          Select a day tab below to assign bowls for that day
-                        </span>
+                  {/* Pick Base Bowls for Slots */}
+                  <div className="pt-2 border-t border-neutral-200/80 space-y-2">
+                    <span className="text-xs font-bold text-neutral-700 block">
+                      Assign Bowls for Slots (Applies to rotation):
+                    </span>
+                    {customSlots.map(slot => (
+                      <div key={slot} className="space-y-1">
+                        <span className="text-[11px] font-bold text-neutral-500 uppercase">{slot} Bowl</span>
+                        <AsyncBowlSelect
+                          value=""
+                          onChange={() => {}}
+                          onSelectBowl={(bowl) => handleSetCustomBowl(0, slot, bowl)}
+                        />
                       </div>
-                      
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setShowScheduleMatrixModal(true)}
-                          className="px-2.5 py-1 text-xs font-bold text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 rounded-lg flex items-center gap-1 transition-colors"
-                          title="View Full Schedule Table"
-                        >
-                          <Table className="w-3.5 h-3.5 text-purple-600" /> Matrix
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleAutoFillCustomSchedule}
-                          disabled={isAutoFilling}
-                          className="px-2.5 py-1 text-xs font-bold text-[#6A0FAD] bg-purple-50 border border-purple-200 hover:bg-purple-100 rounded-lg flex items-center gap-1 transition-colors"
-                          title="Auto-fill all days using meal categories"
-                        >
-                          <Repeat className={`w-3.5 h-3.5 ${isAutoFilling ? "animate-spin" : ""}`} /> Auto-Fill
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Day Tabs Horizontal Scroll */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
-                      {Array.from({ length: customDays }, (_, i) => i + 1).map((d) => {
-                        const dayMeals = customSchedule.filter(it => Number(it.day_index) === d);
-                        const isComplete = dayMeals.length >= customSlots.length && customSlots.length > 0;
-                        const isPartial = dayMeals.length > 0 && !isComplete;
-                        const isActive = activeCustomDay === d;
-
-                        return (
-                          <button
-                            key={d}
-                            type="button"
-                            onClick={() => setActiveCustomDay(d)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-                              isActive
-                                ? "bg-[#6A0FAD] border-[#6A0FAD] text-white shadow-sm"
-                                : isComplete
-                                ? "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100"
-                                : isPartial
-                                ? "bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100"
-                                : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50"
-                            }`}
-                          >
-                            <span>Day {d}</span>
-                            {isComplete ? (
-                              <Check className={`w-3 h-3 ${isActive ? "text-white" : "text-emerald-600"}`} />
-                            ) : (
-                              <span className={`text-[10px] font-bold ${isActive ? "text-purple-200" : "text-neutral-400"}`}>
-                                {dayMeals.length}/{customSlots.length}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Day Action Bar */}
-                    <div className="flex items-center justify-between bg-purple-50/70 p-2.5 rounded-xl border border-purple-100 text-xs">
-                      <span className="font-bold text-purple-900">
-                        Configuring: <strong>Day {activeCustomDay}</strong> of {customDays}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleCopyDayToAll(activeCustomDay)}
-                          className="px-2 py-1 text-[11px] font-bold text-purple-800 bg-white border border-purple-200 hover:bg-purple-100/60 rounded-md flex items-center gap-1 transition-colors"
-                          title="Copy Day bowls to all other days"
-                        >
-                          <Copy className="w-3 h-3 text-[#6A0FAD]" /> Copy to All Days
-                        </button>
-                        {activeCustomDay < customDays && (
-                          <button
-                            type="button"
-                            onClick={() => handleCopyDayToNext(activeCustomDay)}
-                            className="px-2 py-1 text-[11px] font-bold text-purple-800 bg-white border border-purple-200 hover:bg-purple-100/60 rounded-md flex items-center gap-1 transition-colors"
-                            title="Copy to next day and advance"
-                          >
-                            <ArrowRight className="w-3 h-3 text-[#6A0FAD]" /> Copy to Day {activeCustomDay + 1}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Meal Slot Pickers for activeCustomDay */}
-                    <div className="space-y-3">
-                      {customSlots.map(slot => {
-                        const assignedItem = customSchedule.find(
-                          it => Number(it.day_index) === Number(activeCustomDay) && 
-                                it.meal_slot.toLowerCase() === slot.toLowerCase()
-                        );
-
-                        return (
-                          <div key={slot} className="p-3 bg-white rounded-2xl border border-neutral-200 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-black text-neutral-800 flex items-center gap-1.5">
-                                <Utensils className="w-3.5 h-3.5 text-[#6A0FAD]" />
-                                Day {activeCustomDay} • {slot} Bowl
-                              </span>
-                              {assignedItem && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveCustomBowl(activeCustomDay, slot)}
-                                  className="text-[11px] font-bold text-red-500 hover:text-red-700 transition-colors"
-                                >
-                                  Remove
-                                </button>
-                              )}
-                            </div>
-
-                            <AsyncBowlSelect
-                              value={assignedItem?.bowl_ulid || ""}
-                              selectedBowl={assignedItem ? { name: assignedItem.bowl_name, ulid: assignedItem.bowl_ulid } : undefined}
-                              onChange={() => {}}
-                              onSelectBowl={(bowl) => handleSetCustomBowl(activeCustomDay, slot, bowl)}
-                            />
-
-                            {assignedItem && (
-                              <div className="flex items-center justify-between pt-1.5 border-t border-neutral-100 text-xs">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-neutral-900">{assignedItem.bowl_name}</span>
-                                  {assignedItem.is_customized && (
-                                    <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">
-                                      Customized
-                                    </span>
-                                  )}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenCustomizer({
-                                    day_index: activeCustomDay,
-                                    meal_type: slot,
-                                    bowl_ulid: assignedItem.bowl_ulid,
-                                    bowl_name: assignedItem.bowl_name,
-                                    custom_ingredients: assignedItem.custom_ingredients || []
-                                  })}
-                                  className="text-xs font-bold text-[#6A0FAD] hover:underline flex items-center gap-1"
-                                >
-                                  <SlidersHorizontal className="w-3 h-3" /> Customize Recipe
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Day Navigation Controls */}
-                    <div className="flex items-center justify-between pt-2">
-                      <button
-                        type="button"
-                        disabled={activeCustomDay <= 1}
-                        onClick={() => setActiveCustomDay(prev => Math.max(1, prev - 1))}
-                        className="px-3 py-1.5 text-xs font-bold text-neutral-700 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-                      >
-                        <ChevronLeft className="w-4 h-4" /> Day {activeCustomDay - 1}
-                      </button>
-                      <span className="text-xs font-bold text-neutral-500">
-                        Day {activeCustomDay} of {customDays}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={activeCustomDay >= customDays}
-                        onClick={() => setActiveCustomDay(prev => Math.min(customDays, prev + 1))}
-                        className="px-3 py-1.5 text-xs font-bold text-neutral-700 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-                      >
-                        Day {activeCustomDay + 1} <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1257,193 +689,70 @@ export default function PlanPriceCalculatorPage() {
 
             {/* Step 3: Nutritional Targets & Adjustments */}
             <div className="bg-[#FAFAFA] rounded-3xl p-5 border border-neutral-200/80 shadow-sm space-y-4">
-              <h3 className="text-sm font-black text-neutral-900 flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-[#F97316]" />
+              <h3 className="text-xs font-black uppercase tracking-wider text-neutral-600 flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-orange-500" />
                 3. Macro Target & Financial Overrides
               </h3>
 
-              {/* Top Row: Total Calorie Target & Goal Strategy */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-black text-neutral-800">
-                      Total Daily Calories (kcal)
-                    </label>
-                    {(selectedCustomer?.calorie_profile?.probaeTarget || selectedCustomer?.calorie_profile?.total) && (
-                      <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
-                        Customer: {selectedCustomer.calorie_profile.probaeTarget || selectedCustomer.calorie_profile.total} kcal
-                      </span>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="500"
-                      max="10000"
-                      step="50"
-                      value={manualCalorieTarget}
-                      onChange={(e) => handleDailyCalorieChange(e.target.value ? parseInt(e.target.value) : "")}
-                      placeholder="e.g. 1800"
-                      style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A", caretColor: "#6A0FAD" }}
-                      className="w-full h-11 text-base px-3.5 pr-14 py-2 border-2 border-neutral-300 rounded-xl bg-white font-black text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-neutral-400 placeholder:font-normal"
-                    />
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400 pointer-events-none">
-                      kcal
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-neutral-500 font-medium mt-1">
-                    <span>
-                      Sum of slots: <strong className="text-purple-700">{manualCalorieTarget || 0} kcal</strong>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleSplitDailyEvenly}
-                      className="text-[10px] font-bold text-[#6A0FAD] hover:underline"
-                    >
-                      Split Evenly Across Slots
-                    </button>
-                  </div>
+                  <label className="text-xs font-bold text-neutral-600 block mb-1">
+                    Calorie Target (kcal)
+                  </label>
+                  <input
+                    type="number"
+                    value={manualCalorieTarget}
+                    onChange={(e) => setManualCalorieTarget(e.target.value ? parseInt(e.target.value) : "")}
+                    placeholder="e.g. 1800"
+                    className="w-full text-xs px-3 py-2 border border-neutral-200 rounded-xl bg-white font-bold"
+                  />
                 </div>
 
                 <div>
-                  <label className="text-xs font-black text-neutral-800 block mb-1.5">
+                  <label className="text-xs font-bold text-neutral-600 block mb-1">
                     Goal Strategy
                   </label>
                   <select
                     value={goal}
                     onChange={(e) => setGoal(e.target.value)}
-                    style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A" }}
-                    className="w-full h-11 text-sm px-3.5 py-2 border-2 border-neutral-300 rounded-xl bg-white font-bold text-neutral-900 focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all cursor-pointer"
+                    className="w-full text-xs px-3 py-2 border border-neutral-200 rounded-xl bg-white font-semibold"
                   >
-                    <option value="MAINTENANCE" className="text-neutral-900 font-semibold">Maintenance</option>
-                    <option value="FAT_LOSS" className="text-neutral-900 font-semibold">Fat Loss</option>
-                    <option value="MUSCLE_GAIN" className="text-neutral-900 font-semibold">Muscle Gain</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="FAT_LOSS">Fat Loss</option>
+                    <option value="MUSCLE_GAIN">Muscle Gain</option>
                   </select>
                 </div>
               </div>
 
-              {/* Per-Meal Slot Calorie Allocation Section */}
-              <div className="pt-3 border-t border-neutral-200 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-xs font-black text-neutral-900 flex items-center gap-1.5">
-                      <Utensils className="w-3.5 h-3.5 text-[#6A0FAD]" />
-                      Selected Calorie Per Meal Slot
-                    </label>
-                    <span className="text-[11px] text-neutral-500 font-medium">
-                      Bowls in each slot scale directly to that slot's target calorie
-                    </span>
-                  </div>
-
-                  {selectedCustomer?.calorie_profile?.mealCalories && (
-                    <button
-                      type="button"
-                      onClick={handleResetSlotsToCustomer}
-                      className="text-xs font-bold text-[#6A0FAD] bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
-                      title="Reset meal slot targets to customer's saved profile"
-                    >
-                      <RotateCcw className="w-3 h-3" /> Reset to Customer
-                    </button>
-                  )}
-                </div>
-
-                {/* Grid of Meal Slot Calorie Inputs */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {activeMealSlots.map((slot: string) => {
-                    const custVal = getCustomerSlotCalorie(selectedCustomer, slot);
-                    const currentVal = slotCalories[slot] ?? "";
-                    const daily = Number(manualCalorieTarget) || 0;
-                    const pct = daily > 0 && typeof currentVal === "number" ? Math.round((currentVal / daily) * 100) : null;
-
-                    return (
-                      <div
-                        key={slot}
-                        className="p-3 bg-white rounded-xl border border-neutral-200/90 shadow-2xs space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 text-xs font-black">
-                            {slot}
-                          </span>
-                          {custVal !== null && (
-                            <button
-                              type="button"
-                              onClick={() => handleSlotCalorieChange(slot, custVal)}
-                              className="text-[10px] font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-1.5 py-0.5 rounded transition-colors"
-                              title="Click to apply customer's saved target"
-                            >
-                              Customer: {custVal} kcal
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="relative">
-                          <input
-                            type="number"
-                            min="100"
-                            max="3000"
-                            step="25"
-                            value={currentVal}
-                            onChange={(e) => handleSlotCalorieChange(slot, e.target.value ? parseInt(e.target.value) : "")}
-                            placeholder="e.g. 750"
-                            style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A", caretColor: "#6A0FAD" }}
-                            className="w-full h-10 text-sm px-3 pr-14 py-1.5 border-2 border-neutral-300 rounded-xl bg-white font-black text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-neutral-400 placeholder:font-normal"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400 pointer-events-none">
-                            kcal
-                          </span>
-                        </div>
-
-                        {pct !== null && (
-                          <div className="flex items-center justify-between text-[10px] text-neutral-500 font-medium">
-                            <span>Share of day:</span>
-                            <span className="font-bold text-purple-800">{pct}%</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Delivery & Discount Section (Full width to avoid squishing) */}
-              <div className="space-y-3 pt-3 border-t border-neutral-200">
-                <label className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-neutral-200 hover:border-neutral-300 transition-all cursor-pointer select-none">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#6A0FAD] flex items-center justify-center shrink-0">
-                      <Truck className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-black text-neutral-900 block">Include Delivery</span>
-                      <span className="text-[11px] text-neutral-500 font-medium">Auto-calculates customer distance fees</span>
-                    </div>
+              {/* Delivery & Discount Row */}
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-neutral-200/80">
+                <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-neutral-200/80">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-neutral-500" />
+                    <span className="text-xs font-bold text-neutral-700">Delivery</span>
                   </div>
                   <input
                     type="checkbox"
                     checked={includeDelivery}
                     onChange={(e) => setIncludeDelivery(e.target.checked)}
-                    className="w-5 h-5 text-[#6A0FAD] rounded-md cursor-pointer accent-[#6A0FAD]"
+                    className="w-4 h-4 text-[#6A0FAD] rounded cursor-pointer"
                   />
-                </label>
+                </div>
 
-                <div className="p-3.5 bg-white rounded-xl border border-neutral-200 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-neutral-800 flex items-center gap-1.5">
-                      <Percent className="w-3.5 h-3.5 text-emerald-600" /> Apply Discount %
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-neutral-600 flex items-center gap-1">
+                      <Percent className="w-3.5 h-3.5 text-emerald-600" /> Discount %
                     </span>
-                    <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200">
-                      {discountPct}% OFF
-                    </span>
+                    <span className="text-xs font-bold text-neutral-900">{discountPct}%</span>
                   </div>
-                  <div className="grid grid-cols-5 gap-1.5">
-                    {[0, 5, 10, 15, 20].map((p) => (
+                  <div className="flex gap-1">
+                    {[0, 5, 10, 15].map(p => (
                       <button
                         key={p}
-                        type="button"
                         onClick={() => setDiscountPct(p)}
-                        className={`py-2 text-xs font-black rounded-lg border transition-all ${
-                          discountPct === p
-                            ? "bg-emerald-600 border-emerald-600 text-white shadow-sm"
-                            : "bg-neutral-50 border-neutral-200 text-neutral-700 hover:bg-neutral-100"
+                        className={`flex-1 py-1 text-[10px] font-bold rounded-lg border ${
+                          discountPct === p ? "bg-emerald-100 border-emerald-300 text-emerald-800" : "bg-white border-neutral-200 text-neutral-600"
                         }`}
                       >
                         {p}%
@@ -1490,38 +799,7 @@ export default function PlanPriceCalculatorPage() {
             ) : calculationResult ? (
               <div className="space-y-6">
                 
-                {/* 1. Daily Calorie & Nutrition Snapshot Banner */}
-                <div className="bg-gradient-to-r from-purple-50 via-white to-purple-50 border border-purple-200/90 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#6A0FAD] text-white flex items-center justify-center font-black shadow-sm shrink-0">
-                      <Sparkles className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block">Customer Daily Target</span>
-                      <p className="text-base font-black text-neutral-900">
-                        {calculationResult.calorie_target || manualCalorieTarget ? `${Number(calculationResult.calorie_target || manualCalorieTarget).toLocaleString()} kcal / day` : "Standard Energy Target"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="px-3 py-1.5 bg-white rounded-xl border border-neutral-200 text-xs text-neutral-700">
-                      <span className="text-neutral-400 font-bold mr-1">Meals / Day:</span>
-                      <strong className="text-neutral-900">{planMode === "STANDARD" ? (selectedPlanTier?.included_meal_slots?.length || 2) : customSlots.length} Slots</strong>
-                    </div>
-                    <div className="px-3 py-1.5 bg-white rounded-xl border border-neutral-200 text-xs text-neutral-700">
-                      <span className="text-neutral-400 font-bold mr-1">Avg / Meal:</span>
-                      <strong className="text-[#6A0FAD]">
-                        ~{Math.round(Number(calculationResult.calorie_target || manualCalorieTarget || 1600) / Math.max(1, (planMode === "STANDARD" ? (selectedPlanTier?.included_meal_slots?.length || 2) : customSlots.length)))} kcal
-                      </strong>
-                    </div>
-                    <div className="px-3 py-1.5 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 font-black">
-                      {calculationResult.goal || goal}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2. Primary Financial Cards Grid */}
+                {/* 1. Primary Financial Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {/* Final Price Card */}
                   <div className="bg-gradient-to-br from-[#6A0FAD] to-[#4A0A7A] text-white rounded-3xl p-5 shadow-sm flex flex-col justify-between">
@@ -1609,8 +887,7 @@ export default function PlanPriceCalculatorPage() {
                     value={calculationNotes}
                     onChange={(e) => setCalculationNotes(e.target.value)}
                     placeholder="Add calculation notes or client reference (e.g. 'Customized quote for John - extra chicken requested')..."
-                    style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A" }}
-                    className="w-full h-11 text-sm px-4 py-2 border-2 border-neutral-300 rounded-xl bg-white font-bold text-neutral-900 selection:bg-[#6A0FAD] selection:text-white focus:border-[#6A0FAD] focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-neutral-400 placeholder:font-normal"
+                    className="w-full text-xs px-3.5 py-2 border border-neutral-200 rounded-xl bg-neutral-50"
                   />
 
                   {saveSuccessMessage && (
@@ -1672,9 +949,7 @@ export default function PlanPriceCalculatorPage() {
 
                             <td className="px-4 py-3 text-center">
                               <span className="font-black text-neutral-900">{Math.round(item.scaled_calories || 0)}</span>
-                              <span className="text-[10px] text-neutral-400 block">
-                                kcal {item.target_calories ? `(target ${Math.round(item.target_calories)})` : ""}
-                              </span>
+                              <span className="text-[10px] text-neutral-400 block">kcal</span>
                             </td>
 
                             <td className="px-4 py-3 text-center">
@@ -2018,107 +1293,9 @@ export default function PlanPriceCalculatorPage() {
         isOpen={Boolean(deletingLogUlid)}
         title="Delete Saved Calculation Entry"
         message="Are you sure you want to delete this saved calculation log? This action cannot be undone."
-        type="delete"
-        confirmText="Delete Entry"
         onConfirm={handleDeleteLog}
-        onClose={() => setDeletingLogUlid(null)}
+        onCancel={() => setDeletingLogUlid(null)}
       />
-
-      {/* ── FULL SCHEDULE MATRIX MODAL ─────────────────────────────────────── */}
-      {showScheduleMatrixModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-neutral-100 overflow-hidden animate-slide-up-fade">
-            <div className="p-5 border-b border-neutral-100 flex items-center justify-between bg-[#FAFAFA]">
-              <div>
-                <h3 className="text-base font-black text-neutral-900 flex items-center gap-2">
-                  <Table className="w-4 h-4 text-[#6A0FAD]" />
-                  Custom Plan Schedule Matrix ({customDays} Days × {customSlots.length} Slots)
-                </h3>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  Full blueprint of assigned bowls per day and meal slot. Click any cell to jump to that day.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowScheduleMatrixModal(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-700 hover:bg-neutral-200"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5">
-              <div className="border border-neutral-200 rounded-2xl overflow-hidden">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-neutral-100 uppercase font-black text-neutral-600 sticky top-0">
-                    <tr>
-                      <th className="px-4 py-3 border-b border-neutral-200 w-24">Day</th>
-                      {customSlots.map(slot => (
-                        <th key={slot} className="px-4 py-3 border-b border-neutral-200">{slot}</th>
-                      ))}
-                      <th className="px-4 py-3 border-b border-neutral-200 text-right w-24">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-100">
-                    {Array.from({ length: customDays }, (_, i) => i + 1).map((d) => (
-                      <tr key={d} className={`hover:bg-purple-50/40 transition-colors ${activeCustomDay === d ? "bg-purple-50/70" : ""}`}>
-                        <td className="px-4 py-3 font-black text-neutral-900">
-                          Day {d}
-                        </td>
-                        {customSlots.map(slot => {
-                          const item = customSchedule.find(
-                            it => Number(it.day_index) === d && it.meal_slot.toLowerCase() === slot.toLowerCase()
-                          );
-                          return (
-                            <td key={slot} className="px-4 py-3">
-                              {item ? (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-neutral-900">{item.bowl_name}</span>
-                                  {item.is_customized && (
-                                    <span className="text-[9px] font-bold text-purple-700 bg-purple-100 px-1 py-0.5 rounded">
-                                      Customized
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-neutral-400 italic font-normal">Not assigned</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveCustomDay(d);
-                              setShowScheduleMatrixModal(false);
-                            }}
-                            className="px-2.5 py-1 text-[11px] font-bold text-[#6A0FAD] bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
-                          >
-                            Edit Day
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="px-5 py-3 border-t border-neutral-100 bg-[#FAFAFA] flex items-center justify-between">
-              <span className="text-xs text-neutral-500 font-medium">
-                Total Meals: <strong className="text-neutral-900">{customSchedule.length}</strong> of {customDays * customSlots.length} mapped
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowScheduleMatrixModal(false)}
-                className="px-4 py-2 bg-[#6A0FAD] text-white text-xs font-bold rounded-xl"
-              >
-                Close Matrix View
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
