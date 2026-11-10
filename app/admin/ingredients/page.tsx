@@ -281,7 +281,7 @@ export default function IngredientsPage() {
 
                         {/* ID Badge on top-left (dynamic width capsule) */}
                         <div className="absolute top-3 left-3 h-8 px-2.5 min-w-[32px] bg-white rounded-full flex items-center justify-center shadow-sm select-none">
-                          <span className="text-[12px] font-bold text-neutral-800">A{item.id}</span>
+                          <span className="text-[12px] font-bold text-neutral-800">{item.code || `A${item.id}`}</span>
                         </div>
 
                         {/* Edit/Delete semi-transparent circles on top-right */}

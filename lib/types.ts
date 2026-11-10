@@ -241,8 +241,17 @@ export interface Ingredient {
   raw_materials: IngredientRawMaterialResponse[];
 }
 
+export type ComponentCodePrefix = "P" | "C" | "F" | "D";
+
+export interface NextIngredientCodeResponse {
+  prefix: ComponentCodePrefix;
+  next_number: number;
+  next_code: string;
+}
+
 export interface IngredientCreateInput {
-  code?: string;
+  code?: string | null;
+  code_prefix?: ComponentCodePrefix | null;
   name: string;
   description?: string;
   image_filename?: string;
@@ -252,7 +261,8 @@ export interface IngredientCreateInput {
 }
 
 export interface IngredientUpdateInput {
-  code?: string;
+  code?: string | null;
+  code_prefix?: ComponentCodePrefix | null;
   name?: string;
   description?: string;
   image_filename?: string;

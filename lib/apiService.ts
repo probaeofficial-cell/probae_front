@@ -6,7 +6,7 @@
  * in-memory token storage (per architecture rules), automatic token refresh
  * on 401 Unauthorized responses (with queueing logic), and standardized error handling.
  */
-import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories, StockLog, BowlCategory, BowlCategoryCreateInput, BowlCategoryUpdateInput, PaginatedBowlCategories, PaginatedPackagingComponents, PackagingComponent, PackagingComponentCreateInput, PackagingComponentUpdateInput, PaginatedPackaging, Packaging, PackagingCreateInput, PackagingUpdateInput, PaginatedBowls, Bowl, BowlCreateInput, BowlUpdateInput, Vendor, VendorCreateInput, VendorUpdateInput, PaginatedVendors, MealCategory, MealCategoryCreateInput, MealCategoryUpdateInput, PaginatedMealCategories } from "./types";
+import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, ComponentCodePrefix, NextIngredientCodeResponse, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories, StockLog, BowlCategory, BowlCategoryCreateInput, BowlCategoryUpdateInput, PaginatedBowlCategories, PaginatedPackagingComponents, PackagingComponent, PackagingComponentCreateInput, PackagingComponentUpdateInput, PaginatedPackaging, Packaging, PackagingCreateInput, PackagingUpdateInput, PaginatedBowls, Bowl, BowlCreateInput, BowlUpdateInput, Vendor, VendorCreateInput, VendorUpdateInput, PaginatedVendors, MealCategory, MealCategoryCreateInput, MealCategoryUpdateInput, PaginatedMealCategories } from "./types";
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
@@ -658,6 +658,9 @@ export const endpoints = {
 
     getIngredient: async (ulid: string): Promise<Ingredient> => {
       return await api.get<Ingredient>(`/ingredients/${ulid}`);
+    },
+    getNextCode: async (prefix: ComponentCodePrefix): Promise<NextIngredientCodeResponse> => {
+      return await api.get<NextIngredientCodeResponse>(`/ingredients/next-code?prefix=${encodeURIComponent(prefix)}`);
     },
     createIngredient: async (data: IngredientCreateInput): Promise<Ingredient> => {
       return await api.post<Ingredient>("/ingredients/", data);

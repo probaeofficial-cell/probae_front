@@ -6,13 +6,23 @@ import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Plus, X, UploadCloud, Trash2, Pencil } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { endpoints } from "@/lib/apiService";
-import { IngredientUpdateInput, IngredientCreateInput, RawMaterial } from "@/lib/types";
+import { IngredientUpdateInput, IngredientCreateInput, ComponentCodePrefix, RawMaterial } from "@/lib/types";
 import { AddIngredientRawMaterialModal } from "@/components/admin/AddIngredientRawMaterialModal";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { getMediaUrl } from "@/lib/utils";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
+
+const COMPONENT_CODE_PREFIX_OPTIONS: Array<{
+  prefix: ComponentCodePrefix;
+  label: string;
+}> = [
+  { prefix: "P", label: "Protein" },
+  { prefix: "C", label: "Carb" },
+  { prefix: "F", label: "Fiber" },
+  { prefix: "D", label: "Dressing" },
+];
 
 export default function IngredientFormPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -24,6 +34,12 @@ export default function IngredientFormPage() {
   // Form State
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [manualCode, setManualCode] = useState("");
+  const [selectedPrefix, setSelectedPrefix] = useState<ComponentCodePrefix | null>(null);
+  const [initialCode, setInitialCode] = useState("");
+  const [initialPrefix, setInitialPrefix] = useState<ComponentCodePrefix | null>(null);
+  const [isLoadingNextCode, setIsLoadingNextCode] = useState(false);
+  const prefixRequestRef = useRef(0);
   const [description, setDescription] = useState("");
   const [yieldWeight, setYieldWeight] = useState<number | "">("");
   
@@ -98,8 +114,16 @@ export default function IngredientFormPage() {
       if (!isEditMode) return;
       try {
         const ingredient = await endpoints.ingredients.getIngredient(ulid);
+        const loadedCode = ingredient.code || "";
+        const prefixMatch = loadedCode.trim().match(/^([PCFD])\d+$/i);
+        const matchedPrefix = prefixMatch ? (prefixMatch[1].toUpperCase() as ComponentCodePrefix) : null;
+
         setName(ingredient.name);
-        setCode(ingredient.code || "");
+        setCode(loadedCode);
+        setInitialCode(loadedCode);
+        setInitialPrefix(matchedPrefix);
+        setSelectedPrefix(matchedPrefix);
+        setManualCode(matchedPrefix ? "" : loadedCode);
         setDescription(ingredient.description || "");
         setYieldWeight(ingredient.yield_weight ?? "");
         setBgImageFilename(ingredient.background_image_filename || null);
@@ -283,6 +307,45 @@ export default function IngredientFormPage() {
     return { finalBgFilename, finalMainFilename };
   };
 
+  const handleTogglePrefix = async (prefix: ComponentCodePrefix) => {
+    const requestId = ++prefixRequestRef.current;
+
+    if (selectedPrefix === prefix) {
+      setSelectedPrefix(null);
+      setIsLoadingNextCode(false);
+      setCode(manualCode);
+      return;
+    }
+
+    setSelectedPrefix(prefix);
+    setError("");
+
+    // In Edit mode, returning to the original prefix restores the component's existing code
+    if (isEditMode && initialPrefix === prefix && initialCode) {
+      setCode(initialCode);
+      setIsLoadingNextCode(false);
+      return;
+    }
+
+    setCode("");
+    setIsLoadingNextCode(true);
+    try {
+      const res = await endpoints.ingredients.getNextCode(prefix);
+      if (prefixRequestRef.current === requestId) {
+        setCode(res.next_code);
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch next component code", err);
+      if (prefixRequestRef.current === requestId) {
+        setError(err?.message || "Failed to generate next component code");
+      }
+    } finally {
+      if (prefixRequestRef.current === requestId) {
+        setIsLoadingNextCode(false);
+      }
+    }
+  };
+
   const handleSave = async () => {
     if (!name.trim()) {
       setError("Name is required");
@@ -294,10 +357,13 @@ export default function IngredientFormPage() {
 
     try {
       const { finalBgFilename, finalMainFilename } = await uploadImages();
+      const trimmedCode = code.trim();
 
-      const basePayload = {
+      const basePayload: IngredientUpdateInput = {
         name,
-        code: code || undefined,
+        ...(selectedPrefix
+          ? { code_prefix: selectedPrefix }
+          : { code: isEditMode ? (trimmedCode || null) : (trimmedCode || undefined) }),
         description: description || undefined,
         yield_weight: yieldWeight === "" ? null : Number(yieldWeight),
         background_image_filename: finalBgFilename || undefined,
@@ -450,14 +516,78 @@ export default function IngredientFormPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-semibold text-neutral-800 mb-2 block">Code</label>
-                  <input 
-                    type="text" 
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="e.g. SSC"
-                    className="w-full h-[52px] bg-neutral-100 rounded-[16px] px-4 outline-none text-neutral-800 font-medium placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-200"
-                  />
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <label className="text-sm font-semibold text-neutral-800 block">Code</label>
+                    <span className="text-xs text-neutral-500 font-medium">
+                      {selectedPrefix
+                        ? isEditMode && selectedPrefix === initialPrefix
+                          ? `Keeping existing ${selectedPrefix} code`
+                          : `Auto-generated sequentially (${selectedPrefix}1, ${selectedPrefix}2, ...)`
+                        : "Select P, C, F, or D to auto-generate, or type manually"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3">
+                    {COMPONENT_CODE_PREFIX_OPTIONS.map(({ prefix, label }) => {
+                      const isChecked = selectedPrefix === prefix;
+                      return (
+                        <label
+                          key={prefix}
+                          className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] border cursor-pointer select-none transition-all ${
+                            isChecked
+                              ? "bg-[#6A0FAD]/10 border-[#6A0FAD] text-[#6A0FAD] shadow-sm"
+                              : "bg-neutral-50 border-neutral-200 text-neutral-700 hover:bg-neutral-100"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleTogglePrefix(prefix)}
+                            className="w-4 h-4 accent-[#6A0FAD] rounded cursor-pointer shrink-0"
+                          />
+                          <div className="flex items-baseline gap-1 min-w-0">
+                            <span className="text-sm font-bold">{prefix}</span>
+                            <span
+                              className={`text-xs truncate ${
+                                isChecked ? "text-[#6A0FAD]/80 font-semibold" : "text-neutral-500 font-medium"
+                              }`}
+                            >
+                              ({label})
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={code}
+                      onChange={(e) => {
+                        setCode(e.target.value);
+                        setManualCode(e.target.value);
+                      }}
+                      readOnly={selectedPrefix !== null}
+                      placeholder={
+                        isLoadingNextCode
+                          ? "Generating next code..."
+                          : selectedPrefix
+                          ? `Auto code (e.g. ${selectedPrefix}1)`
+                          : "e.g. SSC"
+                      }
+                      className={`w-full h-[52px] rounded-[16px] px-4 outline-none font-medium placeholder:text-neutral-400 transition-colors ${
+                        selectedPrefix
+                          ? "bg-purple-50/70 border border-[#6A0FAD]/30 text-[#6A0FAD] font-bold pr-24 cursor-default"
+                          : "bg-neutral-100 text-neutral-800 focus:ring-2 focus:ring-neutral-200"
+                      }`}
+                    />
+                    {selectedPrefix && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-[#6A0FAD] text-white text-[11px] font-bold tracking-wide select-none">
+                        {isLoadingNextCode ? "..." : "AUTO"}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex-1">
@@ -671,7 +801,7 @@ export default function IngredientFormPage() {
               <div className="w-[160px]">
                 <ProbaeButton
                   onClick={handleSave}
-                  disabled={isSaving}
+                  disabled={isSaving || isLoadingNextCode}
                   className="py-3.5 text-lg rounded-[20px]"
                 >
                   {isSaving ? <BowlLoader className="w-5 h-5 mr-2" /> : null}
