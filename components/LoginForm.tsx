@@ -54,9 +54,9 @@ export function ProbaeWordmark() {
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const inputCls = `
   w-full bg-transparent border border-[#3a3a3a]
-  text-white placeholder:text-neutral-600
+  text-white placeholder:text-neutral-400 caret-white
   rounded-2xl px-4 py-3.5 text-sm
-  outline-none focus:border-neutral-500
+  outline-none focus:border-neutral-400
   transition-colors duration-150
 `;
 
@@ -203,15 +203,20 @@ function LoginView({
       <form onSubmit={handleSubmit} className="w-full space-y-3" noValidate>
         <input
           type="text"
+          name="username"
           placeholder="Username or email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="username"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
           className={inputCls}
         />
         <div className="relative w-full">
           <input
             type={showPwd ? "text" : "password"}
+            name="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -222,6 +227,7 @@ function LoginView({
             type="button"
             onClick={() => setShowPwd((v) => !v)}
             aria-label={showPwd ? "Hide password" : "Show password"}
+            aria-pressed={showPwd}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
           >
             {showPwd ? <EyeOffIcon /> : <EyeIcon />}
@@ -441,9 +447,14 @@ function ForgotView({
         <form onSubmit={handleResetPassword} className="w-full space-y-3" noValidate>
           <input
             type="text"
+            name="otp"
             placeholder="6-digit OTP"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
+            autoComplete="one-time-code"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
             className={inputCls}
             disabled={loading}
             maxLength={6}
@@ -452,13 +463,21 @@ function ForgotView({
           <div className="relative w-full">
             <input
               type={showPwd ? "text" : "password"}
+              name="new-password"
               placeholder="New Password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
               className={`${inputCls} pr-11`}
               disabled={loading}
             />
-            <button type="button" onClick={() => setShowPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300">
+            <button
+              type="button"
+              onClick={() => setShowPwd((v) => !v)}
+              aria-label={showPwd ? "Hide new password" : "Show new password"}
+              aria-pressed={showPwd}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300"
+            >
               {showPwd ? <EyeOffIcon /> : <EyeIcon />}
             </button>
           </div>
@@ -466,13 +485,21 @@ function ForgotView({
           <div className="relative w-full">
             <input
               type={showConfirmPwd ? "text" : "password"}
+              name="confirm-password"
               placeholder="Confirm New Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
               className={`${inputCls} pr-11`}
               disabled={loading}
             />
-            <button type="button" onClick={() => setShowConfirmPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300">
+            <button
+              type="button"
+              onClick={() => setShowConfirmPwd((v) => !v)}
+              aria-label={showConfirmPwd ? "Hide confirm password" : "Show confirm password"}
+              aria-pressed={showConfirmPwd}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300"
+            >
               {showConfirmPwd ? <EyeOffIcon /> : <EyeIcon />}
             </button>
           </div>
@@ -513,10 +540,12 @@ function ForgotView({
       <form onSubmit={handleSendOTP} className="w-full space-y-3" noValidate>
         <input
           type="email"
+          name="email"
           placeholder="Email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
+          spellCheck={false}
           className={inputCls}
           disabled={loading}
         />

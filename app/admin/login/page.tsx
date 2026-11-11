@@ -4,8 +4,8 @@ import LoginForm from "@/components/LoginForm";
 export default function LoginPage() {
   return (
     <main
-      className="h-screen w-full flex overflow-hidden relative"
-      style={{ background: "#1c1c1c" }}
+      className="h-screen w-full flex overflow-hidden relative dark-auth-surface"
+      style={{ background: "#1c1c1c", colorScheme: "dark" }}
     >
       {/* ── Left: form panel ──────────────────────────────────────────────── */}
       {/* 

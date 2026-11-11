@@ -912,7 +912,7 @@ export default function OnboardingPage() {
       <div 
         id="onboarding-root"
         className="min-h-screen w-full bg-[#111111] font-sans text-gray-100 flex flex-col items-center justify-start p-4 md:p-8 relative overflow-x-hidden overflow-y-auto"
-        style={{ WebkitOverflowScrolling: "touch" }}
+        style={{ WebkitOverflowScrolling: "touch", colorScheme: "dark" }}
       >
       
       {/* Background Square Grid */}

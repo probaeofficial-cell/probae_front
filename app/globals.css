@@ -64,13 +64,34 @@
   -webkit-text-fill-color: #ffffff !important;
 }
 
-/* Ensure form controls on light backgrounds stay crisp & high-contrast */
-input:not([type="checkbox"]):not([type="radio"]),
-select,
-textarea {
-  color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a !important;
-  accent-color: #6a0fad;
+@layer base {
+  /* Keep default form controls on light surfaces legible against dark body foreground,
+     while letting utility classes (e.g. text-white on dark surfaces) override cleanly. */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    color: #0f172a;
+    accent-color: #6a0fad;
+  }
+
+  /* Match browser autofill highlight to dark auth and onboarding fields without layout shift */
+  .dark-auth-surface {
+    --autofill-background-color: #1c1c1c;
+  }
+
+  #onboarding-root {
+    --autofill-background-color: #222222;
+  }
+
+  :is(.dark-auth-surface, #onboarding-root) input:not([type="checkbox"]):not([type="radio"]):is(:autofill, :-webkit-autofill),
+  :is(.dark-auth-surface, #onboarding-root) select:is(:autofill, :-webkit-autofill),
+  :is(.dark-auth-surface, #onboarding-root) textarea:is(:autofill, :-webkit-autofill) {
+    box-shadow:
+      inset 0 0 0 2px #6a0fad,
+      inset 0 0 0 100vmax var(--autofill-background-color);
+    -webkit-text-fill-color: #ffffff;
+    caret-color: #ffffff;
+  }
 }
 
 input:not([type="checkbox"]):not([type="radio"])::selection,
