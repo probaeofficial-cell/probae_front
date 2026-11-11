@@ -972,6 +972,26 @@ export const endpoints = {
     },
     getCalculation: async (ulid: string) => await api.get(`/plans/calculations/${ulid}`),
     deleteCalculation: async (ulid: string) => await api.del(`/plans/calculations/${ulid}`),
+    getBulkSample: async (): Promise<any> => {
+      return await api.get<any>("/plans/tiers/bulk/sample");
+    },
+    downloadBulkSampleCsv: async (): Promise<Blob> => {
+      return await api.get<Blob>("/plans/tiers/bulk/sample?format=csv", { responseType: "blob" });
+    },
+    uploadBulkPlanTiers: async (file: File): Promise<any> => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return await api.post<any>("/plans/tiers/bulk/upload", formData);
+    },
+    getBulkJob: async (jobId: string): Promise<any> => {
+      return await api.get<any>(`/plans/tiers/bulk/jobs/${jobId}`);
+    },
+    cancelBulkJob: async (jobId: string): Promise<any> => {
+      return await api.post<any>(`/plans/tiers/bulk/jobs/${jobId}/cancel`, {});
+    },
+    listBulkJobs: async (limit: number = 15): Promise<any> => {
+      return await api.get<any>(`/plans/tiers/bulk/jobs?limit=${limit}`);
+    },
   },
   menuBlueprints: {
     get: async (durationType: string, mealSlot: string, planCategory: string = 'Core') => await api.get(`/plans/blueprints?duration_type=${durationType}&meal_slot=${mealSlot}&plan_category=${planCategory}`),
