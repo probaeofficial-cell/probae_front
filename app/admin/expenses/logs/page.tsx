@@ -1,8 +1,8 @@
 "use client";
 
 import { BowlLoader } from "@/components/admin/BowlLoader";
-import { useState, useEffect } from "react";
-import { Plus, Trash2, Pencil, Calendar, FileText, Search } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Trash2, Pencil, Calendar, Filter } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -11,20 +11,31 @@ import AsyncExpenseCategorySelect from "@/components/admin/AsyncExpenseCategoryS
 import { BulkExpenseModal } from "@/components/admin/BulkExpenseModal";
 import { FileSpreadsheet } from "lucide-react";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { EMPTY_EXPENSE_FILTERS, ExpenseFilters, ExpenseFiltersModal } from "@/components/admin/ExpenseFiltersModal";
+
+const toLocalDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const initialExpenseFilters = (): ExpenseFilters => {
+  const today = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  return { ...EMPTY_EXPENSE_FILTERS, date_from: toLocalDate(monthStart), date_to: toLocalDate(monthEnd) };
+};
 
 export default function ExpenseLogsPage() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [totalAmount, setTotalAmount] = useState(0);
-  
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<ExpenseFilters>(initialExpenseFilters);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filterCategoryUlid, setFilterCategoryUlid] = useState("");
-  
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [paymentRecipients, setPaymentRecipients] = useState<string[]>([]);
   const [formData, setFormData] = useState({ category_ulid: "", amount: "", expense_date: new Date().toISOString().slice(0, 10), notes: "", sent_from: "" });
@@ -49,34 +60,36 @@ export default function ExpenseLogsPage() {
     loadPaymentRecipients();
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 500);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       const expRes = await endpoints.expenses.list({ 
         page,
         limit: 20,
-        month,
-        category_ulid: filterCategoryUlid || undefined,
-        search: debouncedSearch || undefined
+        category_ulid: filters.category_ulid || undefined,
+        date_from: filters.date_from || undefined,
+        date_to: filters.date_to || undefined,
+        min_amount: filters.min_amount === "" ? undefined : Number(filters.min_amount),
+        max_amount: filters.max_amount === "" ? undefined : Number(filters.max_amount),
+        sent_from: filters.sent_from || undefined,
+        recorded_by: filters.recorded_by.trim() || undefined,
+        search: filters.search.trim() || undefined,
       }) as any;
       setExpenses(expRes.expenses || expRes.items || []);
       setTotalAmount(expRes.totalAmount || 0);
-      setTotalPages(Math.ceil((expRes.totalCount || expRes.total_count || expRes.expenses?.length || 0) / 20) || 1);
+      setTotalPages(Math.max(1, Math.ceil((expRes.totalCount || expRes.total_count || 0) / 20)));
     } catch (err) {
       console.error(err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, filters]);
 
   useEffect(() => {
     fetchData();
-  }, [month, filterCategoryUlid, debouncedSearch]);
+  }, [fetchData]);
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const handleSave = async () => {
     if (!formData.category_ulid || !formData.amount || !formData.expense_date) return setErrorMsg("Category, Amount, and Date are required");
@@ -125,43 +138,15 @@ export default function ExpenseLogsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Expense Logs</h1>
-            <p className="text-neutral-500 mt-1">Total for {month}: <span className="font-bold text-red-600">₹{totalAmount.toFixed(2)}</span></p>
+            <p className="text-neutral-500 mt-1">Filtered total: <span className="font-bold text-red-600">₹{totalAmount.toFixed(2)}</span></p>
           </div>
           
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-            {/* <div className="relative w-full sm:w-48">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-              <input
-                type="text"
-                placeholder="Search notes..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-[48px] pl-9 pr-4 bg-white border border-neutral-200 rounded-xl outline-none text-sm font-medium text-neutral-800 focus:border-[#6A0FAD] focus:ring-1 focus:ring-[#6A0FAD]"
-              />
-            </div> */}
-            <div className="w-full sm:w-48 relative">
-              <AsyncExpenseCategorySelect 
-                value={filterCategoryUlid} 
-                onChange={(val) => setFilterCategoryUlid(val)} 
-                selectedCategory={null}
-              />
-              {filterCategoryUlid && (
-                <button 
-                  onClick={() => setFilterCategoryUlid("")} 
-                  className="absolute right-8 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-red-500 z-10 p-1"
-                  title="Clear filter"
-                >
-                  &times;
-                </button>
-              )}
-            </div>
-            <input 
-              type="month" 
-              value={month}
-              onChange={e => setMonth(e.target.value)}
-              className="bg-white border border-neutral-200 rounded-xl px-4 py-2 h-[48px] text-sm font-bold text-neutral-700 outline-none focus:ring-2 focus:ring-[#6A0FAD]/20 w-full sm:w-auto"
-            />
-            <div className="flex gap-3 shrink-0">
+            <div className="flex flex-wrap gap-3">
+              <ProbaeButton onClick={() => setIsFiltersOpen(true)} className="!w-auto flex items-center justify-center gap-2 h-[48px] !bg-white !text-neutral-700 border border-neutral-200 hover:!bg-neutral-50 whitespace-nowrap px-4">
+                <Filter className="w-4 h-4 shrink-0" /> Filters
+                {activeFilterCount > 0 && <span className="rounded-full bg-[#6A0FAD] px-2 py-0.5 text-xs font-black text-white">{activeFilterCount}</span>}
+              </ProbaeButton>
               <ProbaeButton onClick={() => setIsBulkModalOpen(true)} className="!w-auto flex items-center justify-center gap-2 h-[48px] !bg-neutral-800 !text-white hover:!bg-neutral-900 border-none whitespace-nowrap px-4">
                 <FileSpreadsheet className="w-4 h-4 shrink-0" /> Bulk Upload
               </ProbaeButton>
@@ -201,7 +186,7 @@ export default function ExpenseLogsPage() {
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {expenses.length === 0 ? (
-                  <tr><td colSpan={7} className="py-8 text-center text-neutral-500">No expenses recorded for this month.</td></tr>
+                  <tr><td colSpan={7} className="py-8 text-center text-neutral-500">No expenses match these filters.</td></tr>
                 ) : expenses.map((e) => (
                   <tr key={e.ulid} className="hover:bg-neutral-50/30 transition-colors">
                     <td className="py-4 px-6 font-medium text-neutral-900 flex items-center gap-2"><Calendar className="w-4 h-4 text-neutral-400"/> {e.expense_date}</td>
@@ -240,7 +225,7 @@ export default function ExpenseLogsPage() {
             </table>
             </div>
           
-          {true && (
+          {totalPages > 1 && (
             <div className="py-4 px-6 border-t border-neutral-100 flex items-center justify-between shrink-0 bg-white rounded-b-2xl">
               <button 
                 onClick={() => setPage(p => Math.max(1, p - 1))}
@@ -270,6 +255,17 @@ export default function ExpenseLogsPage() {
           setIsBulkModalOpen(false);
           fetchData();
         }} 
+      />
+      <ExpenseFiltersModal
+        isOpen={isFiltersOpen}
+        onClose={() => setIsFiltersOpen(false)}
+        initialFilters={filters}
+        paymentRecipients={paymentRecipients}
+        onApply={(nextFilters) => {
+          setFilters(nextFilters);
+          setPage(1);
+          setIsFiltersOpen(false);
+        }}
       />
       {/* Modal */}
       {isModalOpen && (
