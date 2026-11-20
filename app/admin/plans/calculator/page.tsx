@@ -25,7 +25,8 @@ import {
   ChevronLeft,
   X,
   Plus,
-  ArrowRight
+  ArrowRight,
+  Copy
 } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -60,6 +61,7 @@ export default function PlanPriceCalculatorPage() {
   const [customDays, setCustomDays] = useState<number>(20);
   const [customSlots, setCustomSlots] = useState<string[]>(["Lunch", "Dinner"]);
   const [customSchedule, setCustomSchedule] = useState<any[]>([]);
+  const [activeCustomDay, setActiveCustomDay] = useState<number>(1);
 
   // Overrides & Preferences
   const [goal, setGoal] = useState<string>("MAINTENANCE");
@@ -161,20 +163,69 @@ export default function PlanPriceCalculatorPage() {
     if (!bowl) return;
     setCustomSchedule(prev => {
       const filtered = prev.filter(
-        item => !(item.day_index === dayIndex && item.meal_slot.toLowerCase() === mealSlot.toLowerCase())
+        item => !(Number(item.day_index) === Number(dayIndex) && item.meal_slot.toLowerCase() === mealSlot.toLowerCase())
       );
       return [
         ...filtered,
         {
-          day_index: dayIndex,
+          day_index: Number(dayIndex),
           meal_slot: mealSlot,
           bowl_ulid: bowl.ulid,
           bowl_name: bowl.name,
+          bowl_code: bowl.code,
+          bowl_price: bowl.price,
+          image_filename: bowl.image_filename,
           is_customized: false,
           custom_ingredients: []
         }
       ];
     });
+  };
+
+  const handleRemoveCustomBowl = (dayIndex: number, mealSlot: string) => {
+    setCustomSchedule(prev =>
+      prev.filter(
+        item => !(Number(item.day_index) === Number(dayIndex) && item.meal_slot.toLowerCase() === mealSlot.toLowerCase())
+      )
+    );
+  };
+
+  const handleCopyDayToAll = (sourceDay: number) => {
+    const sourceBowls = customSchedule.filter(item => Number(item.day_index) === Number(sourceDay));
+    if (sourceBowls.length === 0) {
+      alert(`Day ${sourceDay} has no bowls assigned yet. Please assign at least one bowl first.`);
+      return;
+    }
+    setCustomSchedule(prev => {
+      const keepSource = prev.filter(item => Number(item.day_index) === Number(sourceDay));
+      const newCopies: any[] = [];
+      for (let d = 1; d <= customDays; d++) {
+        if (d === sourceDay) continue;
+        sourceBowls.forEach(sb => {
+          newCopies.push({
+            ...sb,
+            day_index: d
+          });
+        });
+      }
+      return [...keepSource, ...newCopies];
+    });
+  };
+
+  const handleCopyDayToNext = (sourceDay: number) => {
+    if (sourceDay >= customDays) return;
+    const targetDay = sourceDay + 1;
+    const sourceBowls = customSchedule.filter(item => Number(item.day_index) === Number(sourceDay));
+    if (sourceBowls.length === 0) {
+      alert(`Day ${sourceDay} has no bowls assigned to copy.`);
+      return;
+    }
+    setCustomSchedule(prev => {
+      const filtered = prev.filter(item => Number(item.day_index) !== targetDay);
+      const copied = sourceBowls.map(sb => ({ ...sb, day_index: targetDay }));
+      return [...filtered, ...copied];
+    });
+    setActiveCustomDay(targetDay);
   };
 
   // ── Execute Price Calculation ─────────────────────────────────────────────
@@ -402,7 +453,7 @@ export default function PlanPriceCalculatorPage() {
   const handleOpenCustomizer = (item: any) => {
     setCustomizingBowl({
       isOpen: true,
-      dayIndex: item.day_index,
+      dayIndex: Number(item.day_number || item.day_index || 1),
       mealSlot: item.meal_type,
       bowlUlid: item.bowl_ulid,
       bowlName: item.bowl_name,
@@ -414,12 +465,13 @@ export default function PlanPriceCalculatorPage() {
 
   const handleSaveBowlCustomization = (customData: any) => {
     const updated = [...customSchedule];
+    const targetDay = Number(customizingBowl.dayIndex);
     const existingIdx = updated.findIndex(
-      it => it.day_index === customizingBowl.dayIndex && it.meal_slot.toLowerCase() === customizingBowl.mealSlot.toLowerCase()
+      it => Number(it.day_index) === targetDay && it.meal_slot.toLowerCase() === customizingBowl.mealSlot.toLowerCase()
     );
 
     const scheduleItem = {
-      day_index: customizingBowl.dayIndex,
+      day_index: targetDay,
       meal_slot: customizingBowl.mealSlot,
       bowl_ulid: customizingBowl.bowlUlid,
       bowl_name: customizingBowl.bowlName,
@@ -618,7 +670,11 @@ export default function PlanPriceCalculatorPage() {
                         min="1"
                         max="90"
                         value={customDays}
-                        onChange={(e) => setCustomDays(parseInt(e.target.value) || 1)}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 1;
+                          setCustomDays(val);
+                          setActiveCustomDay(prev => Math.min(prev, val));
+                        }}
                         className="w-full text-xs px-3 py-2 border border-neutral-200 rounded-xl bg-white font-bold"
                       />
                     </div>
@@ -630,7 +686,10 @@ export default function PlanPriceCalculatorPage() {
                         {[5, 20, 24, 26].map(d => (
                           <button
                             key={d}
-                            onClick={() => setCustomDays(d)}
+                            onClick={() => {
+                              setCustomDays(d);
+                              setActiveCustomDay(prev => Math.min(prev, d));
+                            }}
                             className={`flex-1 py-1 text-[11px] font-bold rounded-lg border ${
                               customDays === d ? "bg-purple-100 border-purple-300 text-[#6A0FAD]" : "bg-white border-neutral-200 text-neutral-600"
                             }`}
@@ -667,21 +726,168 @@ export default function PlanPriceCalculatorPage() {
                     </div>
                   </div>
 
-                  {/* Pick Base Bowls for Slots */}
-                  <div className="pt-2 border-t border-neutral-200/80 space-y-2">
-                    <span className="text-xs font-bold text-neutral-700 block">
-                      Assign Bowls for Slots (Applies to rotation):
-                    </span>
-                    {customSlots.map(slot => (
-                      <div key={slot} className="space-y-1">
-                        <span className="text-[11px] font-bold text-neutral-500 uppercase">{slot} Bowl</span>
-                        <AsyncBowlSelect
-                          value=""
-                          onChange={() => {}}
-                          onSelectBowl={(bowl) => handleSetCustomBowl(0, slot, bowl)}
-                        />
+                  {/* Multi-Day Schedule & Bowl Assignment */}
+                  <div className="pt-3 border-t border-neutral-200/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-black text-neutral-900 block">
+                          Day Schedule ({customSchedule.length} / {customDays * customSlots.length} meals assigned)
+                        </span>
+                        <span className="text-[11px] text-neutral-500 font-medium">
+                          Select a day tab below to assign bowls for that day
+                        </span>
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Day Tabs Horizontal Scroll */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
+                      {Array.from({ length: customDays }, (_, i) => i + 1).map((d) => {
+                        const dayMeals = customSchedule.filter(it => Number(it.day_index) === d);
+                        const isComplete = dayMeals.length >= customSlots.length && customSlots.length > 0;
+                        const isPartial = dayMeals.length > 0 && !isComplete;
+                        const isActive = activeCustomDay === d;
+
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => setActiveCustomDay(d)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
+                              isActive
+                                ? "bg-[#6A0FAD] border-[#6A0FAD] text-white shadow-sm"
+                                : isComplete
+                                ? "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100"
+                                : isPartial
+                                ? "bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100"
+                                : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50"
+                            }`}
+                          >
+                            <span>Day {d}</span>
+                            {isComplete ? (
+                              <Check className={`w-3 h-3 ${isActive ? "text-white" : "text-emerald-600"}`} />
+                            ) : (
+                              <span className={`text-[10px] font-bold ${isActive ? "text-purple-200" : "text-neutral-400"}`}>
+                                {dayMeals.length}/{customSlots.length}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Day Action Bar */}
+                    <div className="flex items-center justify-between bg-purple-50/70 p-2.5 rounded-xl border border-purple-100 text-xs">
+                      <span className="font-bold text-purple-900">
+                        Configuring: <strong>Day {activeCustomDay}</strong> of {customDays}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyDayToAll(activeCustomDay)}
+                          className="px-2 py-1 text-[11px] font-bold text-purple-800 bg-white border border-purple-200 hover:bg-purple-100/60 rounded-md flex items-center gap-1 transition-colors"
+                          title="Copy Day bowls to all other days"
+                        >
+                          <Copy className="w-3 h-3 text-[#6A0FAD]" /> Copy to All Days
+                        </button>
+                        {activeCustomDay < customDays && (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyDayToNext(activeCustomDay)}
+                            className="px-2 py-1 text-[11px] font-bold text-purple-800 bg-white border border-purple-200 hover:bg-purple-100/60 rounded-md flex items-center gap-1 transition-colors"
+                            title="Copy to next day and advance"
+                          >
+                            <ArrowRight className="w-3 h-3 text-[#6A0FAD]" /> Copy to Day {activeCustomDay + 1}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Meal Slot Pickers for activeCustomDay */}
+                    <div className="space-y-3">
+                      {customSlots.map(slot => {
+                        const assignedItem = customSchedule.find(
+                          it => Number(it.day_index) === Number(activeCustomDay) && 
+                                it.meal_slot.toLowerCase() === slot.toLowerCase()
+                        );
+
+                        return (
+                          <div key={slot} className="p-3 bg-white rounded-2xl border border-neutral-200 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black text-neutral-800 flex items-center gap-1.5">
+                                <Utensils className="w-3.5 h-3.5 text-[#6A0FAD]" />
+                                Day {activeCustomDay} • {slot} Bowl
+                              </span>
+                              {assignedItem && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveCustomBowl(activeCustomDay, slot)}
+                                  className="text-[11px] font-bold text-red-500 hover:text-red-700 transition-colors"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+
+                            <AsyncBowlSelect
+                              value={assignedItem?.bowl_ulid || ""}
+                              selectedBowl={assignedItem ? { name: assignedItem.bowl_name, ulid: assignedItem.bowl_ulid } : undefined}
+                              onChange={() => {}}
+                              onSelectBowl={(bowl) => handleSetCustomBowl(activeCustomDay, slot, bowl)}
+                            />
+
+                            {assignedItem && (
+                              <div className="flex items-center justify-between pt-1.5 border-t border-neutral-100 text-xs">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-neutral-900">{assignedItem.bowl_name}</span>
+                                  {assignedItem.is_customized && (
+                                    <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">
+                                      Customized
+                                    </span>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCustomizer({
+                                    day_number: activeCustomDay,
+                                    day_index: activeCustomDay,
+                                    meal_type: slot,
+                                    bowl_ulid: assignedItem.bowl_ulid,
+                                    bowl_name: assignedItem.bowl_name,
+                                    custom_ingredients: assignedItem.custom_ingredients || []
+                                  })}
+                                  className="text-xs font-bold text-[#6A0FAD] hover:underline flex items-center gap-1"
+                                >
+                                  <SlidersHorizontal className="w-3 h-3" /> Customize Recipe
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Day Navigation Controls */}
+                    <div className="flex items-center justify-between pt-2">
+                      <button
+                        type="button"
+                        disabled={activeCustomDay <= 1}
+                        onClick={() => setActiveCustomDay(prev => Math.max(1, prev - 1))}
+                        className="px-3 py-1.5 text-xs font-bold text-neutral-700 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        <ChevronLeft className="w-4 h-4" /> Day {activeCustomDay - 1}
+                      </button>
+                      <span className="text-xs font-bold text-neutral-500">
+                        Day {activeCustomDay} of {customDays}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={activeCustomDay >= customDays}
+                        onClick={() => setActiveCustomDay(prev => Math.min(customDays, prev + 1))}
+                        className="px-3 py-1.5 text-xs font-bold text-neutral-700 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        Day {activeCustomDay + 1} <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -930,7 +1136,7 @@ export default function PlanPriceCalculatorPage() {
                         {calculationResult.scaled_matrix?.map((item: any, idx: number) => (
                           <tr key={idx} className="hover:bg-purple-50/30 transition-colors">
                             <td className="px-4 py-3">
-                              <div className="font-bold text-neutral-800">Day {item.day_number || item.day_index + 1}</div>
+                              <div className="font-bold text-neutral-800">Day {item.day_number || item.day_index || 1}</div>
                               <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-600 uppercase">
                                 {item.meal_type}
                               </span>
@@ -1190,7 +1396,7 @@ export default function PlanPriceCalculatorPage() {
         onClose={() => setCustomizingBowl(prev => ({ ...prev, isOpen: false }))}
         bowlUlid={customizingBowl.bowlUlid}
         bowlName={customizingBowl.bowlName}
-        dayIndex={customizingBowl.dayIndex + 1}
+        dayIndex={customizingBowl.dayIndex}
         mealSlot={customizingBowl.mealSlot}
         initialIngredients={customizingBowl.initialIngredients}
         basePackagingCost={customizingBowl.packagingCost}
