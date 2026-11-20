@@ -17,6 +17,7 @@ import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { CustomerLedger } from "../components/CustomerLedger";
 import { CustomerCalories } from "@/components/admin/CustomerCalories";
 import { CustomerHistory } from "@/components/admin/CustomerHistory";
+import { CustomerOrderReport } from "@/components/admin/CustomerOrderReport";
 import { BowlCustomizerModal, CustomIngredient, parseBowlIngredient } from "@/components/admin/BowlCustomizerModal";
 
 
@@ -741,29 +742,30 @@ export default function CustomerDetailPage() {
             <div className="animate-in fade-in zoom-in duration-300">
             
             {/* Action Bar */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-              <div className="flex items-center gap-4">
-                <button onClick={() => router.push("/admin/customers")} className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
+            <div className="mb-8 flex flex-col items-stretch gap-5">
+              <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
+                <button onClick={() => router.push("/admin/customers")} className="mt-1 shrink-0 rounded-full p-2 transition-colors hover:bg-neutral-100 sm:mt-0">
                   <ArrowLeft className="w-5 h-5 text-neutral-600" />
                 </button>
-                <div>
-                  <h1 className="text-3xl font-bold text-neutral-900">{customer.name}</h1>
-                  <p className="text-sm text-neutral-500 mt-1">{customer.ulid}</p>
+                <div className="min-w-0">
+                  <h1 className="break-words text-2xl font-bold text-neutral-900 sm:text-3xl">{customer.name}</h1>
+                  <p className="mt-1 break-all text-xs text-neutral-500 sm:break-normal sm:text-sm">{customer.ulid}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:gap-3">
                 {!isEditMode ? (
                   <>
+                    <CustomerOrderReport customer={customer} />
                     <Link
                       href={`/admin/orders/new?customer_ulid=${customer.ulid}&order_type=PLAN`}
-                      className="px-4 py-2 text-sm font-bold bg-[#16A34A] text-white hover:bg-[#15803d] rounded-xl transition-colors flex items-center gap-2 shadow-sm"
+                      className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#16A34A] px-3 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#15803d] max-sm:flex-1 sm:px-4 sm:text-sm"
                     >
                       <Plus className="w-4 h-4" /> Create Plan Order
                     </Link>
-                    <button onClick={() => setShowDeleteModal(true)} className="px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-2 border border-transparent hover:border-red-200">
+                    <button onClick={() => setShowDeleteModal(true)} className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-transparent px-3 py-2.5 text-xs font-bold text-red-600 transition-colors hover:border-red-200 hover:bg-red-50 max-sm:flex-1 sm:px-4 sm:text-sm">
                       <Trash2 className="w-4 h-4" /> Delete
                     </button>
-                    <ProbaeButton onClick={() => setIsEditMode(true)} className="!w-auto bg-[#f8f5fb] !text-[#6A0FAD] hover:!bg-[#6A0FAD] hover:!text-white !border-transparent">
+                    <ProbaeButton onClick={() => setIsEditMode(true)} className="!w-auto whitespace-nowrap !border-transparent !bg-[#f8f5fb] !px-3 !py-2.5 !text-xs !text-[#6A0FAD] hover:!bg-[#6A0FAD] hover:!text-white max-sm:flex-1 max-sm:justify-center sm:!px-4 sm:!text-sm">
                       <Edit2 className="w-4 h-4 mr-2" /> Edit Customer
                     </ProbaeButton>
                   </>
@@ -1997,4 +1999,3 @@ export default function CustomerDetailPage() {
     </div>
   );
 }
-

@@ -904,6 +904,10 @@ export const endpoints = {
       return await api.get(`/customers?${p.toString()}`);
     },
     get: async (ulid: string) => await api.get(`/customers/${ulid}`),
+    downloadOrderReport: async (ulid: string, params: { scope: "CUSTOMER" | "SUBSCRIPTION"; date_from: string; date_to: string }): Promise<Blob> => {
+      const query = new URLSearchParams({ scope: params.scope, date_from: params.date_from, date_to: params.date_to });
+      return await api.get<Blob>(`/customers/${ulid}/order-report.pdf?${query.toString()}`, { responseType: "blob" });
+    },
     create: async (data: any) => await api.post("/customers", data),
     update: async (ulid: string, data: any) => await api.patch(`/customers/${ulid}`, data),
     getCalories: async (ulid: string, filterDate?: string, page: number = 1, limit: number = 5) => {
