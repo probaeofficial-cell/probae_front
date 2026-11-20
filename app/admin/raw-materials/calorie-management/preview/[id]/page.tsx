@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Wheat } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
@@ -12,28 +12,19 @@ import { getMediaUrl } from "@/lib/utils";
 import { RawMaterial } from "@/lib/types";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function MacrosPreviewPage({ params }: PageProps) {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const { id: materialUlid } = use(params);
 
   const [material, setMaterial] = useState<RawMaterial | null>(null);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [isLoading, setIsLoading] = useState(true);
-  const [materialUlid, setMaterialUlid] = useState<string | null>(null);
-
-  // Resolve params asynchronously (consistent with Next.js 15+)
-  useEffect(() => {
-    async function resolveParams() {
-      const resolved = await (params as any);
-      setMaterialUlid(resolved.id);
-    }
-    resolveParams();
-  }, [params]);
 
   // Load raw material details and settings
   useEffect(() => {

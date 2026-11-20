@@ -1,7 +1,7 @@
 "use client";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import { Wheat, AlertTriangle, CheckCircle2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
@@ -13,25 +13,15 @@ import { getMediaUrl } from "@/lib/utils";
 import { RawMaterial, MacrosUpdatePayload } from "@/lib/types";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function EditMacrosPage({ params }: PageProps) {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  
-  // Resolve dynamic parameters asynchronously (Next.js 15+)
-  const [materialUlid, setMaterialUlid] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function resolveParams() {
-      const resolved = await (params as any);
-      setMaterialUlid(resolved.id);
-    }
-    resolveParams();
-  }, [params]);
+  const { id: materialUlid } = use(params);
 
   // ─── State Variables ───────────────────────────────────────────────────────
   const [material, setMaterial] = useState<RawMaterial | null>(null);
@@ -51,6 +41,14 @@ export default function EditMacrosPage({ params }: PageProps) {
 
   // Notifications State
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  // ─── Toast Helper ─────────────────────────────────────────────────────────
+  const showToast = useCallback((message: string, type: "success" | "error") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  }, []);
 
   // ─── Side Effects ──────────────────────────────────────────────────────────
   // Auth validation
@@ -91,15 +89,7 @@ export default function EditMacrosPage({ params }: PageProps) {
       }
     }
     loadData();
-  }, [user, materialUlid]);
-
-  // ─── Toast Helper ─────────────────────────────────────────────────────────
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast(null);
-    }, 3500);
-  };
+  }, [user, materialUlid, showToast]);
 
   // ─── Save Action ───────────────────────────────────────────────────────────
   const handleSave = async (e: React.FormEvent) => {
