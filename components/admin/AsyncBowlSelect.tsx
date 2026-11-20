@@ -11,9 +11,19 @@ interface AsyncBowlSelectProps {
   onSelectBowl?: (bowl: any) => void;
   mealCategoryId?: number;
   selectedBowl?: any;
+  disabledBowlIds?: Set<number>;
+  placeholder?: string;
 }
 
-export default function AsyncBowlSelect({ value, onChange, mealCategoryId, selectedBowl, onSelectBowl }: AsyncBowlSelectProps) {
+export default function AsyncBowlSelect({ 
+  value, 
+  onChange, 
+  mealCategoryId, 
+  selectedBowl, 
+  onSelectBowl,
+  disabledBowlIds,
+  placeholder
+}: AsyncBowlSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<any[]>([]);
@@ -117,16 +127,16 @@ export default function AsyncBowlSelect({ value, onChange, mealCategoryId, selec
     };
   }, [handleObserver]);
 
-  const currentOption = options.find(o => o.ulid === value) || selectedBowl;
-  const displayLabel = value === "" ? "Select Bowl..." : currentOption ? currentOption.name : "Select Bowl...";
+  const currentOption = options.find(o => o.ulid === value || String(o.id) === value) || selectedBowl;
+  const displayLabel = !value ? (placeholder || "Select Bowl...") : currentOption ? currentOption.name : (placeholder || "Select Bowl...");
 
   return (
     <div className="relative w-full" ref={containerRef}>
       <div 
-        className={`w-full h-[44px] bg-neutral-50 rounded-xl px-4 flex items-center justify-between cursor-pointer transition-all border ${isOpen ? 'border-[#7c3aed] ring-2 ring-[#7c3aed]/20' : 'border-neutral-200'}`}
+        className={`w-full h-12 bg-neutral-50 rounded-xl px-4 flex items-center justify-between cursor-pointer transition-all border ${isOpen ? 'border-[#7c3aed] ring-2 ring-[#7c3aed]/20' : 'border-neutral-200'}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className={`text-sm font-medium ${currentOption || value !== "" ? 'text-neutral-900' : 'text-neutral-500'} line-clamp-1`}>
+        <span className={`text-sm font-medium ${currentOption || value ? 'text-neutral-900' : 'text-neutral-500'} line-clamp-1`}>
           {displayLabel}
         </span>
         <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''} shrink-0`} />
@@ -148,29 +158,54 @@ export default function AsyncBowlSelect({ value, onChange, mealCategoryId, selec
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
-            {options.map((opt) => (
-              <div 
-                key={opt.ulid}
-                onClick={() => {
-                  onChange(opt.ulid);
-                  if (onSelectBowl) onSelectBowl(opt);
-                  setIsOpen(false);
-                  setSearch("");
-                }}
-                className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-between group ${value === opt.ulid ? 'bg-[#f3f0ff] text-[#7c3aed] font-semibold' : 'text-neutral-900 hover:bg-neutral-50'}`}
-              >
-                <div className="flex flex-col">
-                  <span className="truncate font-medium">{opt.name}</span>
-                  <span className="text-[10px] text-neutral-500">
-                    {opt.code && <span className="font-mono bg-neutral-100 px-1 rounded mr-1">{opt.code}</span>}
-                    {opt.bowl_type || 'Standard'}
-                  </span>
+            {options.map((opt) => {
+              const isSelected = value === opt.ulid || String(opt.id) === value;
+              const isMapped = !isSelected && disabledBowlIds && opt.id && disabledBowlIds.has(opt.id);
+
+              if (isMapped) {
+                return (
+                  <div 
+                    key={opt.ulid}
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-sm flex items-center justify-between opacity-50 bg-neutral-50/70 cursor-not-allowed select-none"
+                  >
+                    <div className="flex flex-col min-w-0 pr-2">
+                      <span className="truncate font-medium text-neutral-400">{opt.name}</span>
+                      <span className="text-[10px] text-neutral-400">
+                        {opt.code && <span className="font-mono bg-neutral-100 px-1 rounded mr-1">{opt.code}</span>}
+                        {opt.bowl_type || 'Standard'}
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-neutral-100 text-[10px] font-bold text-neutral-400 border border-neutral-200 shrink-0">
+                      Already Mapped
+                    </span>
+                  </div>
+                );
+              }
+
+              return (
+                <div 
+                  key={opt.ulid}
+                  onClick={() => {
+                    onChange(opt.ulid);
+                    if (onSelectBowl) onSelectBowl(opt);
+                    setIsOpen(false);
+                    setSearch("");
+                  }}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-between group ${isSelected ? 'bg-[#f3f0ff] text-[#7c3aed] font-semibold' : 'text-neutral-900 hover:bg-neutral-50'}`}
+                >
+                  <div className="flex flex-col min-w-0 pr-2">
+                    <span className="truncate font-medium">{opt.name}</span>
+                    <span className="text-[10px] text-neutral-500">
+                      {opt.code && <span className="font-mono bg-neutral-100 px-1 rounded mr-1">{opt.code}</span>}
+                      {opt.bowl_type || 'Standard'}
+                    </span>
+                  </div>
+                  {isSelected && (
+                    <div className="w-2 h-2 rounded-full bg-[#7c3aed] shrink-0" />
+                  )}
                 </div>
-                {value === opt.ulid && (
-                  <div className="w-2 h-2 rounded-full bg-[#7c3aed]" />
-                )}
-              </div>
-            ))}
+              );
+            })}
             
             {hasMore && (
               <div ref={loadingNodeRef} className="py-3 flex justify-center">

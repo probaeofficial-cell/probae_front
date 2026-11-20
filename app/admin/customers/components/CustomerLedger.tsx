@@ -17,6 +17,8 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
   const [totalDebitAmount, setTotalDebitAmount] = useState(0);
   const [totalDepositCount, setTotalDepositCount] = useState(0);
   const [totalDebitCount, setTotalDebitCount] = useState(0);
+  const [totalRefundAmount, setTotalRefundAmount] = useState(0);
+  const [totalRefundCount, setTotalRefundCount] = useState(0);
 
   const [showModal, setShowModal] = useState(false);
   const [amount, setAmount] = useState("");
@@ -43,6 +45,8 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
       setTotalDebitAmount(res.total_debit_amount || 0);
       setTotalDepositCount(res.total_deposit_count || 0);
       setTotalDebitCount(res.total_debit_count || 0);
+      setTotalRefundAmount(res.total_refund_amount || 0);
+      setTotalRefundCount(res.total_refund_count || 0);
       try {
         const pData = await endpoints.settings.getPaymentRecipients();
         setPaymentRecipients(pData.recipients || []);
@@ -140,13 +144,20 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
                 <span>₹{Math.abs(totalDebitAmount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </span>
             )}
+            {txTypeFilter === "REFUND" && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-orange-50 border border-orange-200/80 text-orange-700 text-xs font-bold shadow-xs">
+                <RotateCcw className="w-3.5 h-3.5 text-orange-600" />
+                <span className="text-[10px] uppercase font-semibold text-orange-600">Refunds:</span>
+                <span>₹{totalRefundAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </span>
+            )}
           </div>
 
-          {/* 3 Tabs: All Transactions | Deposits | Debits */}
-          <div className="relative flex bg-neutral-200/70 p-1 rounded-2xl w-full sm:w-[380px]">
+          {/* Transaction filters */}
+          <div className="relative flex bg-neutral-200/70 p-1 rounded-2xl w-full sm:w-[480px]">
             <div 
-              className={`absolute top-1 bottom-1 left-1 w-[calc(33.333%-0.25rem)] bg-white rounded-xl shadow-sm transition-transform duration-300 ease-out ${
-                txTypeFilter === "" ? "translate-x-0" : txTypeFilter === "DEPOSIT" ? "translate-x-[100%]" : "translate-x-[200%]"
+              className={`absolute top-1 bottom-1 left-1 w-[calc(25%-0.25rem)] bg-white rounded-xl shadow-sm transition-transform duration-300 ease-out ${
+                txTypeFilter === "" ? "translate-x-0" : txTypeFilter === "DEPOSIT" ? "translate-x-[100%]" : txTypeFilter === "DEBIT" ? "translate-x-[200%]" : "translate-x-[300%]"
               }`}
             />
             <button
@@ -156,7 +167,7 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
                 txTypeFilter === "" ? "text-[#6A0FAD]" : "text-neutral-500 hover:text-neutral-900"
               }`}
             >
-              All {totalDepositCount + totalDebitCount > 0 ? `(${totalDepositCount + totalDebitCount})` : ""}
+              All {totalDepositCount + totalDebitCount + totalRefundCount > 0 ? `(${totalDepositCount + totalDebitCount + totalRefundCount})` : ""}
             </button>
             <button
               type="button"
@@ -177,6 +188,16 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
             >
               <ArrowUp className="w-3.5 h-3.5 text-red-600" />
               Debits {totalDebitCount > 0 ? `(${totalDebitCount})` : ""}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setTxTypeFilter("REFUND"); setPage(1); }}
+              className={`relative z-10 flex-1 py-1.5 px-2 rounded-xl flex items-center justify-center gap-1 font-bold text-[11px] transition-colors duration-300 ${
+                txTypeFilter === "REFUND" ? "text-orange-700" : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-orange-600" />
+              Refunds {totalRefundCount > 0 ? `(${totalRefundCount})` : ""}
             </button>
           </div>
         </div>
@@ -203,6 +224,8 @@ export function CustomerLedger({ customerUlid, initialBalance, onBalanceChange }
                       ? "No deposit transactions recorded yet."
                       : txTypeFilter === "DEBIT"
                       ? "No debit transactions recorded yet."
+                      : txTypeFilter === "REFUND"
+                      ? "No refunds recorded yet."
                       : "No transactions recorded yet."}
                   </td>
                 </tr>

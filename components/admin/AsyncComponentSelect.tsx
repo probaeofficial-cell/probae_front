@@ -48,7 +48,7 @@ export default function AsyncComponentSelect({ value, onChange, selectedComponen
   const fetchOptions = async (pageNum: number, searchQuery: string, isNewSearch: boolean) => {
     setIsLoading(true);
     try {
-      const res = await endpoints.packagingComponents.getComponents(pageNum, 10, searchQuery);
+      const res = await endpoints.packagingComponents.getComponents(pageNum, 10, searchQuery, undefined, undefined, true);
       if (isNewSearch) {
         setOptions(res.items || []);
       } else {
@@ -94,7 +94,11 @@ export default function AsyncComponentSelect({ value, onChange, selectedComponen
 
   // Derived display name
   const currentOption = options.find(o => o.ulid === value) || selectedComponent;
-  const displayLabel = currentOption ? `${currentOption.name} (₹${currentOption.cost})` : "Select a component...";
+  const formatCost = (c: any) => {
+    const num = Number(c || 0);
+    return num % 1 === 0 ? String(num) : num.toFixed(2);
+  };
+  const displayLabel = currentOption ? `${currentOption.name} (₹${formatCost(currentOption.cost)})` : "Select a component...";
 
   return (
     <div className="relative w-full" ref={containerRef}>
@@ -132,7 +136,7 @@ export default function AsyncComponentSelect({ value, onChange, selectedComponen
                 }}
                 className={`px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors ${value === option.ulid ? 'bg-[#7c3aed]/10 text-[#7c3aed]' : 'text-neutral-700 hover:bg-neutral-50'}`}
               >
-                {option.name} <span className="text-neutral-400 font-normal ml-1">(₹{option.cost})</span>
+                {option.name} <span className="text-neutral-400 font-normal ml-1">(₹{formatCost(option.cost)})</span>
               </div>
             ))}
             

@@ -2,9 +2,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
-import { X, Calendar, Edit3, PauseCircle, RefreshCw, CheckCircle2, Clock, SlidersHorizontal, Sparkles } from "lucide-react";
-import { api } from "@/lib/apiService";
+import { X, Calendar, Edit3, PauseCircle, RefreshCw, CheckCircle2, Clock, SlidersHorizontal, Sparkles, Trash2, AlertTriangle } from "lucide-react";
+import { api, endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { BowlCustomizerModal } from "@/components/admin/BowlCustomizerModal";
@@ -14,6 +15,10 @@ export function SubscriptionSidePanel({ subscription, onClose, onUpdate }: { sub
   const [schedule, setSchedule] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+  const [cancelResult, setCancelResult] = useState<any>(null);
 
   const [customizerModal, setCustomizerModal] = useState<{
     isOpen: boolean;
@@ -45,12 +50,52 @@ export function SubscriptionSidePanel({ subscription, onClose, onUpdate }: { sub
   
   const s = subscription;
   const progressPct = s.progress.total > 0 ? Math.round((s.progress.done / s.progress.total) * 100) : 0;
+  const canCancel = s.customer.can_cancel_plan && ["Active", "Paused", "Ending Soon"].includes(s.status);
+  const allocatedBowls = Math.max(0, Number(s.plan.total_bowls || 0));
+  const remainingBowls = Math.min(allocatedBowls, Math.max(0, Number(s.progress.left || 0)));
+  const consumedBowls = Math.max(0, allocatedBowls - remainingBowls);
+  const amountPaid = Math.max(0, Number(s.plan.amount_paid || 0));
+  const estimatedRefund = allocatedBowls > 0 ? Number((amountPaid * remainingBowls / allocatedBowls).toFixed(2)) : 0;
+  const consumedValue = Number((amountPaid - estimatedRefund).toFixed(2));
+  const formatMoney = (amount: number) => `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const cancelSubscription = async () => {
+    setIsCancelling(true);
+    setCancelError("");
+    try {
+      const result: any = await endpoints.customers.cancelPlan(s.customer.ulid, {
+        remove_transaction: true,
+        remove_remaining_bowls: true,
+        delete_future_orders: true,
+        reason: "Cancelled from subscription details",
+      });
+      setCancelResult(result);
+    } catch (error: any) {
+      setCancelError(error?.detail || error?.message || "Could not cancel this subscription. Please try again.");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
   
   useEffect(() => {
     if (activeTab === "schedule") {
       loadSchedule();
     }
   }, [activeTab, s.customer.ulid]);
+
+  useEffect(() => {
+    if (!showCancelConfirm) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isCancelling && !cancelResult) setShowCancelConfirm(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [showCancelConfirm, isCancelling, cancelResult]);
 
   const loadSchedule = async () => {
     try {
@@ -208,6 +253,15 @@ export function SubscriptionSidePanel({ subscription, onClose, onUpdate }: { sub
             <button disabled={s.status !== "Ending Soon" && s.progress.left > 0} className="w-full flex items-center justify-center gap-2 bg-[#6A0FAD] hover:bg-[#5a0c96] text-white font-bold text-sm py-3.5 rounded-xl transition-colors shadow-lg shadow-[#6A0FAD]/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <RefreshCw className="w-4 h-4" /> Renew Subscription Plan
             </button>
+            {canCancel && (
+              <button
+                type="button"
+                onClick={() => { setCancelError(""); setCancelResult(null); setShowCancelConfirm(true); }}
+                className="mt-3 w-full flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white py-3 text-sm font-bold text-red-700 transition-colors hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4" /> Cancel subscription
+              </button>
+            )}
           </>
         ) : (
           <div className="flex flex-col gap-4">
@@ -297,7 +351,55 @@ export function SubscriptionSidePanel({ subscription, onClose, onUpdate }: { sub
           if (onUpdate) onUpdate();
         }}
       />
+
+      {showCancelConfirm && typeof document !== "undefined" && createPortal((
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto bg-neutral-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="cancel-subscription-title">
+          <div className="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl sm:p-7">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${cancelResult ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}>
+              {cancelResult ? <CheckCircle2 className="h-6 w-6" /> : <AlertTriangle className="h-6 w-6" />}
+            </div>
+            <h3 id="cancel-subscription-title" className="mt-4 text-xl font-black text-neutral-900">{cancelResult ? "Subscription cancelled" : "Cancel this subscription?"}</h3>
+            <p className="mt-2 text-sm leading-6 text-neutral-600">
+              {cancelResult ? cancelResult.message : "This removes the assigned plan and returns the unused bowl value to the wallet. The original plan charge stays in the ledger; the refund is recorded as a separate credit. Future created orders for this plan are cancelled."}
+            </p>
+            {cancelResult && (
+              <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl border border-neutral-200 p-3 text-center">
+                <div><p className="text-[10px] font-bold uppercase text-neutral-500">Paid</p><p className="mt-1 text-xs font-black text-neutral-900">{formatMoney(Number(cancelResult.amount_paid || 0))}</p></div>
+                <div><p className="text-[10px] font-bold uppercase text-neutral-500">Used · {cancelResult.consumed_bowls}/{cancelResult.allocated_bowls}</p><p className="mt-1 text-xs font-black text-neutral-900">{formatMoney(Number(cancelResult.consumed_value || 0))}</p></div>
+                <div><p className="text-[10px] font-bold uppercase text-[#6A0FAD]">Refund · {cancelResult.refundable_bowls}</p><p className="mt-1 text-xs font-black text-[#6A0FAD]">{formatMoney(Number(cancelResult.refund_amount || 0))}</p></div>
+              </div>
+            )}
+            {!cancelResult && <>
+              <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-sm">
+                <p className="font-bold text-neutral-900">{s.customer.name}</p>
+                <p className="mt-0.5 text-neutral-500">{s.plan.name}</p>
+              </div>
+              {amountPaid > 0 && allocatedBowls > 0 ? (
+                <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-neutral-200 p-3 text-center">
+                  <div><p className="text-[10px] font-bold uppercase text-neutral-500">Paid</p><p className="mt-1 text-xs font-black text-neutral-900">{formatMoney(amountPaid)}</p></div>
+                  <div><p className="text-[10px] font-bold uppercase text-neutral-500">Consumed · {consumedBowls}</p><p className="mt-1 text-xs font-black text-neutral-900">{formatMoney(consumedValue)}</p></div>
+                  <div><p className="text-[10px] font-bold uppercase text-[#6A0FAD]">Refund · {remainingBowls} left</p><p className="mt-1 text-xs font-black text-[#6A0FAD]">{formatMoney(estimatedRefund)}</p></div>
+                </div>
+              ) : (
+                <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">The recorded payment amount is unavailable in this view. The server will use the plan payment and bowl allocation records to calculate the refund.</p>
+              )}
+              <p className="mt-2 text-[11px] text-neutral-400">Final amount is recalculated from the latest remaining bowl count when you confirm.</p>
+            </>}
+            {cancelError && <p role="alert" className="mt-4 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">{cancelError}</p>}
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              {cancelResult ? (
+                <button type="button" onClick={() => { setShowCancelConfirm(false); onUpdate?.(); if (!onUpdate) onClose(); }} className="rounded-xl bg-[#6A0FAD] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#570c8d]">Done</button>
+              ) : <>
+                <button type="button" disabled={isCancelling} onClick={() => setShowCancelConfirm(false)} className="rounded-xl px-4 py-2.5 text-sm font-bold text-neutral-600 hover:bg-neutral-100 disabled:opacity-50">Keep subscription</button>
+                <button type="button" disabled={isCancelling} onClick={cancelSubscription} className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-wait disabled:opacity-60">
+                  {isCancelling ? <BowlLoader className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+                  {isCancelling ? "Cancelling…" : "Confirm cancellation"}
+                </button>
+              </>}
+            </div>
+          </div>
+        </div>
+      ), document.body)}
     </div>
   );
 }
-

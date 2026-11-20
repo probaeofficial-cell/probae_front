@@ -120,11 +120,28 @@ export function CustomerHistory({
                       <td className="px-6 py-4 text-sm font-bold text-[#6A0FAD]">{log.plan_name}</td>
                       <td className="px-6 py-4 text-sm">
                         {log.removed_transaction ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-lg border border-green-200">
-                            Removed Debit • Refunded ₹{Number(log.refund_amount).toFixed(2)}
-                          </span>
+                          <div className="space-y-1">
+                            {Number(log.refund_amount) > 0 ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-lg border border-green-200">
+                                {log.options_selected?.allocated_bowls > 0 ? "Unused-bowl refund" : "Refund issued"} · ₹{Number(log.refund_amount).toFixed(2)}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-50 text-neutral-500 text-xs font-bold rounded-lg border border-neutral-200">No unused-bowl refund issued</span>
+                            )}
+                            {log.options_selected?.allocated_bowls > 0 && (
+                              <>
+                                <p className="text-[10px] text-neutral-500">
+                                  {log.options_selected.consumed_bowls} used / {log.options_selected.allocated_bowls} allocated
+                                  {Number(log.options_selected.average_bowl_value) > 0 ? ` · ₹${Number(log.options_selected.average_bowl_value).toFixed(2)} per bowl` : ""}
+                                </p>
+                                {Number(log.options_selected.amount_paid) > 0 && (
+                                  <p className="text-[10px] text-neutral-500">Paid ₹{Number(log.options_selected.amount_paid).toFixed(2)} · used value ₹{Number(log.options_selected.consumed_value || 0).toFixed(2)}</p>
+                                )}
+                              </>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-xs text-neutral-400 font-medium">Transaction Retained</span>
+                          <span className="text-xs text-neutral-400 font-medium">No wallet refund requested</span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm">

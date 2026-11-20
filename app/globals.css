@@ -83,15 +83,49 @@
     --autofill-background-color: #222222;
   }
 
-  :is(.dark-auth-surface, #onboarding-root) input:not([type="checkbox"]):not([type="radio"]):is(:autofill, :-webkit-autofill),
-  :is(.dark-auth-surface, #onboarding-root) select:is(:autofill, :-webkit-autofill),
-  :is(.dark-auth-surface, #onboarding-root) textarea:is(:autofill, :-webkit-autofill) {
-    box-shadow:
-      inset 0 0 0 2px #6a0fad,
-      inset 0 0 0 100vmax var(--autofill-background-color);
+  /* Ensure inputs on dark auth surfaces and onboarding always have bright white text & legible placeholder */
+  :is(.dark-auth-surface, #onboarding-root) input:not([type="checkbox"]):not([type="radio"]),
+  :is(.dark-auth-surface, #onboarding-root) select,
+  :is(.dark-auth-surface, #onboarding-root) textarea {
+    color: #ffffff;
     -webkit-text-fill-color: #ffffff;
     caret-color: #ffffff;
   }
+
+  :is(.dark-auth-surface, #onboarding-root) input::placeholder,
+  :is(.dark-auth-surface, #onboarding-root) textarea::placeholder {
+    color: #a3a3a3;
+    -webkit-text-fill-color: #a3a3a3;
+  }
+
+  :is(.dark-auth-surface, #onboarding-root) input:not([type="checkbox"]):not([type="radio"]):is(:autofill, :-webkit-autofill),
+  :is(.dark-auth-surface, #onboarding-root) select:is(:autofill, :-webkit-autofill),
+  :is(.dark-auth-surface, #onboarding-root) textarea:is(:autofill, :-webkit-autofill) {
+    -webkit-box-shadow:
+      inset 0 0 0 2px #6a0fad,
+      inset 0 0 0 100vmax var(--autofill-background-color, #1c1c1c) !important;
+    box-shadow:
+      inset 0 0 0 2px #6a0fad,
+      inset 0 0 0 100vmax var(--autofill-background-color, #1c1c1c) !important;
+    -webkit-text-fill-color: #ffffff !important;
+    caret-color: #ffffff !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+  }
+}
+
+/* Explicit high-priority rules for dark authentication and onboarding input surfaces */
+:is(.dark-auth-surface, #onboarding-root) input:not([type="checkbox"]):not([type="radio"]),
+:is(.dark-auth-surface, #onboarding-root) select,
+:is(.dark-auth-surface, #onboarding-root) textarea {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+}
+
+:is(.dark-auth-surface, #onboarding-root) input::placeholder,
+:is(.dark-auth-surface, #onboarding-root) textarea::placeholder {
+  color: #a3a3a3 !important;
+  -webkit-text-fill-color: #a3a3a3 !important;
 }
 
 input:not([type="checkbox"]):not([type="radio"])::selection,

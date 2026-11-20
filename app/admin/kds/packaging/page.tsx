@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { api as apiService } from "@/lib/apiService";
-import { Package, ChefHat, RefreshCw, AlertCircle, Calendar, ChevronDown, ChevronUp, CheckSquare, Square } from "lucide-react";
+import { Package, ChefHat, RefreshCw, AlertCircle, AlertTriangle, Calendar, ChevronDown, ChevronUp, CheckSquare, Square } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { BowlLoader } from "@/components/admin/BowlLoader";
@@ -45,6 +45,15 @@ export default function PackagingDashboardPage() {
   // Mock completion status logic for UI presentation
   const [completedOrders, setCompletedOrders] = useState<Record<string, boolean>>({});
 
+  // Stock Warning State for Insufficient Sticker Stock (Phase 6 feedback)
+  const [stockWarning, setStockWarning] = useState<{
+    bowlName: string;
+    stickerName: string;
+    available: number;
+    required: number;
+    message: string;
+  } | null>(null);
+
   const fetchData = async () => {
     setLoading(true);
     setError(null);
@@ -82,7 +91,13 @@ export default function PackagingDashboardPage() {
     setExpandedBowls(prev => ({ ...prev, [bowlName]: !prev[bowlName] }));
   };
 
-  const toggleOrderComplete = async (orderItemUlid: string, currentStatus: boolean, assemblyStatus: string, orderStatus: string) => {
+  const toggleOrderComplete = async (
+    orderItemUlid: string, 
+    currentStatus: boolean, 
+    assemblyStatus: string, 
+    orderStatus: string,
+    bowlName?: string
+  ) => {
     // Only allow if assembled OR if the order is already PREPARED
     if (assemblyStatus !== "ASSEMBLED" && assemblyStatus !== "PACKAGED" && assemblyStatus !== "COMPLETED" && orderStatus !== "PREPARED") {
       alert("This bowl has not been assembled or prepared yet! Please wait for it to be ready before packaging.");
@@ -107,10 +122,32 @@ export default function PackagingDashboardPage() {
          }
          return newData;
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to update status", err);
       // Revert on failure
       setCompletedOrders(prev => ({ ...prev, [orderItemUlid]: currentStatus }));
+
+      // Check if insufficient sticker stock error (HTTP 409)
+      const detail = err.detail || {};
+      const isInsufficientStock = 
+        err.status === 409 || 
+        detail.message === "Insufficient sticker stock" || 
+        (typeof err.message === "string" && err.message.includes("Insufficient sticker stock"));
+
+      if (isInsufficientStock) {
+        const stickerName = detail.sticker || "Sticker";
+        const available = detail.available ?? 0;
+        const required = detail.required ?? 1;
+        setStockWarning({
+          bowlName: bowlName || "Bowl",
+          stickerName,
+          available,
+          required,
+          message: `Cannot pack ${bowlName || "Bowl"}: Insufficient sticker stock (Available: ${available}, Required: ${required}). Please notify inventory.`,
+        });
+      } else {
+        alert(err.message || "Failed to package order. Please try again.");
+      }
     }
   };
 
@@ -286,7 +323,7 @@ export default function PackagingDashboardPage() {
                                           <Square className="w-5 h-5 text-neutral-200 inline-block cursor-not-allowed" />
                                         </div>
                                       ) : (
-                                        <div className="cursor-pointer inline-block" onClick={() => toggleOrderComplete(order.order_item_ulid, isCompleted, order.assembly_status, order.order_status)}>
+                                        <div className="cursor-pointer inline-block" onClick={() => toggleOrderComplete(order.order_item_ulid, isCompleted, order.assembly_status, order.order_status, group.bowl_name)}>
                                           {isCompleted ? (
                                             <CheckSquare className="w-5 h-5 text-[#5B108E] inline-block" />
                                           ) : (
@@ -345,6 +382,52 @@ export default function PackagingDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Insufficient Sticker Stock Warning Modal for Kitchen Staff */}
+      {stockWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-red-100 flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-black text-neutral-900 text-lg leading-tight">Packaging Blocked</h3>
+                <span className="text-xs font-bold text-red-600">Insufficient Sticker Stock</span>
+              </div>
+            </div>
+
+            <div className="bg-red-50/70 border border-red-100 rounded-2xl p-4 text-xs text-neutral-700 flex flex-col gap-2">
+              <div className="flex items-center justify-between border-b border-red-100 pb-2">
+                <span className="font-bold text-neutral-500">Bowl Item:</span>
+                <span className="font-black text-neutral-900">{stockWarning.bowlName}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-red-100 pb-2">
+                <span className="font-bold text-neutral-500">Required Sticker:</span>
+                <span className="font-black text-[#6A0FAD]">{stockWarning.stickerName}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-red-100 pb-2">
+                <span className="font-bold text-neutral-500">Stock Availability:</span>
+                <span className="font-black text-red-600">
+                  Available: {stockWarning.available} / Required: {stockWarning.required}
+                </span>
+              </div>
+              <p className="mt-1 text-red-800 font-medium leading-relaxed">
+                Sticker stock is depleted. Packing cannot proceed until inventory is replenished by an administrator in the Packaging section.
+              </p>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setStockWarning(null)}
+                className="w-full py-3 rounded-2xl bg-neutral-900 text-white font-bold text-sm hover:bg-neutral-800 transition-colors"
+              >
+                Acknowledge & Notify Inventory
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

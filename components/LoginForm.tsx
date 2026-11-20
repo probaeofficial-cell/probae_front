@@ -54,7 +54,7 @@ export function ProbaeWordmark() {
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const inputCls = `
   w-full bg-transparent border border-[#3a3a3a]
-  text-white placeholder:text-neutral-400 caret-white
+  !text-white text-white !placeholder-neutral-400 placeholder:text-neutral-400 !caret-white caret-white
   rounded-2xl px-4 py-3.5 text-sm
   outline-none focus:border-neutral-400
   transition-colors duration-150
@@ -116,11 +116,11 @@ function OtpInput({ length, value, onChange }: OtpInputProps) {
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={handlePaste}
-          className="flex-1 aspect-square max-w-[50px] text-center text-white text-lg font-medium
+          className="flex-1 aspect-square max-w-[50px] text-center !text-white text-white text-lg font-medium
             bg-transparent border border-[#3a3a3a] rounded-2xl
             outline-none focus:border-neutral-400
-            caret-white transition-colors duration-150"
-          style={{ minWidth: 0 }}
+            !caret-white caret-white transition-colors duration-150"
+          style={{ minWidth: 0, color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
           aria-label={`OTP digit ${i + 1}`}
         />
       ))}
@@ -212,6 +212,7 @@ function LoginView({
           autoCapitalize="none"
           spellCheck={false}
           className={inputCls}
+          style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
         />
         <div className="relative w-full">
           <input
@@ -222,6 +223,7 @@ function LoginView({
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
             className={`${inputCls} pr-11`}
+            style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
           />
           <button
             type="button"
@@ -456,6 +458,7 @@ function ForgotView({
             autoCapitalize="none"
             spellCheck={false}
             className={inputCls}
+            style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
             disabled={loading}
             maxLength={6}
           />
@@ -469,6 +472,7 @@ function ForgotView({
               onChange={(e) => setNewPassword(e.target.value)}
               autoComplete="new-password"
               className={`${inputCls} pr-11`}
+              style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
               disabled={loading}
             />
             <button
@@ -491,6 +495,7 @@ function ForgotView({
               onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password"
               className={`${inputCls} pr-11`}
+              style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
               disabled={loading}
             />
             <button
@@ -547,6 +552,7 @@ function ForgotView({
           autoComplete="email"
           spellCheck={false}
           className={inputCls}
+          style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
           disabled={loading}
         />
 

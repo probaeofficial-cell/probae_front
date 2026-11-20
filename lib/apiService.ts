@@ -120,6 +120,11 @@ const parseError = async (response: Response, endpoint?: string): Promise<never>
         errorMessage = errorData.detail;
       } else if (Array.isArray(errorData.detail) && errorData.detail.length > 0) {
         errorMessage = errorData.detail.map((err) => err.msg).join(", ");
+      } else if (typeof errorData.detail === "object" && errorData.detail !== null) {
+        const obj = errorData.detail as any;
+        if (obj.message) {
+          errorMessage = obj.message;
+        }
       }
     }
   } catch (e) {
@@ -800,13 +805,19 @@ export const endpoints = {
   },
 
   packagingComponents: {
-    getComponents: async (page: number, size: number, search?: string, sort?: string): Promise<PaginatedPackagingComponents> => {
+    getComponents: async (page: number, size: number, search?: string, sort?: string, stock_status?: string, exclude_children?: boolean): Promise<PaginatedPackagingComponents> => {
       let query = `?page=${page}&page_size=${size}`;
       if (search) {
         query += `&search=${encodeURIComponent(search)}`;
       }
       if (sort) {
         query += `&sort=${encodeURIComponent(sort)}`;
+      }
+      if (stock_status) {
+        query += `&stock_status=${encodeURIComponent(stock_status)}`;
+      }
+      if (exclude_children) {
+        query += `&exclude_children=true`;
       }
       return await api.get<PaginatedPackagingComponents>(`/packaging/components${query}`);
     },
@@ -845,12 +856,16 @@ export const endpoints = {
       return await api.del<void>(`/packaging/${ulid}`);
     },
     // Component stock management
-    getComponents: async (page: number, size: number, search?: string): Promise<any> => {
+    getComponents: async (page: number, size: number, search?: string, stock_status?: string): Promise<any> => {
       let query = `?page=${page}&page_size=${size}`;
       if (search) query += `&search=${encodeURIComponent(search)}`;
+      if (stock_status) query += `&stock_status=${encodeURIComponent(stock_status)}`;
       return await api.get(`/packaging/components${query}`);
     },
-    adjustComponentStock: async (ulid: string, data: { quantity_change: number; description?: string }): Promise<any> => {
+    stockIn: async (ulid: string, data: { quantity: number; reference_type?: string; reference_id?: string; remarks?: string }): Promise<any> => {
+      return await api.post(`/packaging/components/${ulid}/stock-in`, data);
+    },
+    adjustComponentStock: async (ulid: string, data: { quantity_change: number; description?: string; reference_type?: string; reference_id?: string; remarks?: string }): Promise<any> => {
       return await api.post(`/packaging/components/${ulid}/stock`, data);
     },
     updateComponentStockThreshold: async (ulid: string, data: { stock_threshold: number }): Promise<any> => {

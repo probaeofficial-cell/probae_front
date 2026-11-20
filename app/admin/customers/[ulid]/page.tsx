@@ -1885,11 +1885,14 @@ export default function CustomerDetailPage() {
                 />
                 <div className="text-xs">
                   <div className="font-bold text-neutral-900">
-                    Reverse Plan Transaction & Refund Wallet
+                    Refund Unused Bowl Value to Wallet
                   </div>
-                  <div className="text-neutral-500 mt-0.5">
-                    Deletes the subscription charge transaction and refunds the paid amount back into the customer wallet.
-                  </div>
+                    <div className="text-neutral-500 mt-0.5">
+                      Calculates the unused value from bowls remaining, credits that amount to the wallet, and keeps the original plan charge in the ledger.
+                    </div>
+                    {!cancelPlanConfig.removeRemainingBowls && (
+                      <div className="mt-1 font-bold text-amber-700">Clear the remaining bowl quota to issue a refund.</div>
+                    )}
                 </div>
               </label>
 

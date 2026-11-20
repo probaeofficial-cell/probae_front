@@ -326,6 +326,17 @@ export interface PaginatedBowlCategories {
 
 // ─── Packaging Types ────────────────────────────────────────────────────────
 
+export interface ChildStickerSummary {
+  id: number;
+  ulid: string;
+  name: string;
+  cost: number;
+  current_stock: number;
+  stock_threshold: number;
+  stock_status: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+  parent_id?: number | null;
+}
+
 export interface PackagingComponent {
   id: number;
   ulid: string;
@@ -333,6 +344,12 @@ export interface PackagingComponent {
   cost: number;
   current_stock: number;
   stock_threshold: number;
+  stock_status?: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+  is_parent?: boolean;
+  parent_id?: number | null;
+  parent_ulid?: string | null;
+  parent_name?: string | null;
+  children?: ChildStickerSummary[];
   created_at: string;
   updated_at: string;
 }
@@ -341,11 +358,17 @@ export interface PackagingComponentStockLog {
   id: number;
   ulid: string;
   component_id: number;
+  transaction_type?: string;
+  quantity?: number;
   quantity_change: number;
   previous_stock: number;
   new_stock: number;
+  reference_type?: string | null;
+  reference_id?: string | null;
   description?: string | null;
+  remarks?: string | null;
   order_ulid?: string | null;
+  order_item_ulid?: string | null;
   created_at: string;
   created_by?: { id: number; name: string } | null;
 }
@@ -353,11 +376,26 @@ export interface PackagingComponentStockLog {
 export interface PackagingComponentCreateInput {
   name: string;
   cost: number;
+  is_parent?: boolean;
+  parent_ulid?: string | null;
+  parent_id?: number | null;
+  stock_threshold?: number;
 }
 
 export interface PackagingComponentUpdateInput {
   name?: string;
   cost?: number;
+  is_parent?: boolean;
+  parent_ulid?: string | null;
+  parent_id?: number | null;
+  stock_threshold?: number;
+}
+
+export interface PackagingStockInInput {
+  quantity: number;
+  reference_type?: string;
+  reference_id?: string;
+  remarks?: string;
 }
 
 export interface PaginatedPackagingComponents {
