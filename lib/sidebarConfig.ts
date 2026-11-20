@@ -139,6 +139,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       directory: { label: "Directory", dotColor: "bg-blue-500", path: "/admin/customers" },
       subscriptions: { label: "Subscriptions", dotColor: "bg-purple-500", path: "/admin/subscriptions" },
       transactions: { label: "Wallet & Transactions", dotColor: "bg-green-500", path: "/admin/customers/transactions" },
+      dues: { label: "Dues", dotColor: "bg-red-500", path: "/admin/customers/dues" },
       bulkOrders: { label: "Bulk Legacy Orders", dotColor: "bg-amber-500", path: "/admin/customers/bulk-orders" },
     },
   },

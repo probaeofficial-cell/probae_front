@@ -885,6 +885,7 @@ export const endpoints = {
       if (params?.page) p.append("page", params.page.toString());
       if (params?.limit) p.append("limit", params.limit.toString());
       if (params?.search) p.append("search", params.search);
+      if (params?.only_dues) p.append("only_dues", "true");
       if (params?.is_affiliate !== undefined) p.append("is_affiliate", params.is_affiliate.toString());
       if (params?.plan_id) p.append("plan_id", params.plan_id.toString());
       if (params?.period) p.append("period", params.period);
