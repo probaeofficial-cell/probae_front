@@ -26,8 +26,9 @@ import { Header } from "@/components/admin/Header";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { endpoints } from "@/lib/apiService";
-import { PackagingComponent, ChildStickerSummary } from "@/lib/types";
+import { PackagingComponent, ChildStickerSummary, Bowl } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import AsyncBowlSelect from "@/components/admin/AsyncBowlSelect";
 
 export default function PackagingComponentsPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -60,6 +61,7 @@ export default function PackagingComponentsPage() {
   // Modal State for Add/Edit
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PackagingComponent | ChildStickerSummary | null>(null);
+  const [selectedBowl, setSelectedBowl] = useState<Bowl | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     cost: "",
@@ -203,6 +205,7 @@ export default function PackagingComponentsPage() {
   // ─── Form Handlers ─────────────────────────────────────────────────────────
   const openAddModal = (asStickerChild: boolean = false) => {
     setEditingItem(null);
+    setSelectedBowl(null);
     setFormData({
       name: "",
       cost: asStickerChild ? (activeParent && activeParent.cost ? String(activeParent.cost) : "0.25") : "",
@@ -214,6 +217,7 @@ export default function PackagingComponentsPage() {
 
   const openEditModal = (item: PackagingComponent | ChildStickerSummary) => {
     setEditingItem(item);
+    setSelectedBowl(null);
     const isChild = Boolean(item.parent_id);
     setFormData({
       name: item.name,
@@ -227,6 +231,10 @@ export default function PackagingComponentsPage() {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || formData.cost === "") return;
+    if (formData.is_child_sticker && !editingItem && !selectedBowl) {
+      showToast("Please select the bowl for this sticker subcomponent", "error");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -756,7 +764,10 @@ export default function PackagingComponentsPage() {
                 <div className="flex rounded-2xl bg-neutral-100 p-1">
                   <button
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, is_child_sticker: false }))}
+                    onClick={() => {
+                      setSelectedBowl(null);
+                      setFormData(prev => ({ ...prev, is_child_sticker: false }));
+                    }}
                     className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
                       !formData.is_child_sticker 
                         ? "bg-white text-neutral-900 shadow-xs" 
@@ -781,8 +792,29 @@ export default function PackagingComponentsPage() {
 
               {formData.is_child_sticker && (
                 <p className="rounded-xl bg-purple-50 p-3 text-xs text-purple-800">
-                  Name this sticker subcomponent exactly after its bowl. The bowl&apos;s packaging set determines which sticker stock is deducted.
+                  Select the bowl to fill its exact name. The bowl&apos;s packaging set determines which sticker stock is deducted.
                 </p>
+              )}
+
+              {formData.is_child_sticker && !editingItem && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider ml-1">
+                    Bowl <span className="text-red-500">*</span>
+                  </label>
+                  <AsyncBowlSelect
+                    value={selectedBowl?.ulid || ""}
+                    selectedBowl={selectedBowl}
+                    placeholder="Search and select a bowl..."
+                    onChange={() => {}}
+                    onSelectBowl={(bowl) => {
+                      setSelectedBowl(bowl);
+                      setFormData(prev => ({ ...prev, name: bowl.name }));
+                    }}
+                  />
+                  <span className="ml-1 text-[11px] text-neutral-400">
+                    The selected bowl name is saved as the sticker subcomponent name.
+                  </span>
+                </div>
               )}
 
               <div className="flex flex-col gap-1.5">
@@ -794,8 +826,9 @@ export default function PackagingComponentsPage() {
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  readOnly={formData.is_child_sticker && !editingItem}
                   placeholder={formData.is_child_sticker ? "e.g. Zen Platter" : "e.g. Medium Bowl Base"}
-                  className="w-full h-12 bg-neutral-50 border border-neutral-200 rounded-xl px-4 text-sm font-medium text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/20 focus:border-[#7c3aed] transition-all"
+                  className="w-full h-12 bg-neutral-50 border border-neutral-200 rounded-xl px-4 text-sm font-medium text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/20 focus:border-[#7c3aed] transition-all read-only:cursor-not-allowed read-only:bg-neutral-100"
                 />
               </div>
 
