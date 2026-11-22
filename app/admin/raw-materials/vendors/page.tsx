@@ -14,7 +14,7 @@ import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 
 export default function VendorsPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
 
   // ─── State Variables ───────────────────────────────────────────────────────
@@ -233,12 +233,12 @@ return () => clearTimeout(handler);
                 placeholder="Search vendors by name or code..."
                isLoading={isTyping || isLoading}  sortByText={sort} onSortClick={handleSortClick} />
 
-              <ProbaeButton 
+              {isAdmin && <ProbaeButton
                 onClick={openAddModal}
                 className="w-full sm:w-auto px-8 shrink-0"
               >
                 Add Vendor
-              </ProbaeButton>
+              </ProbaeButton>}
             </div>
 
             {/* Table Content Area */}
@@ -264,7 +264,7 @@ return () => clearTimeout(handler);
                       ? `No results match your search "${debouncedSearch}". Try another query.` 
                       : "Get started by adding your first vendor."}
                   </p>
-                  {!debouncedSearch && (
+                  {!debouncedSearch && isAdmin && (
                     <div className="mt-6 w-[200px]">
                       <ProbaeButton onClick={openAddModal}>
                         Add Vendor
@@ -280,7 +280,7 @@ return () => clearTimeout(handler);
                       <th className="px-6 py-4 border-b border-neutral-200">Name</th>
                       <th className="px-6 py-4 border-b border-neutral-200">Description</th>
                       <th className="px-6 py-4 border-b border-neutral-200">Created At</th>
-                      <th className="px-6 py-4 rounded-tr-xl border-b border-neutral-200 text-right">Actions</th>
+                      {isAdmin && <th className="px-6 py-4 rounded-tr-xl border-b border-neutral-200 text-right">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
@@ -307,7 +307,7 @@ return () => clearTimeout(handler);
                             day: 'numeric'
                           })}
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        {isAdmin && <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               type="button"
@@ -326,7 +326,7 @@ return () => clearTimeout(handler);
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                        </td>
+                        </td>}
                       </tr>
                     ))}
                   </tbody>

@@ -8,6 +8,7 @@ import { TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 import { endpoints } from "@/lib/apiService";
 import type { RawMaterial, Vendor } from "@/lib/types";
 import { Header } from "@/components/admin/Header";
@@ -23,10 +24,14 @@ interface DraftPurchase {
 }
 
 export default function PurchaseHistoryPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, hasPermission, permissionsLoaded } = useAuth();
+  const canUpdateInventory = hasPermission(PERMISSIONS.inventory.update);
   const router = useRouter();
   
-  const [activeTab, setActiveTab] = useState<"record" | "daily" | "trends" | "monthly">("record");
+  const [activeTab, setActiveTab] = useState<"record" | "daily" | "trends" | "monthly">("daily");
+  useEffect(() => {
+    if (permissionsLoaded) setActiveTab(canUpdateInventory ? "record" : "daily");
+  }, [permissionsLoaded, canUpdateInventory]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -309,7 +314,7 @@ export default function PurchaseHistoryPage() {
         {/* Tabs Bar */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-start items-center shrink-0">
           <div className="flex bg-neutral-100 p-1 rounded-2xl w-full sm:w-auto overflow-x-auto">
-            <button onClick={() => setActiveTab("record")} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === "record" ? "bg-white text-[#6b21a8] shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}><ListOrdered className="w-4 h-4" />Record Purchase</button>
+            {canUpdateInventory && <button onClick={() => setActiveTab("record")} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === "record" ? "bg-white text-[#6b21a8] shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}><ListOrdered className="w-4 h-4" />Record Purchase</button>}
             <button onClick={() => setActiveTab("daily")} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === "daily" ? "bg-white text-[#6b21a8] shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}><CalendarDays className="w-4 h-4" />Daily View</button>
             <button onClick={() => setActiveTab("monthly")} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === "monthly" ? "bg-white text-[#6b21a8] shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}><CalendarRange className="w-4 h-4" />Monthly View</button>
             <button onClick={() => setActiveTab("trends")} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === "trends" ? "bg-white text-[#6b21a8] shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}><TrendingUp className="w-4 h-4" />Price Trends</button>
@@ -319,7 +324,7 @@ export default function PurchaseHistoryPage() {
         <div className="flex-1 overflow-auto scrollbar-thin">
           <div className="max-w-7xl mx-auto w-full">
             
-            {activeTab === "record" && (
+            {activeTab === "record" && canUpdateInventory && (
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
                 
                 <div className="xl:col-span-5 bg-white border border-neutral-200 rounded-[32px] p-8 shadow-sm">
@@ -471,7 +476,7 @@ export default function PurchaseHistoryPage() {
                                 <td className="py-4 px-2 text-sm font-medium text-neutral-600">{formatCurrency(d.quantity > 0 ? d.purchasePrice / d.quantity : 0)}/{d.rawMaterial.unit}</td>
                                 <td className="py-4 px-2 font-bold text-neutral-900">{formatCurrency(d.purchasePrice)}</td>
                                 <td className={`py-4 px-2 font-bold ${varAmount > 0 ? 'text-red-500' : 'text-green-500'}`}>{varAmount > 0 ? '+' : ''}{formatCurrency(varAmount)}</td>
-                                <td className="py-4 px-4 text-right"><button onClick={() => removeDraft(d.id)} className="text-neutral-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button></td>
+                                <td className="py-4 px-4 text-right">{canUpdateInventory && <button onClick={() => removeDraft(d.id)} className="text-neutral-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button>}</td>
                               </tr>
                             );
                           })
@@ -486,11 +491,13 @@ export default function PurchaseHistoryPage() {
                     <div className="flex justify-between items-center mb-6"><span className="font-black text-lg text-neutral-900">TOTAL VALUE:</span><span className="font-black text-2xl text-[#6b21a8]">{formatCurrency(draftTotalActual)}</span></div>
                     <hr className="border-neutral-200 mb-6" />
                     <div className="flex gap-4">
+                      {canUpdateInventory && <>
                       <button onClick={handleSubmitBatch} disabled={draftPurchases.length === 0 || isLoading} className="flex-1 bg-[#6b21a8] text-white font-bold rounded-2xl py-4 flex items-center justify-center gap-2 hover:bg-[#581c87] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         {isLoading ? <BowlLoader className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
                         <span>Submit Purchase</span>
                       </button>
                       <button onClick={() => setDraftPurchases([])} disabled={draftPurchases.length === 0} className="px-8 bg-white border-2 border-neutral-200 text-neutral-700 font-bold rounded-2xl hover:bg-neutral-50 transition-colors disabled:opacity-50">Clear All</button>
+                      </>}
                     </div>
                   </div>
                 </div>
@@ -541,9 +548,9 @@ export default function PurchaseHistoryPage() {
                               <td className="py-4 px-4 font-bold text-neutral-900">{formatCurrency(p.total_amount)}</td>
                               <td className={`py-4 px-4 font-bold ${p.variance > 0 ? 'text-red-500' : 'text-green-500'}`}>{p.variance > 0 ? '+' : ''}{formatCurrency(p.variance)}</td>
                               <td className="py-4 px-6 text-right">
-                                <button onClick={() => setDeletingPurchaseId(p.id)} className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors ml-auto">
+                                {canUpdateInventory && <button onClick={() => setDeletingPurchaseId(p.id)} className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors ml-auto">
                                   <Trash2 className="w-4 h-4" />
-                                </button>
+                                </button>}
                               </td>
                             </tr>
                           ))
@@ -647,9 +654,9 @@ export default function PurchaseHistoryPage() {
                                 <td className="py-4 px-4 font-bold text-neutral-900">{formatCurrency(p.total_amount)}</td>
                                 <td className={`py-4 px-4 font-bold ${p.variance > 0 ? 'text-red-500' : 'text-green-500'}`}>{p.variance > 0 ? '+' : ''}{formatCurrency(p.variance)}</td>
                                 <td className="py-4 px-6 text-right">
-                                  <button onClick={() => setDeletingPurchaseId(p.id)} className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors ml-auto">
+                                  {canUpdateInventory && <button onClick={() => setDeletingPurchaseId(p.id)} className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors ml-auto">
                                     <Trash2 className="w-4 h-4" />
-                                  </button>
+                                  </button>}
                                 </td>
                               </tr>
                             ))
@@ -670,7 +677,7 @@ export default function PurchaseHistoryPage() {
 </div>
         </div>
       </div>
-      <ConfirmationModal
+      {canUpdateInventory && <ConfirmationModal
         isOpen={deletingPurchaseId !== null}
         onClose={() => setDeletingPurchaseId(null)}
         onConfirm={executeDeletePurchase}
@@ -679,7 +686,7 @@ export default function PurchaseHistoryPage() {
         type="delete"
         confirmText="Delete Record"
         isLoading={isDeleting}
-      />
+      />}
     </div>
   );
 }

@@ -11,10 +11,20 @@ import AsyncCustomerSelect from "@/components/admin/AsyncCustomerSelect";
 import { endpoints } from "@/lib/apiService";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { OrderWindowModal } from "@/components/admin/OrderWindowModal";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const STANDARD_MEAL_SLOTS = ["Breakfast", "Lunch", "Dinner", "Snacks", "Drinks"];
 
 export default function OrdersPage() {
+  const { hasPermission, isAdmin } = useAuth();
+  const canCreateOrders = hasPermission(PERMISSIONS.orders.create);
+  const canEditOrders = hasPermission(PERMISSIONS.orders.update);
+  const canChangeStatusTo = (nextStatus: string) => {
+    if (nextStatus === "DISPATCHED") return hasPermission(PERMISSIONS.orders.dispatch);
+    if (nextStatus === "DELIVERED") return hasPermission(PERMISSIONS.orders.markDelivered);
+    return canEditOrders;
+  };
   const [targetDate, setTargetDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
   const [search, setSearch] = useState("");
   const [customerId, setCustomerId] = useState<number | 0>(0);
@@ -234,12 +244,14 @@ export default function OrdersPage() {
             </div>
             
             <div className="flex flex-col sm:flex-row flex-wrap md:flex-nowrap items-stretch sm:items-center gap-3 md:gap-4 w-full md:w-auto">
-              <button
-                onClick={() => setIsWindowModalOpen(true)}
-                className="flex items-center justify-center gap-2 h-11 px-4 rounded-2xl bg-white border border-neutral-200 text-neutral-700 font-bold text-sm hover:bg-neutral-50 hover:border-neutral-300 shadow-sm transition-colors w-full sm:w-auto"
-              >
-                <Clock className="w-4 h-4 text-[#6A0FAD]" /> Order Window
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setIsWindowModalOpen(true)}
+                  className="flex items-center justify-center gap-2 h-11 px-4 rounded-2xl bg-white border border-neutral-200 text-neutral-700 font-bold text-sm hover:bg-neutral-50 hover:border-neutral-300 shadow-sm transition-colors w-full sm:w-auto"
+                >
+                  <Clock className="w-4 h-4 text-[#6A0FAD]" /> Order Window
+                </button>
+              )}
 
               {/* Batch Order & Wallet Adjust utility button - can be commented or removed anytime */}
               {/* <Link
@@ -266,21 +278,25 @@ export default function OrdersPage() {
                 <Filter className="w-5 h-5 mr-2 sm:mr-0" /> <span className="sm:hidden font-bold">Filter Orders</span>
               </button>
 
-              <button
-                onClick={() => setShowGenerateConfirm(true)}
-                disabled={isCronRunning}
-                title="Manually run the plan order queue for tomorrow. Safe to click multiple times."
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-sm hover:bg-amber-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-              >
-                {isCronRunning ? <BowlLoader className="w-4 h-4"  /> : <Zap className="w-4 h-4" />}
-                {isCronRunning ? "Running..." : "Run Daily Generation"}
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowGenerateConfirm(true)}
+                  disabled={isCronRunning}
+                  title="Manually run the plan order queue for tomorrow. Safe to click multiple times."
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-sm hover:bg-amber-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                >
+                  {isCronRunning ? <BowlLoader className="w-4 h-4"  /> : <Zap className="w-4 h-4" />}
+                  {isCronRunning ? "Running..." : "Run Daily Generation"}
+                </button>
+              )}
 
-              <Link href="/admin/orders/new" className="w-full sm:w-auto">
-                <ProbaeButton className="w-full sm:!w-auto flex items-center justify-center gap-2">
-                  <Plus className="w-4 h-4" /> Custom Order
-                </ProbaeButton>
-              </Link>
+              {canCreateOrders && (
+                <Link href="/admin/orders/new" className="w-full sm:w-auto">
+                  <ProbaeButton className="w-full sm:!w-auto flex items-center justify-center gap-2">
+                    <Plus className="w-4 h-4" /> Custom Order
+                  </ProbaeButton>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -498,18 +514,25 @@ export default function OrdersPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
+                            {(() => {
+                              const availableStatuses = getAvailableStatuses(order.status);
+                              const allowedStatuses = availableStatuses.filter(canChangeStatusTo);
+                              const displayedStatuses = Array.from(new Set([order.status, ...allowedStatuses]));
+                              return (
                             <select 
                               value={order.status}
                               onChange={(e) => requestStatusChange(order.ulid, e.target.value)}
-                              disabled={order.status === "DELIVERED" || order.status === "CANCELLED"}
+                              disabled={displayedStatuses.length <= 1 || order.status === "DELIVERED" || order.status === "CANCELLED"}
                               className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider outline-none transition-colors appearance-none ${
                                 order.status === "DELIVERED" || order.status === "CANCELLED" ? "bg-neutral-100 text-neutral-500 cursor-not-allowed" : "bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200"
                               }`}
                             >
-                              {getAvailableStatuses(order.status).map(st => (
+                              {displayedStatuses.map(st => (
                                 <option key={st} value={st}>{st}</option>
                               ))}
                             </select>
+                              );
+                            })()}
                           </td>
                           <td className="px-6 py-4 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2">
@@ -536,7 +559,7 @@ export default function OrdersPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2">
-                              {order.status === "CREATED" && (
+                              {order.status === "CREATED" && canEditOrders && (
                                 <Link 
                                   href={`/admin/orders/${order.ulid}/edit`}
                                   className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-[#6A0FAD] hover:bg-[#F9F5FD] transition-colors"

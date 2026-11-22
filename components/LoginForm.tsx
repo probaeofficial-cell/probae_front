@@ -655,7 +655,7 @@ export default function LoginForm({
       if (resolvedRole === "delivery") {
         router.push("/delivery");
       } else {
-        router.push("/admin/dashboard");
+        router.push("/admin");
       }
     }, 1000);
   };

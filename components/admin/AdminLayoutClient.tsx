@@ -5,11 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/admin/Sidebar";
 import React, { useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
+import { getAdminLandingPath } from "@/lib/sidebarConfig";
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, permissionsLoaded, hasPermission } = useAuth();
 
   const isLoginPage = pathname === "/admin/login";
 
@@ -21,15 +22,17 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
         if (user.role?.toLowerCase() === "delivery") {
           router.push("/delivery");
         } else {
-          router.push("/admin/dashboard");
+          router.push("/admin");
         }
       }
     } else if (!user) {
       router.push("/admin/login");
     } else if (user.role?.toLowerCase() === "delivery") {
       router.push("/delivery");
+    } else if (user.role?.toUpperCase() === "STAFF" && pathname === "/admin/dashboard" && permissionsLoaded) {
+      router.replace(getAdminLandingPath("STAFF", hasPermission));
     }
-  }, [isLoginPage, isLoading, user, router]);
+  }, [isLoginPage, isLoading, user, router, pathname, permissionsLoaded, hasPermission]);
 
   if (isLoading) {
     return (
@@ -41,7 +44,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
 
   // While waiting for router.push to take effect, show the loader instead of returning null
   // Returning null during an active Next.js App Router transition can cause the page to freeze
-  if ((isLoginPage && user) || (!isLoginPage && !user) || (!isLoginPage && user?.role?.toLowerCase() === "delivery")) {
+  if ((isLoginPage && user) || (!isLoginPage && !user) || (!isLoginPage && user?.role?.toLowerCase() === "delivery") || (!isLoginPage && user?.role?.toUpperCase() === "STAFF" && pathname === "/admin/dashboard")) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#141414] text-white">
         <BowlLoader className="h-8 w-8 text-[#6A0FAD]" />

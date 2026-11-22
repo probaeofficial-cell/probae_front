@@ -14,9 +14,11 @@ import { RawMaterial } from "@/lib/types";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { StockAdjustmentModal } from "@/components/admin/raw-materials/StockAdjustmentModal";
 import { StockLogModal } from "@/components/admin/raw-materials/StockLogModal";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export default function StockManagementPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, hasPermission } = useAuth();
+  const canUpdateInventory = hasPermission(PERMISSIONS.inventory.update);
   const router = useRouter();
 
   // ─── State Variables ───────────────────────────────────────────────────────
@@ -213,8 +215,8 @@ return () => clearTimeout(handler);
                   return (
                     <div
                       key={material.id}
-                      onClick={(e) => handleOpenAdjustment(material, e)}
-                      className="bg-white rounded-[100px] px-6 py-8 flex flex-col items-center justify-between text-center cursor-pointer transition-all hover:translate-y-[-4px] h-full min-h-[380px] w-full max-w-[240px] mx-auto relative group border border-neutral-100/50 shadow-sm hover:shadow-md"
+                      onClick={canUpdateInventory ? (e) => handleOpenAdjustment(material, e) : undefined}
+                      className={`bg-white rounded-[100px] px-6 py-8 flex flex-col items-center justify-between text-center ${canUpdateInventory ? "cursor-pointer hover:translate-y-[-4px] hover:shadow-md" : "cursor-default"} transition-all h-full min-h-[380px] w-full max-w-[240px] mx-auto relative group border border-neutral-100/50 shadow-sm`}
                     >
                       {/* Top Capsule overlap circular image */}
                       <div className={`w-32 h-32 rounded-full overflow-hidden flex items-center justify-center border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.06)] relative bg-gradient-to-br ${getGradientForImage(material.id)} shrink-0`}>
@@ -291,7 +293,7 @@ return () => clearTimeout(handler);
         </div>
       </div>
 
-      {selectedMaterial && (
+      {canUpdateInventory && selectedMaterial && (
         <>
           <StockAdjustmentModal 
             isOpen={isAdjustmentModalOpen}

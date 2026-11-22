@@ -12,6 +12,8 @@ import { BulkExpenseModal } from "@/components/admin/BulkExpenseModal";
 import { FileSpreadsheet } from "lucide-react";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { EMPTY_EXPENSE_FILTERS, ExpenseFilters, ExpenseFiltersModal } from "@/components/admin/ExpenseFiltersModal";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const toLocalDate = (date: Date) => {
   const year = date.getFullYear();
@@ -28,6 +30,8 @@ const initialExpenseFilters = (): ExpenseFilters => {
 };
 
 export default function ExpenseLogsPage() {
+  const { hasPermission, isAdmin } = useAuth();
+  const canCreateExpenses = hasPermission(PERMISSIONS.expenses.create);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -147,9 +151,10 @@ export default function ExpenseLogsPage() {
                 <Filter className="w-4 h-4 shrink-0" /> Filters
                 {activeFilterCount > 0 && <span className="rounded-full bg-[#6A0FAD] px-2 py-0.5 text-xs font-black text-white">{activeFilterCount}</span>}
               </ProbaeButton>
-              <ProbaeButton onClick={() => setIsBulkModalOpen(true)} className="!w-auto flex items-center justify-center gap-2 h-[48px] !bg-neutral-800 !text-white hover:!bg-neutral-900 border-none whitespace-nowrap px-4">
+              {canCreateExpenses && <ProbaeButton onClick={() => setIsBulkModalOpen(true)} className="!w-auto flex items-center justify-center gap-2 h-[48px] !bg-neutral-800 !text-white hover:!bg-neutral-900 border-none whitespace-nowrap px-4">
                 <FileSpreadsheet className="w-4 h-4 shrink-0" /> Bulk Upload
-              </ProbaeButton>
+              </ProbaeButton>}
+              {canCreateExpenses && (
               <ProbaeButton onClick={() => {
                 setEditUlid(null);
                 setFormData({
@@ -163,6 +168,7 @@ export default function ExpenseLogsPage() {
               }} className="!w-auto flex items-center justify-center gap-2 h-[48px] whitespace-nowrap px-4">
                 <Plus className="w-4 h-4 shrink-0" /> Add Expense
               </ProbaeButton>
+              )}
             </div>
           </div>
         </div>
@@ -204,6 +210,7 @@ export default function ExpenseLogsPage() {
                     <td className="py-4 px-6 text-sm text-neutral-500 max-w-xs truncate">{e.notes || "-"}</td>
                     <td className="py-4 px-6 text-sm text-neutral-500">{e.recorded_by_name || "System"}</td>
                     <td className="py-4 px-6 text-right">
+                      {isAdmin && (
                       <div className="flex items-center justify-end gap-2">
                         <button onClick={() => {
                           setEditUlid(e.ulid);
@@ -218,6 +225,7 @@ export default function ExpenseLogsPage() {
                         }} className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"><Pencil className="w-4 h-4" /></button>
                         <button onClick={() => setDeleteUlid(e.ulid)} className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
+                      )}
                     </td>
                   </tr>
                 ))}

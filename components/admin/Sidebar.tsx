@@ -4,17 +4,31 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { ChevronsLeft, ChevronsRight, ChevronDown, ChevronUp } from "lucide-react";
-import { MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
+import { canAccessMenuItem, MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
 import { endpoints } from "@/lib/apiService";
 import { useAuth } from "@/lib/AuthContext";
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   
-  // Default to null if user is not loaded to prevent premature admin-only API calls
-  const userRole = user ? (user.role?.toLowerCase() === "delivery" ? "DELIVERY" : "ADMIN") : null;
+  const userRole = user?.role?.toUpperCase() ?? null;
+  const visibleMainMenu = Object.entries(MAIN_MENU)
+    .filter(([, item]) => canAccessMenuItem(item, userRole, hasPermission))
+    .map(([key, item]) => {
+      if (!item.subItems) return [key, item] as const;
+      const subItems = Object.fromEntries(
+        Object.entries(item.subItems).filter(([, subItem]) =>
+          canAccessMenuItem(subItem, userRole, hasPermission),
+        ),
+      );
+      return [key, { ...item, subItems }] as const;
+    })
+    .filter(([, item]) => !item.subItems || Object.keys(item.subItems).length > 0);
+  const visibleBottomMenu = Object.entries(BOTTOM_MENU).filter(([, item]) =>
+    canAccessMenuItem(item, userRole, hasPermission),
+  );
 
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
@@ -172,9 +186,7 @@ export function Sidebar() {
           )}
 
           <ul className="space-y-1">
-            {Object.entries(MAIN_MENU)
-              .filter(([_, item]) => !item.roles || (userRole && item.roles.includes(userRole)))
-              .map(([menuKey, item]) => {
+            {visibleMainMenu.map(([menuKey, item]) => {
               const Icon = item.label === "Bowls" ? BowlIcon : item.icon;
               const hasSub = !!item.subItems;
               const isOpen = hasSub && openMenus[menuKey] && !collapsed;
@@ -342,8 +354,8 @@ export function Sidebar() {
       <div className="border-t border-[#2a2a2a] px-4 py-4 flex flex-col gap-1">
 
         {/* Settings and other non-profile bottom items */}
-        {Object.entries(BOTTOM_MENU)
-          .filter(([key, item]) => key !== "profile" && (!item.roles || (userRole && item.roles.includes(userRole))))
+        {visibleBottomMenu
+          .filter(([key]) => key !== "profile")
           .map(([menuKey, item]) => {
             const checkActive = (targetPath: string) => {
               if (targetPath === '/delivery' || targetPath === '/admin') {
@@ -389,8 +401,9 @@ export function Sidebar() {
           })}
 
         {/* ── Profile button — isolated in its own relative wrapper ── */}
-        <div className="relative group">
-          {(() => {
+        {canAccessMenuItem(BOTTOM_MENU.profile, userRole, hasPermission) && (
+          <div className="relative group">
+            {(() => {
             const profilePath = userRole === "DELIVERY" ? "/delivery/profile" : "/admin/profile";
             const isProfileActive = pathname === profilePath || pathname.startsWith(profilePath + "/");
             return (
@@ -426,8 +439,9 @@ export function Sidebar() {
                 )}
               </>
             );
-          })()}
-        </div>
+            })()}
+          </div>
+        )}
 
         {/* Copyright */}
         {!collapsed ? (

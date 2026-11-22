@@ -14,7 +14,9 @@ import {
   Settings,
   Truck,
   MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
+import { PERMISSIONS, type PermissionCode } from "@/lib/permissions";
 
 export type SubMenuItem = {
   label: string;
@@ -22,6 +24,7 @@ export type SubMenuItem = {
   badge?: number;
   path?: string;
   roles?: string[];
+  permission?: PermissionCode;
 };
 
 export type MenuItem = {
@@ -32,7 +35,32 @@ export type MenuItem = {
   active?: boolean;
   path?: string;
   roles?: string[];
+  permission?: PermissionCode;
 };
+
+export function canAccessMenuItem(
+  item: MenuItem | SubMenuItem,
+  role: string | null,
+  hasPermission: (permission: string) => boolean,
+) {
+  return (
+    (!item.roles || (!!role && item.roles.includes(role))) &&
+    (!item.permission || hasPermission(item.permission))
+  );
+}
+
+export function getAdminLandingPath(
+  role: string | null,
+  hasPermission: (permission: string) => boolean,
+): string {
+  if (role === "ADMIN") return "/admin/dashboard";
+  if (role !== "STAFF") return "/admin/profile";
+  if (hasPermission(PERMISSIONS.orders.read)) return "/admin/orders";
+  if (hasPermission(PERMISSIONS.inventory.read)) return "/admin/raw-materials/stock";
+  if (hasPermission(PERMISSIONS.customers.read)) return "/admin/customers";
+  if (hasPermission(PERMISSIONS.expenses.read)) return "/admin/expenses/logs";
+  return "/admin/profile";
+}
 
 export const MAIN_MENU: Record<string, MenuItem> = {
   dashboard: { label: "Dashboard", icon: Home, path: "/admin/dashboard", roles: ["ADMIN"] },
@@ -40,15 +68,15 @@ export const MAIN_MENU: Record<string, MenuItem> = {
   rawMaterials: {
     label: "Raw materials",
     icon: Wheat,
-    roles: ["ADMIN"],
+    permission: PERMISSIONS.inventory.read,
     subItems: {
       vendors: { label: "Vendors", dotColor: "bg-purple-500", path: "/admin/raw-materials/vendors" },
-      categories: { label: "Categories", dotColor: "bg-blue-500", path: "/admin/raw-materials/categories" },
-      costMgt: { label: "Cost MGT", dotColor: "bg-yellow-500", path: "/admin/raw-materials/cost-management" },
-      calorieMgt: { label: "Calorie MGT", dotColor: "bg-red-500", path: "/admin/raw-materials/calorie-management" },
-      stockMgt: { label: "Stock MGT", dotColor: "bg-green-500", badge: 3, path: "/admin/raw-materials/stock" },
-      purchaseHistory: { label: "Purchase History", dotColor: "bg-teal-500", path: "/admin/raw-materials/purchase-history" },
-      bulkUpload: { label: "Bulk Upload", dotColor: "bg-indigo-500", path: "/admin/raw-materials/bulk-upload" },
+      categories: { label: "Categories", dotColor: "bg-blue-500", path: "/admin/raw-materials/categories", roles: ["ADMIN"] },
+      costMgt: { label: "Cost MGT", dotColor: "bg-yellow-500", path: "/admin/raw-materials/cost-management", roles: ["ADMIN"] },
+      calorieMgt: { label: "Calorie MGT", dotColor: "bg-red-500", path: "/admin/raw-materials/calorie-management", roles: ["ADMIN"] },
+      stockMgt: { label: "Stock MGT", dotColor: "bg-green-500", badge: 3, path: "/admin/raw-materials/stock", permission: PERMISSIONS.inventory.read },
+      purchaseHistory: { label: "Purchase History", dotColor: "bg-teal-500", path: "/admin/raw-materials/purchase-history", permission: PERMISSIONS.inventory.read },
+      bulkUpload: { label: "Bulk Upload", dotColor: "bg-indigo-500", path: "/admin/raw-materials/bulk-upload", roles: ["ADMIN"] },
     },
   },
   ingredients: { label: "Components", icon: Layers, path: "/admin/ingredients", roles: ["ADMIN"] },
@@ -85,16 +113,16 @@ export const MAIN_MENU: Record<string, MenuItem> = {
   orders: {
     label: "Orders & KDS",
     icon: Package,
-    roles: ["ADMIN"],
+    permission: PERMISSIONS.orders.read,
     subItems: {
-      dailyBowls: { label: "Daily Bowls", dotColor: "bg-amber-500", path: "/admin/orders/daily-bowls" },
-      daily: { label: "Daily Orders", dotColor: "bg-blue-500", path: "/admin/orders" },
-      procurement: { label: "Daily Purchase", dotColor: "bg-red-500", path: "/admin/kds/procurement" },
-      prep: { label: "Kitchen Prep", dotColor: "bg-orange-500", path: "/admin/kds/prep" },
-      assembly: { label: "Bowl Assembly", dotColor: "bg-green-500", path: "/admin/kds/assembly" },
-      packaging: { label: "Packaging Prep", dotColor: "bg-teal-500", path: "/admin/kds/packaging" },
-      dispatch: { label: "Dispatch Prep", dotColor: "bg-purple-500", path: "/admin/kds/dispatch" },
-      delivered: { label: "Dispatch Orders", dotColor: "bg-pink-500", path: "/admin/dispatch" },
+      dailyBowls: { label: "Daily Bowls", dotColor: "bg-amber-500", path: "/admin/orders/daily-bowls", roles: ["ADMIN"] },
+      daily: { label: "Daily Orders", dotColor: "bg-blue-500", path: "/admin/orders", permission: PERMISSIONS.orders.read },
+      procurement: { label: "Daily Purchase", dotColor: "bg-red-500", path: "/admin/kds/procurement", roles: ["ADMIN"] },
+      prep: { label: "Kitchen Prep", dotColor: "bg-orange-500", path: "/admin/kds/prep", permission: PERMISSIONS.orders.read },
+      assembly: { label: "Bowl Assembly", dotColor: "bg-green-500", path: "/admin/kds/assembly", roles: ["ADMIN"] },
+      packaging: { label: "Packaging Prep", dotColor: "bg-teal-500", path: "/admin/kds/packaging", roles: ["ADMIN"] },
+      dispatch: { label: "Dispatch Prep", dotColor: "bg-purple-500", path: "/admin/kds/dispatch", roles: ["ADMIN"] },
+      delivered: { label: "Dispatch Orders", dotColor: "bg-pink-500", path: "/admin/dispatch", roles: ["ADMIN"] },
     },
   },
   delivery: {
@@ -120,12 +148,12 @@ export const MAIN_MENU: Record<string, MenuItem> = {
   expenses: {
     label: "Expenses",
     icon: Wallet,
-    roles: ["ADMIN"],
+    permission: PERMISSIONS.expenses.read,
     subItems: {
-      dashboard: { label: "Dashboard", dotColor: "bg-purple-500", path: "/admin/expenses/dashboard" },
-      settlements: { label: "User Settlements", dotColor: "bg-emerald-500", path: "/admin/expenses/settlements" },
-      categories: { label: "Categories", dotColor: "bg-orange-500", path: "/admin/expenses/categories" },
-      logs: { label: "Expense Logs", dotColor: "bg-red-500", path: "/admin/expenses/logs" },
+      dashboard: { label: "Dashboard", dotColor: "bg-purple-500", path: "/admin/expenses/dashboard", roles: ["ADMIN"] },
+      settlements: { label: "User Settlements", dotColor: "bg-emerald-500", path: "/admin/expenses/settlements", roles: ["ADMIN"] },
+      categories: { label: "Categories", dotColor: "bg-orange-500", path: "/admin/expenses/categories", roles: ["ADMIN"] },
+      logs: { label: "Expense Logs", dotColor: "bg-red-500", path: "/admin/expenses/logs", permission: PERMISSIONS.expenses.read },
     },
   },
 
@@ -134,20 +162,21 @@ export const MAIN_MENU: Record<string, MenuItem> = {
   customers: {
     label: "Customers",
     icon: Users,
-    roles: ["ADMIN"],
+    permission: PERMISSIONS.customers.read,
     subItems: {
-      directory: { label: "Directory", dotColor: "bg-blue-500", path: "/admin/customers" },
-      subscriptions: { label: "Subscriptions", dotColor: "bg-purple-500", path: "/admin/subscriptions" },
-      transactions: { label: "Wallet & Transactions", dotColor: "bg-green-500", path: "/admin/customers/transactions" },
-      dues: { label: "Dues", dotColor: "bg-red-500", path: "/admin/customers/dues" },
-      bulkOrders: { label: "Bulk Legacy Orders", dotColor: "bg-amber-500", path: "/admin/customers/bulk-orders" },
+      directory: { label: "Directory", dotColor: "bg-blue-500", path: "/admin/customers", permission: PERMISSIONS.customers.read },
+      subscriptions: { label: "Subscriptions", dotColor: "bg-purple-500", path: "/admin/subscriptions", roles: ["ADMIN"] },
+      transactions: { label: "Wallet & Transactions", dotColor: "bg-green-500", path: "/admin/customers/transactions", roles: ["ADMIN"] },
+      dues: { label: "Dues", dotColor: "bg-red-500", path: "/admin/customers/dues", roles: ["ADMIN"] },
+      bulkOrders: { label: "Bulk Legacy Orders", dotColor: "bg-amber-500", path: "/admin/customers/bulk-orders", roles: ["ADMIN"] },
     },
   },
   enquiries: { label: "Enquiries", icon: MessageSquare, path: "/admin/enquiries", roles: ["ADMIN"] },
+  accessRoles: { label: "Roles & Permissions", icon: ShieldCheck, path: "/admin/settings/roles", roles: ["ADMIN"] },
 };
 
 export const BOTTOM_MENU: Record<string, MenuItem> = {
-  profile: { label: "Profile", icon: CircleUser, path: "/admin/profile", roles: ["ADMIN", "DELIVERY"] },
-  users: { label: "System Users", icon: Users, path: "/admin/users", roles: ["ADMIN"] },
+  profile: { label: "Profile", icon: CircleUser, path: "/admin/profile", roles: ["ADMIN", "STAFF", "DELIVERY"] },
+  users: { label: "Staff Management", icon: Users, path: "/admin/users", roles: ["ADMIN"] },
   settings: { label: "Settings", icon: Settings, path: "/admin/settings", roles: ["ADMIN"] },
 };

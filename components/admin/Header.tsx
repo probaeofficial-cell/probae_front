@@ -7,11 +7,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserAvatar } from "./UserAvatar";
 import { endpoints } from "@/lib/apiService";
 import { formatTimeAgo } from "@/lib/timeUtils";
-import { MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
+import { canAccessMenuItem, MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
+import { PERMISSIONS } from "@/lib/permissions";
 import { ChangePasswordModal } from "./ChangePasswordModal";
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission, isAdmin } = useAuth();
+  const userRole = user?.role?.toUpperCase() ?? null;
   const router = useRouter();
 
   // Load system settings for R2 URL stitching and Kitchen status
@@ -127,24 +129,34 @@ export function Header() {
   const avatarLetter = user?.email?.charAt(0).toUpperCase() ?? "A";
 
     const SEARCH_ROUTES = React.useMemo(() => {
-    const routes = [
-      { name: "Create Customer", path: "/admin/customers/new", keywords: "new add create customer client" },
-      { name: "Create User", path: "/admin/users/create", keywords: "new add create user staff admin" },
-      { name: "Create Order", path: "/admin/orders/new", keywords: "new add create order" },
-    ];
-    Object.values(MAIN_MENU).forEach(item => {
+    const routes: { name: string; path: string; keywords: string }[] = [];
+    if (isAdmin) {
+      routes.push(
+        { name: "Create Customer", path: "/admin/customers/new", keywords: "new add create customer client" },
+        { name: "Create User", path: "/admin/users/create", keywords: "new add create user staff admin" },
+      );
+    }
+    if (hasPermission(PERMISSIONS.orders.create)) {
+      routes.push({ name: "Create Order", path: "/admin/orders/new", keywords: "new add create order" });
+    }
+    Object.entries(MAIN_MENU)
+      .filter(([, item]) => canAccessMenuItem(item, userRole, hasPermission))
+      .forEach(([, item]) => {
       if (item.path) {
         routes.push({ name: item.label, path: item.path, keywords: item.label.toLowerCase() });
       }
       if (item.subItems) {
-        Object.values(item.subItems).forEach(sub => {
-          if (sub.path) {
+        Object.values(item.subItems)
+          .filter((sub) => canAccessMenuItem(sub, userRole, hasPermission))
+          .forEach(sub => {
+            if (!sub.path) return;
             routes.push({ name: `${item.label} > ${sub.label}`, path: sub.path, keywords: `${item.label} ${sub.label}`.toLowerCase() });
-          }
-        });
+          });
       }
     });
-    Object.values(BOTTOM_MENU).forEach(item => {
+    Object.values(BOTTOM_MENU)
+      .filter((item) => canAccessMenuItem(item, userRole, hasPermission))
+      .forEach(item => {
       if (item.path) {
         routes.push({ name: item.label, path: item.path, keywords: item.label.toLowerCase() });
       }
@@ -158,7 +170,7 @@ export function Header() {
       }
     });
     return Array.from(unique.values());
-  }, []);
+  }, [hasPermission, isAdmin, userRole]);
 
   const filteredRoutes = searchQuery.trim() === "" 
     ? [] 

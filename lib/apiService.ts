@@ -7,6 +7,7 @@
  * on 401 Unauthorized responses (with queueing logic), and standardized error handling.
  */
 import { LoginResponse, UserProfile, RawMaterial, RawMaterialCreateInput, RawMaterialUpdateInput, PaginatedRawMaterials, MacrosUpdatePayload, Ingredient, IngredientCreateInput, IngredientUpdateInput, PaginatedIngredients, ComponentCodePrefix, NextIngredientCodeResponse, RawMaterialCategory, RawMaterialCategoryCreateInput, RawMaterialCategoryUpdateInput, PaginatedRawMaterialCategories, StockLog, BowlCategory, BowlCategoryCreateInput, BowlCategoryUpdateInput, PaginatedBowlCategories, PaginatedPackagingComponents, PackagingComponent, PackagingComponentCreateInput, PackagingComponentUpdateInput, PaginatedPackaging, Packaging, PackagingCreateInput, PackagingUpdateInput, PaginatedBowls, Bowl, BowlCreateInput, BowlUpdateInput, Vendor, VendorCreateInput, VendorUpdateInput, PaginatedVendors, MealCategory, MealCategoryCreateInput, MealCategoryUpdateInput, PaginatedMealCategories } from "./types";
+import type { AdminUsersResponse, EffectivePermissionsResponse, RbacPermission, RbacRole, RbacRoleDetail } from "./types";
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
@@ -531,6 +532,35 @@ export const endpoints = {
     },
     updateProfile: async (data: { profile_picture_id?: number; full_name?: string | null }) => {
       return await api.patch<UserProfile>("/auth/me", data);
+    },
+  },
+
+  rbac: {
+    getMyEffectivePermissions: async (): Promise<EffectivePermissionsResponse> => {
+      return await api.get<EffectivePermissionsResponse>("/rbac/me/permissions");
+    },
+    listRoles: async (): Promise<RbacRole[]> => api.get<RbacRole[]>("/rbac/roles"),
+    getRole: async (roleUlid: string): Promise<RbacRoleDetail> => api.get<RbacRoleDetail>(`/rbac/roles/${roleUlid}`),
+    createRole: async (payload: { name: string; code: string; description?: string | null }): Promise<RbacRole> =>
+      api.post<RbacRole>("/rbac/roles", payload),
+    updateRole: async (roleUlid: string, payload: { name?: string; description?: string | null }): Promise<RbacRole> =>
+      api.patch<RbacRole>(`/rbac/roles/${roleUlid}`, payload),
+    deleteRole: async (roleUlid: string): Promise<{ success: boolean; deleted_role: string }> =>
+      api.delete<{ success: boolean; deleted_role: string }>(`/rbac/roles/${roleUlid}`),
+    listPermissions: async (): Promise<RbacPermission[]> => api.get<RbacPermission[]>("/rbac/permissions"),
+    addRolePermissions: async (roleUlid: string, permissionCodes: string[]) =>
+      api.post<{ role_ulid: string; assigned_permissions: string[] }>(`/rbac/roles/${roleUlid}/permissions`, { permission_codes: permissionCodes }),
+    removeRolePermission: async (roleUlid: string, permissionCode: string) =>
+      api.delete<{ role_ulid: string; removed_permission: string }>(`/rbac/roles/${roleUlid}/permissions/${encodeURIComponent(permissionCode)}`),
+    assignStaffRole: async (staffUlid: string, roleUlid: string | null) =>
+      api.put<{ user_ulid: string; role: RbacRole | null }>(`/rbac/staff/${staffUlid}/role`, { role_ulid: roleUlid }),
+  },
+  adminUsers: {
+    list: async (skip: number, limit: number, search?: string, role?: string): Promise<AdminUsersResponse> => {
+      const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
+      if (search) params.set("search", search);
+      if (role) params.set("role", role);
+      return api.get<AdminUsersResponse>(`/auth/admin?${params.toString()}`);
     },
   },
 

@@ -25,6 +25,51 @@ export interface UserProfile {
   profile_picture?: Document | null;
 }
 
+export interface EffectivePermissionsResponse {
+  is_admin: boolean;
+  account_role: string;
+  permissions: string[];
+}
+
+export interface RbacRole {
+  id: number;
+  ulid: string;
+  name: string;
+  code: string;
+  description: string | null;
+  is_system: boolean;
+  is_active: boolean;
+  version: number;
+  created_by_id: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RbacPermission {
+  id: number;
+  code: string;
+  name: string;
+  module: string;
+  action: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RbacRoleDetail extends RbacRole {
+  permissions: RbacPermission[];
+  assigned_staff_count: number;
+}
+
+export interface AdminUsersResponse {
+  total_users: number;
+  total_admins: number;
+  total_staff: number;
+  total: number;
+  users: Array<UserProfile & { is_active: boolean; created_at?: string | null }>;
+}
+
 // ─── Vendor Types ──────────────────────────────────────────────────────────────
 export interface Vendor {
   id: number;

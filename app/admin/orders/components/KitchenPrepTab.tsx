@@ -5,8 +5,12 @@ import { CheckCircle2, Circle, Clock, Scale, ChefHat } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
+  const { hasPermission } = useAuth();
+  const canUpdateOrders = hasPermission(PERMISSIONS.orders.update);
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mealSlots, setMealSlots] = useState<any[]>([]);
@@ -194,7 +198,7 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
                         )}
                       </div>
                       
-                      <div className="flex items-center bg-neutral-100 p-1.5 rounded-2xl border border-neutral-200 shadow-sm shrink-0">
+                      {canUpdateOrders ? <div className="flex items-center bg-neutral-100 p-1.5 rounded-2xl border border-neutral-200 shadow-sm shrink-0">
                         <button
                           disabled={true}
                           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
@@ -231,7 +235,7 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
                         >
                           <CheckCircle2 className="w-4 h-4" /> Prepared
                         </button>
-                      </div>
+                      </div> : <span className="text-sm font-bold text-neutral-500">{comp.status.replace("_", " ")}</span>}
                     </div>
                   </div>
                 ))
@@ -240,7 +244,7 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
         </div>
       </div>
 
-      <ConfirmationModal
+      {canUpdateOrders && <ConfirmationModal
         isOpen={!!confirmAction}
         onClose={() => setConfirmAction(null)}
         onConfirm={handleConfirmUpdate}
@@ -250,7 +254,7 @@ export function KitchenPrepTab({ targetDate }: { targetDate: string }) {
         confirmText="Yes, Update"
         cancelText="Cancel"
         isLoading={isUpdating}
-      />
+      />}
     </div>
   );
 }

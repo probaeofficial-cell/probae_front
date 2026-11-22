@@ -11,8 +11,12 @@ import { getMediaUrl } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BowlLoader } from "@/components/admin/BowlLoader";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export default function CustomersPage() {
+  const { hasPermission } = useAuth();
+  const canCreateCustomers = hasPermission(PERMISSIONS.customers.create);
   const router = useRouter();
   useEffect(() => {
     async function fetchSystemSettings() {
@@ -76,11 +80,13 @@ export default function CustomersPage() {
               onChange={setSearchQuery}
               placeholder="Search customers..."
              isLoading={isLoading} />
-            <Link href="/admin/customers/new">
-              <ProbaeButton  className="!w-auto flex items-center gap-2">
-                <Plus className="w-4 h-4" /> Add Customer
-              </ProbaeButton>
-            </Link>
+            {canCreateCustomers && (
+              <Link href="/admin/customers/new">
+                <ProbaeButton className="!w-auto flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> Add Customer
+                </ProbaeButton>
+              </Link>
+            )}
           </div>
 
           {/* Table */}

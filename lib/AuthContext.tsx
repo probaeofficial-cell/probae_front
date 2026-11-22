@@ -1,8 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { endpoints, setMemoryAccessToken, getAccessToken } from "./apiService";
+import { ApiError, endpoints, setMemoryAccessToken, getAccessToken } from "./apiService";
 
 export interface User {
   id: string | number;
@@ -21,6 +21,11 @@ interface AuthContextType {
   user: User | null;
   accessToken: string | null;
   isLoading: boolean;
+  permissions: string[];
+  permissionsLoaded: boolean;
+  isAdmin: boolean;
+  hasPermission: (permission: string) => boolean;
+  refreshPermissions: () => Promise<void>;
   setAccessToken: (token: string | null, rememberMe?: boolean) => void;
   fetchMe: (token?: string) => Promise<User | null>;
   logout: () => Promise<void>;
@@ -33,18 +38,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   // Update token
   const setAccessToken = (token: string | null, rememberMe?: boolean) => {
     setMemoryAccessToken(token, rememberMe);
     setAccessTokenState(token);
+    if (!token) {
+      setUser(null);
+      setPermissions([]);
+      setPermissionsLoaded(false);
+      setIsAdmin(false);
+    } else if (token !== accessToken) {
+      setPermissions([]);
+      setPermissionsLoaded(false);
+      setIsAdmin(false);
+      setIsLoading(true);
+    }
   };
 
   const fetchMe = async (overrideToken?: string): Promise<User | null> => {
     const token = overrideToken || accessToken;
     if (!token) {
       setUser(null);
+      setPermissions([]);
+      setPermissionsLoaded(false);
+      setIsAdmin(false);
       setIsLoading(false);
       return null;
     }
@@ -52,23 +74,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = await endpoints.users.getMe();
       setUser(data);
+      const effective = await endpoints.rbac.getMyEffectivePermissions();
+      setPermissions(effective.permissions);
+      setIsAdmin(effective.is_admin);
+      setPermissionsLoaded(true);
       return data;
     } catch (err) {
       console.error("Failed to fetch /me", err);
       setUser(null);
       setMemoryAccessToken(null);
       setAccessTokenState(null);
+      setPermissions([]);
+      setPermissionsLoaded(false);
+      setIsAdmin(false);
       return null;
     } finally {
       setIsLoading(false);
     }
   };
 
+  const refreshPermissions = useCallback(async () => {
+    if (!accessToken && !getAccessToken()) return;
+
+    try {
+      const effective = await endpoints.rbac.getMyEffectivePermissions();
+      setPermissions(effective.permissions);
+      setIsAdmin(effective.is_admin);
+      setPermissionsLoaded(true);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        setMemoryAccessToken(null);
+        setAccessTokenState(null);
+        setUser(null);
+        setPermissions([]);
+        setPermissionsLoaded(false);
+        setIsAdmin(false);
+      }
+      console.error("Failed to refresh effective permissions", error);
+    }
+  }, [accessToken]);
+
+  const userIsAdmin =
+    isAdmin || user?.role?.toUpperCase() === "ADMIN";
+  const hasPermission = useCallback(
+    (permission: string) =>
+      userIsAdmin ||
+      (permissionsLoaded && permissions.includes(permission)),
+    [permissions, permissionsLoaded, userIsAdmin],
+  );
+
   const logout = async () => {
-    await endpoints.auth.logout();
-    setAccessTokenState(null);
-    setMemoryAccessToken(null);
-    setUser(null);
+    try {
+      await endpoints.auth.logout();
+    } finally {
+      setAccessToken(null);
+    }
   };
 
   // Perform client-side token initialization once on mount
@@ -88,13 +148,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fetchMe(accessToken);
     } else {
       setUser(null);
+      setPermissions([]);
+      setPermissionsLoaded(false);
+      setIsAdmin(false);
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, isInitialized]);
 
+  // Re-read database permissions when a role changes in another session/tab.
+  useEffect(() => {
+    if (!accessToken || !user) return;
+    const handleFocus = () => void refreshPermissions();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [accessToken, refreshPermissions, user]);
+
   return (
-    <AuthContext.Provider value={{ user, accessToken, isLoading, setAccessToken, fetchMe, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        accessToken,
+        isLoading,
+        permissions,
+        permissionsLoaded,
+        isAdmin: userIsAdmin,
+        hasPermission,
+        refreshPermissions,
+        setAccessToken,
+        fetchMe,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

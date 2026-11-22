@@ -11,6 +11,8 @@ import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints, api } from "@/lib/apiService";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const STATUS_ORDER = ["CREATED", "PREPARED", "DISPATCHED", "DELIVERED", "CANCELLED"];
 
@@ -32,6 +34,7 @@ const MACRO_COLORS: Record<string, string> = {
 export default function OrderDetailPage() {
   const { ulid } = useParams<{ ulid: string }>();
   const router = useRouter();
+  const { hasPermission } = useAuth();
 
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -194,8 +197,14 @@ export default function OrderDetailPage() {
     });
   };
 
-  const canEdit   = order?.status === "CREATED";
-  const canDelete = true; // Always allow hard delete
+  const canDelete = hasPermission(PERMISSIONS.orders.delete);
+  const nextStatus = order ? getNextStatus(order.status) : null;
+  const canChangeToNextStatus = nextStatus
+    ? nextStatus.value === "DISPATCHED"
+      ? hasPermission(PERMISSIONS.orders.dispatch)
+      : hasPermission(PERMISSIONS.orders.update)
+    : false;
+  const canCancelOrder = hasPermission(PERMISSIONS.orders.update);
 
   if (isLoading) return (
     <div className="flex flex-col flex-1 h-full bg-[#E6E6E6]">
@@ -311,12 +320,12 @@ export default function OrderDetailPage() {
             >
               <Printer className="w-4 h-4" /> Print Ticket
             </button>
-            {getNextStatus(order.status) && (
+            {nextStatus && canChangeToNextStatus && (
               <button 
-                onClick={() => requestStatusChange(getNextStatus(order.status)!.value)} 
+                onClick={() => requestStatusChange(nextStatus.value)}
                 className="px-6 py-2.5 rounded-full bg-[#4B0082] text-white font-bold hover:bg-[#3a0066] flex items-center gap-2 shadow-sm transition-colors"
               >
-                {getNextStatus(order.status)!.label}
+                {nextStatus.label}
               </button>
             )}
           </div>
@@ -564,7 +573,7 @@ export default function OrderDetailPage() {
             </div>
             
             {/* Cancel Button */}
-            {order.status !== "DELIVERED" && order.status !== "CANCELLED" && (
+            {canCancelOrder && order.status !== "DELIVERED" && order.status !== "CANCELLED" && (
               <div className="flex justify-end pt-6">
                 <button 
                   onClick={() => requestStatusChange("CANCELLED")} 
