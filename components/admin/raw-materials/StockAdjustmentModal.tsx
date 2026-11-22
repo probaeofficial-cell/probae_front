@@ -5,6 +5,9 @@ import { RawMaterial } from "@/lib/types";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
+import { useInvalidateLowStockCount } from "@/lib/queryHooks";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface Props {
   isOpen: boolean;
@@ -15,6 +18,8 @@ interface Props {
 }
 
 export function StockAdjustmentModal({ isOpen, onClose, material, onSuccess, systemSettings }: Props) {
+  const invalidateLowStock = useInvalidateLowStockCount();
+  const queryClient = useQueryClient();
   const [adjustment, setAdjustment] = useState<number | "">(0);
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,6 +45,8 @@ export function StockAdjustmentModal({ isOpen, onClose, material, onSuccess, sys
         stock_threshold: thresholdValue
       });
       onSuccess(updated);
+      await invalidateLowStock();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.rawMaterials.root });
       setIsEditingThreshold(false);
     } catch (err) {
       console.error("Failed to update threshold", err);
@@ -61,6 +68,8 @@ export function StockAdjustmentModal({ isOpen, onClose, material, onSuccess, sys
         description: description || undefined
       });
       onSuccess(updated);
+      await invalidateLowStock();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.rawMaterials.root });
       onClose();
     } catch (err) {
       console.error("Failed to adjust stock", err);

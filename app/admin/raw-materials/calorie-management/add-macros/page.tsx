@@ -11,10 +11,14 @@ import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { RawMaterial, MacrosUpdatePayload } from "@/lib/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function AddMacrosPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // ─── State Variables ───────────────────────────────────────────────────────
   const [selectedMaterial, setSelectedMaterial] = useState<RawMaterial | null>(null);
@@ -72,7 +76,8 @@ export default function AddMacrosPage() {
     if (isDropdownLoading) return;
     setIsDropdownLoading(true);
     try {
-      const res = await endpoints.rawMaterials.getRawMaterials(pageToFetch, 20, search);
+      if (!user) return;
+      const res = await fetchCatalogueQuery(queryClient, queryKeys.rawMaterials.list(user.id, [pageToFetch, 20, search, false, ""]), () => endpoints.rawMaterials.getRawMaterials(pageToFetch, 20, search), 30_000);
       const items = res.items || [];
       if (clearPrevious) {
         setDropdownMaterials(items);

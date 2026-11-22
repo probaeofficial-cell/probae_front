@@ -5,6 +5,10 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import { MealCategory } from "@/lib/types";
+import { useAuth } from "@/lib/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface AsyncMealCategorySelectProps {
   value: number | 0;
@@ -13,6 +17,8 @@ interface AsyncMealCategorySelectProps {
 }
 
 export default function AsyncMealCategorySelect({ value, onChange, selectedCategory }: AsyncMealCategorySelectProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<MealCategory[]>([]);
@@ -48,7 +54,8 @@ export default function AsyncMealCategorySelect({ value, onChange, selectedCateg
   const fetchOptions = async (pageNum: number, searchTerm: string, isNewSearch: boolean) => {
     setIsLoading(true);
     try {
-      const res = await endpoints.mealCategories.getMealCategories(pageNum, 10, searchTerm);
+      if (!user) return;
+      const res = await fetchCatalogueQuery(queryClient, queryKeys.mealCategories.list(user.id, [pageNum, 10, searchTerm, ""]), () => endpoints.mealCategories.getMealCategories(pageNum, 10, searchTerm));
       const newItems = res.items || [];
       if (isNewSearch) {
         setOptions(newItems);

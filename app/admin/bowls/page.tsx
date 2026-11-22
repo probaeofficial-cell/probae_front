@@ -16,10 +16,14 @@ import { endpoints } from "@/lib/apiService";
 import { Bowl } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { getMediaUrl } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery, useSystemSettingsQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function BowlsListPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [bowls, setBowls] = useState<Bowl[]>([]);
   const [totalBowls, setTotalBowls] = useState(0);
@@ -61,7 +65,7 @@ export default function BowlsListPage() {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  const [systemSettings, setSystemSettings] = useState<any>({});
+  const { data: systemSettings } = useSystemSettingsQuery();
 
   
   const handleSortClick = () => {
@@ -79,8 +83,8 @@ export default function BowlsListPage() {
       await new Promise(r => setTimeout(r, 2000));
     }
     try {
-      const [data, settingsRes] = await Promise.all([
-        endpoints.bowls.getBowls(
+      const params = [page, pageSize, debouncedSearch, sort, "", "", filterBowlType, filterCode, filterCreatedById, filterMealCategoryId, filterBowlCategoryId] as const;
+      const data = await fetchCatalogueQuery(queryClient, queryKeys.bowlCatalogue.list(user.id, params), () => endpoints.bowls.getBowls(
           page, 
           pageSize, 
           debouncedSearch, 
@@ -92,12 +96,7 @@ export default function BowlsListPage() {
           filterCreatedById ? parseInt(filterCreatedById) : undefined,
           filterMealCategoryId || undefined,
           filterBowlCategoryId || undefined
-        ),
-        endpoints.settings.getSystemSettings()
-      ]);
-      if (settingsRes && (settingsRes as any).R2_BASE_URL) {
-        setSystemSettings({ R2_BASE_URL: (settingsRes as any).R2_BASE_URL });
-      }
+        ));
       setBowls(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -113,7 +112,7 @@ export default function BowlsListPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch, sort, filterMealCategoryId, filterBowlCategoryId, filterBowlType, filterCode, filterCreatedById]);
+  }, [user, page, pageSize, debouncedSearch, sort, filterMealCategoryId, filterBowlCategoryId, filterBowlType, filterCode, filterCreatedById, queryClient]);
 
   useEffect(() => {
     fetchBowls();
@@ -151,6 +150,7 @@ export default function BowlsListPage() {
     setIsDeleting(true);
     try {
       await endpoints.bowls.deleteBowl(itemToDelete.ulid);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.bowls });
       showToast(`Bowl "${itemToDelete.name}" deleted successfully`, "success");
       fetchBowls();
     } catch (error: any) {
@@ -248,7 +248,7 @@ export default function BowlsListPage() {
                     <div className="h-48 w-full bg-neutral-100 relative">
                       {item.image_filename ? (
                         <img 
-                          src={getMediaUrl(systemSettings.R2_BASE_URL, item.image_filename) || undefined} 
+                          src={getMediaUrl(systemSettings?.R2_BASE_URL, item.image_filename) || undefined}
                           alt={item.name}
                           className="w-full h-full object-cover"
                         />

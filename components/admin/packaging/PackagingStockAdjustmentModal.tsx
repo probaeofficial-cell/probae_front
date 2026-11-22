@@ -5,6 +5,9 @@ import { X, Plus, Minus, Check, Edit2, ArrowDownToLine, SlidersHorizontal, Info 
 import { endpoints } from "@/lib/apiService";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { PackagingComponent, ChildStickerSummary } from "@/lib/types";
+import { useInvalidateLowStockCount } from "@/lib/queryHooks";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface Props {
   component: PackagingComponent | ChildStickerSummary;
@@ -19,6 +22,8 @@ export function PackagingStockAdjustmentModal({
   onSuccess,
   initialMode = "stock_in" 
 }: Props) {
+  const invalidateLowStock = useInvalidateLowStockCount();
+  const queryClient = useQueryClient();
   const isParent = Boolean(('is_parent' in component && component.is_parent) || component.name.trim().toLowerCase() === "sticker" && !('parent_id' in component && component.parent_id));
 
   // Tabs: "stock_in" (Replenishment) vs "adjust" (Manual Adjustment)
@@ -50,6 +55,8 @@ export function PackagingStockAdjustmentModal({
     try {
       const updated = await endpoints.packaging.updateComponentStockThreshold(component.ulid, { stock_threshold: thresholdValue });
       onSuccess(updated);
+      await invalidateLowStock();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.packaging.root });
       setIsEditingThreshold(false);
     } catch (err: any) {
       console.error("Failed to update threshold", err);
@@ -77,6 +84,8 @@ export function PackagingStockAdjustmentModal({
         remarks: stockInRemarks.trim() || undefined,
       });
       onSuccess(updated);
+      await invalidateLowStock();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.packaging.root });
       onClose();
     } catch (err: any) {
       console.error("Failed to replenish stock", err);
@@ -105,6 +114,8 @@ export function PackagingStockAdjustmentModal({
         reference_type: "ADJUSTMENT",
       });
       onSuccess(updated);
+      await invalidateLowStock();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.packaging.root });
       onClose();
     } catch (err: any) {
       console.error("Failed to adjust stock", err);

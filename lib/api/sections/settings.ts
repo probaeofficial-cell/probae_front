@@ -4,8 +4,8 @@ type ApiClient = typeof SharedApiClient;
 
 export const createSettingsApi = (api: ApiClient) => (
   {
-    getSystemSettings: async (): Promise<{ R2_BASE_URL: string }> => {
-      return await api.get<{ R2_BASE_URL: string }>("/settings/");
+    getSystemSettings: async (): Promise<Record<string, string>> => {
+      return await api.get<Record<string, string>>("/settings/");
     },
     updateSystemSettings: async (payload: Record<string, string>): Promise<Record<string, string>> => {
       return await api.put<Record<string, string>>("/settings/", payload);

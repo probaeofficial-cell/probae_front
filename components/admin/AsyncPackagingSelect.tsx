@@ -5,6 +5,10 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import { Packaging } from "@/lib/types";
+import { useAuth } from "@/lib/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface AsyncPackagingSelectProps {
   value: number | null;
@@ -13,6 +17,8 @@ interface AsyncPackagingSelectProps {
 }
 
 export default function AsyncPackagingSelect({ value, onChange, selectedPackaging }: AsyncPackagingSelectProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<Packaging[]>([]);
@@ -50,7 +56,8 @@ export default function AsyncPackagingSelect({ value, onChange, selectedPackagin
     try {
       // The backend packaging search might not support search string right now?
       // Assuming it does or we just fetch page by page
-      const res = await endpoints.packaging.getBundles(pageNum, 10);
+      if (!user) return;
+      const res = await fetchCatalogueQuery(queryClient, queryKeys.packaging.list(user.id, [pageNum, 10, searchQuery, ""]), () => endpoints.packaging.getBundles(pageNum, 10, searchQuery), 8 * 60_000);
       let newItems = res.items || [];
       if (searchQuery) {
          newItems = newItems.filter((i: Packaging) => i.name.toLowerCase().includes(searchQuery.toLowerCase()) || (i.code && i.code.toLowerCase().includes(searchQuery.toLowerCase())));

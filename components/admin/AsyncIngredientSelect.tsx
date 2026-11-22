@@ -5,6 +5,10 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import { Ingredient } from "@/lib/types";
+import { useAuth } from "@/lib/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface AsyncIngredientSelectProps {
   value: number;
@@ -19,6 +23,8 @@ export default function AsyncIngredientSelect({
   selectedIngredient,
   compact = false,
 }: AsyncIngredientSelectProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<Ingredient[]>([]);
@@ -49,7 +55,8 @@ export default function AsyncIngredientSelect({
   const fetchOptions = useCallback(async (pageNum: number, searchQuery: string, isNewSearch: boolean) => {
     setIsLoading(true);
     try {
-      const res = await endpoints.ingredients.getIngredients(pageNum, 15, searchQuery || undefined);
+      if (!user) return;
+      const res = await fetchCatalogueQuery(queryClient, queryKeys.ingredientCatalogue.list(user.id, [pageNum, 15, searchQuery, ""]), () => endpoints.ingredients.getIngredients(pageNum, 15, searchQuery || undefined));
       const newItems: Ingredient[] = res.items || [];
       if (isNewSearch) {
         setOptions(newItems);

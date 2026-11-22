@@ -13,6 +13,9 @@ import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { getMediaUrl } from "@/lib/utils";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
 
 const COMPONENT_CODE_PREFIX_OPTIONS: Array<{
   prefix: ComponentCodePrefix;
@@ -27,6 +30,7 @@ const COMPONENT_CODE_PREFIX_OPTIONS: Array<{
 export default function IngredientFormPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useParams();
   const ulid = params.ulid as string;
   const isEditMode = ulid !== "add";
@@ -111,6 +115,7 @@ export default function IngredientFormPage() {
   // Load Ingredient Data if Edit
   useEffect(() => {
     async function loadIngredient() {
+      if (!user) return;
       if (!isEditMode) return;
       try {
         const ingredient = await endpoints.ingredients.getIngredient(ulid);
@@ -133,7 +138,7 @@ export default function IngredientFormPage() {
         let allItems: RawMaterial[] = [];
         let currentPage = 1;
         while (true) {
-          const res = await endpoints.rawMaterials.getRawMaterials(currentPage, 100);
+          const res = await fetchCatalogueQuery(queryClient, queryKeys.rawMaterials.list(user.id, [currentPage, 100, "", false, ""]), () => endpoints.rawMaterials.getRawMaterials(currentPage, 100), 30_000);
           allItems = [...allItems, ...res.items];
           if (res.items.length < 100) break;
           currentPage++;
@@ -379,6 +384,7 @@ export default function IngredientFormPage() {
       } else {
         await endpoints.ingredients.createIngredient(basePayload as IngredientCreateInput);
       }
+      await queryClient.invalidateQueries({ queryKey: queryKeys.ingredients });
       
       router.push("/admin/ingredients");
     } catch (err: any) {

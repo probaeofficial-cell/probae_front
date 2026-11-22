@@ -5,13 +5,14 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { ChevronsLeft, ChevronsRight, ChevronDown, ChevronUp } from "lucide-react";
 import { canAccessMenuItem, MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
-import { endpoints } from "@/lib/apiService";
 import { useAuth } from "@/lib/AuthContext";
+import { useLowStockCountQuery } from "@/lib/queryHooks";
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, hasPermission } = useAuth();
+  const { data: lowStockData } = useLowStockCountQuery();
   
   const userRole = user?.role?.toUpperCase() ?? null;
   const visibleMainMenu = Object.entries(MAIN_MENU)
@@ -78,19 +79,7 @@ export function Sidebar() {
   }, []);
 
 
-  const [lowStockCount, setLowStockCount] = useState<number>(0);
-  useEffect(() => {
-    const fetchLowStockCount = async () => {
-      if (userRole !== "ADMIN") return;
-      try {
-        const data = await endpoints.rawMaterials.getLowStockCount();
-        setLowStockCount(data.count);
-      } catch (err) {
-        console.error("Failed to fetch low stock count", err);
-      }
-    };
-    fetchLowStockCount();
-  }, [pathname, userRole]);
+  const lowStockCount = lowStockData?.count ?? 0;
 
   const BowlIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg

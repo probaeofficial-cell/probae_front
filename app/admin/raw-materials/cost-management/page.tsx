@@ -13,11 +13,16 @@ import { getMediaUrl } from "@/lib/utils";
 import { RawMaterial, UnitType, RawMaterialCategory } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
+import { fetchCatalogueQuery, useSystemSettingsQuery } from "@/lib/queryHooks";
 import { SelectCategoryModal } from "@/components/admin/SelectCategoryModal";
 import { SelectVendorModal } from "@/components/admin/SelectVendorModal";
 
 export default function CostManagementPage() {
+  const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();
+  const { data: cachedSettings } = useSystemSettingsQuery();
   const router = useRouter();
 
   // ─── State Variables ───────────────────────────────────────────────────────
@@ -29,7 +34,7 @@ export default function CostManagementPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sort, setSort] = useState("A to Z");
-  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+  const systemSettings = { R2_BASE_URL: cachedSettings?.R2_BASE_URL ?? "" };
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
@@ -87,22 +92,6 @@ export default function CostManagementPage() {
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
 
   // ─── Side Effects ──────────────────────────────────────────────────────────
-
-  // Load system settings
-  useEffect(() => {
-    async function loadSettings() {
-      if (!user) return;
-      try {
-        const settings = await endpoints.settings.getSystemSettings();
-        if (settings && settings.R2_BASE_URL !== undefined) {
-          setSystemSettings({ R2_BASE_URL: settings.R2_BASE_URL });
-        }
-      } catch (err) {
-        console.error("Failed to load settings:", err);
-      }
-    }
-    loadSettings();
-  }, [user]);
 
 
   // Auth validation
@@ -168,7 +157,7 @@ export default function CostManagementPage() {
       await new Promise(r => setTimeout(r, 2000));
     }
     try {
-      const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch, false, sort);
+      const data = await fetchCatalogueQuery(queryClient, queryKeys.rawMaterials.list(user.id, [page, pageSize, debouncedSearch, false, sort]), () => endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch, false, sort), 30_000);
       setMaterials(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -184,7 +173,7 @@ export default function CostManagementPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch, sort]);
+  }, [user, page, pageSize, debouncedSearch, sort, queryClient]);
 
   useEffect(() => {
     if (user) {
@@ -412,6 +401,7 @@ export default function CostManagementPage() {
         showToast(`${payload.name} created successfully`, "success");
       }
       setIsModalOpen(false);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.rawMaterials.root });
       fetchMaterials();
     } catch (error: any) {
       console.error("Error saving raw material:", error);
@@ -433,6 +423,7 @@ export default function CostManagementPage() {
     setIsDeleting(true);
     try {
       await endpoints.rawMaterials.deleteRawMaterial(materialToDelete.ulid);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.rawMaterials.root });
       showToast(`${materialToDelete.name} deleted successfully`, "success");
       // Adjust page if deleting last item on current page
       if (materials.length === 1 && page > 1) {

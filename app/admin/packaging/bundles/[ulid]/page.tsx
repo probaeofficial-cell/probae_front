@@ -5,6 +5,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ChevronLeft, Package, Plus, Trash2, Box, AlertTriangle, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import { Header } from "@/components/admin/Header";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { endpoints } from "@/lib/apiService";
@@ -14,6 +16,7 @@ import AsyncComponentSelect from "@/components/admin/AsyncComponentSelect";
 
 export default function PackagingBundleFormPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const params = useParams();
   
@@ -106,6 +109,7 @@ export default function PackagingBundleFormPage() {
       } else {
         await endpoints.packaging.createBundle(payload);
       }
+      await queryClient.invalidateQueries({ queryKey: queryKeys.packaging.root });
       router.push("/admin/packaging/bundles");
     } catch (err: any) {
       setError(err.message || "Failed to save packaging set");

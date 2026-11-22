@@ -9,11 +9,13 @@ import { endpoints } from "@/lib/apiService";
 import { BowlCategoryUpdateInput, BowlCategoryCreateInput } from "@/lib/types";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { getMediaUrl } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 
 export default function BowlCategoryFormPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const params = useParams();
   const ulid = params.ulid as string;
@@ -168,6 +170,7 @@ export default function BowlCategoryFormPage() {
         };
         await endpoints.bowlCategories.createBowlCategory(payload);
       }
+      await queryClient.invalidateQueries({ queryKey: ["private", "bowl-categories"] });
 
       router.push("/admin/bowls/categories");
     } catch (err: any) {

@@ -15,11 +15,16 @@ import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { StockAdjustmentModal } from "@/components/admin/raw-materials/StockAdjustmentModal";
 import { StockLogModal } from "@/components/admin/raw-materials/StockLogModal";
 import { PERMISSIONS } from "@/lib/permissions";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery, useSystemSettingsQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function StockManagementPage() {
   const { user, isLoading: authLoading, hasPermission } = useAuth();
   const canUpdateInventory = hasPermission(PERMISSIONS.inventory.update);
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: cachedSettings } = useSystemSettingsQuery();
 
   // ─── State Variables ───────────────────────────────────────────────────────
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
@@ -38,7 +43,7 @@ export default function StockManagementPage() {
   };
 
   const [filterStockout, setFilterStockout] = useState(false);
-  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+  const systemSettings = { R2_BASE_URL: cachedSettings?.R2_BASE_URL ?? "" };
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
@@ -65,7 +70,8 @@ return () => clearTimeout(handler);
       setIsFetchingNextPage(true);
       await new Promise(r => setTimeout(r, 2000));
     }
-      const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch, filterStockout, sort);
+      if (!user) return;
+      const data = await fetchCatalogueQuery(queryClient, queryKeys.rawMaterials.list(user.id, [page, pageSize, debouncedSearch, filterStockout, sort]), () => endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch, filterStockout, sort), 30_000);
       setMaterials(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -80,18 +86,7 @@ return () => clearTimeout(handler);
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [page, pageSize, debouncedSearch, filterStockout, sort]);
-
-  const fetchSystemSettings = async () => {
-    try {
-      const data = await endpoints.settings.getSystemSettings();
-      if (data && data.R2_BASE_URL !== undefined) {
-        setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
-      }
-    } catch (error) {
-      console.error("Failed to fetch system settings:", error);
-    }
-  };
+  }, [page, pageSize, debouncedSearch, filterStockout, sort, user, queryClient]);
 
   useEffect(() => {
     setPage(1);
@@ -103,7 +98,6 @@ return () => clearTimeout(handler);
       return;
     }
     if (user) {
-      fetchSystemSettings();
       fetchMaterials();
     }
   }, [user, authLoading, router, fetchMaterials]);// ─── Actions ───────────────────────────────────────────────────────────────

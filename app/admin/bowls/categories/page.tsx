@@ -10,12 +10,17 @@ import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery, useSystemSettingsQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 import { BowlCategory } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function BowlCategoriesPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: cachedSettings } = useSystemSettingsQuery();
 
   // ─── State Variables ───────────────────────────────────────────────────────
   const [categories, setCategories] = useState<BowlCategory[]>([]);
@@ -24,7 +29,7 @@ export default function BowlCategoriesPage() {
   const [pageSize] = useState(6); // 6 items per page
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+  const systemSettings = { R2_BASE_URL: cachedSettings?.R2_BASE_URL ?? "" };
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
@@ -47,22 +52,6 @@ export default function BowlCategoriesPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    async function fetchSystemSettings() {
-      try {
-        const data = await endpoints.settings.getSystemSettings();
-        if (data && data.R2_BASE_URL !== undefined) {
-          setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
-        }
-      } catch (error) {
-        console.error("Error fetching system settings:", error);
-      }
-    }
-    if (user) {
-      fetchSystemSettings();
-    }
-  }, [user]);
-
-  useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchQuery);
       setPage(1); 
@@ -79,7 +68,7 @@ export default function BowlCategoriesPage() {
       await new Promise(r => setTimeout(r, 2000));
     }
     try {
-      const data = await endpoints.bowlCategories.getBowlCategories(page, pageSize, debouncedSearch);
+      const data = await fetchCatalogueQuery(queryClient, queryKeys.bowlCatalogue.categories(user.id, [page, pageSize, debouncedSearch, ""]), () => endpoints.bowlCategories.getBowlCategories(page, pageSize, debouncedSearch));
       setCategories(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -95,7 +84,7 @@ export default function BowlCategoriesPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch]);
+  }, [user, page, pageSize, debouncedSearch, queryClient]);
 
   useEffect(() => {
     fetchCategories();
@@ -136,6 +125,7 @@ export default function BowlCategoriesPage() {
     setIsDeleting(true);
     try {
       await endpoints.bowlCategories.deleteBowlCategory(itemToDelete.ulid);
+      await queryClient.invalidateQueries({ queryKey: ["private", "bowl-categories"] });
       showToast(`Category ${itemToDelete.name} deleted successfully`, "success");
       fetchCategories();
     } catch (error: any) {

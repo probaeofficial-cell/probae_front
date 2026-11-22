@@ -10,6 +10,7 @@ import { formatTimeAgo } from "@/lib/timeUtils";
 import { canAccessMenuItem, MAIN_MENU, BOTTOM_MENU } from "@/lib/sidebarConfig";
 import { PERMISSIONS } from "@/lib/permissions";
 import { ChangePasswordModal } from "./ChangePasswordModal";
+import { useSystemSettingsQuery, useInvalidateSettings } from "@/lib/queryHooks";
 
 export function Header() {
   const { user, logout, hasPermission, isAdmin } = useAuth();
@@ -17,34 +18,14 @@ export function Header() {
   const router = useRouter();
 
   // Load system settings for R2 URL stitching and Kitchen status
-  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "", KITCHEN_OFF: "false" });
+  const { data: systemSettings } = useSystemSettingsQuery({ refetchInterval: 30000 });
+  const invalidateSettings = useInvalidateSettings();
 
   useEffect(() => {
-    async function fetchSystemSettings() {
-      try {
-        const data = await endpoints.settings.getSystemSettings() as any;
-        if (data) {
-          setSystemSettings({
-            R2_BASE_URL: data.R2_BASE_URL || "",
-            KITCHEN_OFF: data.KITCHEN_OFF || "false",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching system settings in Header:", error);
-      }
-    }
-    if (user) {
-      fetchSystemSettings();
-      // Listen for local updates and poll periodically
-      const handleCustomUpdate = () => fetchSystemSettings();
-      window.addEventListener("settings-updated", handleCustomUpdate);
-      const interval = setInterval(fetchSystemSettings, 30000);
-      return () => {
-        window.removeEventListener("settings-updated", handleCustomUpdate);
-        clearInterval(interval);
-      };
-    }
-  }, [user]);
+    const handleCustomUpdate = () => void invalidateSettings();
+    window.addEventListener("settings-updated", handleCustomUpdate);
+    return () => window.removeEventListener("settings-updated", handleCustomUpdate);
+  }, [invalidateSettings]);
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -245,7 +226,7 @@ export function Header() {
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
 
         {/* ── Kitchen Status Badge ─────────────────────────────────── */}
-        {systemSettings.KITCHEN_OFF === "true" && (
+        {systemSettings?.KITCHEN_OFF === "true" && (
           <button
             type="button"
             onClick={() => router.push("/admin/settings")}

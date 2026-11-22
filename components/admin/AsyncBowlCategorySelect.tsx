@@ -5,6 +5,10 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import { BowlCategory } from "@/lib/types";
+import { useAuth } from "@/lib/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface AsyncBowlCategorySelectProps {
   value: number | 0;
@@ -13,6 +17,8 @@ interface AsyncBowlCategorySelectProps {
 }
 
 export default function AsyncBowlCategorySelect({ value, onChange, selectedCategory }: AsyncBowlCategorySelectProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<BowlCategory[]>([]);
@@ -48,7 +54,8 @@ export default function AsyncBowlCategorySelect({ value, onChange, selectedCateg
   const fetchOptions = async (pageNum: number, searchTerm: string, isNewSearch: boolean) => {
     setIsLoading(true);
     try {
-      const res = await endpoints.bowlCategories.getBowlCategories(pageNum, 10, searchTerm);
+      if (!user) return;
+      const res = await fetchCatalogueQuery(queryClient, queryKeys.bowlCatalogue.categories(user.id, [pageNum, 10, searchTerm, ""]), () => endpoints.bowlCategories.getBowlCategories(pageNum, 10, searchTerm));
       const newItems = res.items || [];
       if (isNewSearch) {
         setOptions(newItems);

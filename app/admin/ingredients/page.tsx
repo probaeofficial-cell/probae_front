@@ -13,10 +13,15 @@ import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { Ingredient } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery, useSystemSettingsQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function IngredientsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: cachedSettings } = useSystemSettingsQuery();
 
   // ─── State Variables ───────────────────────────────────────────────────────
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -27,7 +32,7 @@ export default function IngredientsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sort, setSort] = useState("A to Z");
-  const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
+  const systemSettings = { R2_BASE_URL: cachedSettings?.R2_BASE_URL ?? "" };
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
@@ -40,22 +45,6 @@ export default function IngredientsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // ─── Side Effects ──────────────────────────────────────────────────────────
-
-  // Load system settings
-  useEffect(() => {
-    async function loadSettings() {
-      if (!user) return;
-      try {
-        const settings = await endpoints.settings.getSystemSettings();
-        if (settings && settings.R2_BASE_URL !== undefined) {
-          setSystemSettings({ R2_BASE_URL: settings.R2_BASE_URL });
-        }
-      } catch (err) {
-        console.error("Failed to load settings:", err);
-      }
-    }
-    loadSettings();
-  }, [user]);
 
   // Auth validation
   useEffect(() => {
@@ -85,7 +74,7 @@ export default function IngredientsPage() {
       await new Promise(r => setTimeout(r, 2000));
     }
     try {
-      const data = await endpoints.ingredients.getIngredients(page, pageSize, debouncedSearch, sort);
+      const data = await fetchCatalogueQuery(queryClient, queryKeys.ingredientCatalogue.list(user.id, [page, pageSize, debouncedSearch, sort]), () => endpoints.ingredients.getIngredients(page, pageSize, debouncedSearch, sort));
       setIngredients(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -101,7 +90,7 @@ export default function IngredientsPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch, sort]);
+  }, [user, page, pageSize, debouncedSearch, sort, queryClient]);
 
   useEffect(() => {
     fetchIngredients();
@@ -144,6 +133,7 @@ export default function IngredientsPage() {
     setIsDeleting(true);
     try {
       await endpoints.ingredients.deleteIngredient(itemToDelete.ulid);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.ingredients });
       showToast(`Ingredient ${itemToDelete.name} deleted successfully`, "success");
       fetchIngredients();
     } catch (error: any) {

@@ -7,6 +7,9 @@ import BottomNav from "@/components/user/BottomNav";
 import PlanCard, { type PlanData } from "@/components/user/PlanCard";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { endpoints } from "@/lib/apiService";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 type Category = "" | "Core" | "Pro";
 interface PlansResponse {
@@ -22,6 +25,7 @@ export default function PlansClientPage({
   totalPages: number;
 }) {
   const [plans, setPlans] = useState(initialPlans);
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(initialTotalPages);
   const [category, setCategory] = useState<Category>("");
@@ -32,6 +36,13 @@ export default function PlansClientPage({
   const firstRender = useRef(true);
   const loadingMoreRef = useRef(false);
   const requestVersionRef = useRef(0);
+
+  useEffect(() => {
+    queryClient.setQueryData(queryKeys.publicPlans.list(1, 9, ""), {
+      plans: initialPlans,
+      total_pages: initialTotalPages,
+    });
+  }, [initialPlans, initialTotalPages, queryClient]);
 
   // Keep server-rendered initial plans, then replace the list when its filter changes.
   useEffect(() => {
@@ -49,7 +60,7 @@ export default function PlansClientPage({
     setPlans([]);
     setPage(1);
 
-    endpoints.public.getPlans(1, 9, category)
+    fetchCatalogueQuery(queryClient, queryKeys.publicPlans.list(1, 9, category), () => endpoints.public.getPlans(1, 9, category))
       .then((data: PlansResponse) => {
         if (!active || requestVersion !== requestVersionRef.current) return;
         setPlans(Array.isArray(data.plans) ? data.plans : []);
@@ -68,7 +79,7 @@ export default function PlansClientPage({
       });
 
     return () => { active = false; };
-  }, [category]);
+  }, [category, queryClient]);
 
   // Load the next page as the bottom sentinel enters the viewport.
   useEffect(() => {
@@ -84,7 +95,7 @@ export default function PlansClientPage({
       setLoadingMore(true);
       setLoadError("");
 
-      endpoints.public.getPlans(nextPage, 9, category)
+      fetchCatalogueQuery(queryClient, queryKeys.publicPlans.list(nextPage, 9, category), () => endpoints.public.getPlans(nextPage, 9, category))
         .then((data: PlansResponse) => {
           if (observedVersion !== requestVersionRef.current) return;
           const nextPlans = Array.isArray(data.plans) ? data.plans : [];
@@ -108,7 +119,7 @@ export default function PlansClientPage({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [category, loading, loadingMore, loadError, page, totalPages]);
+  }, [category, loading, loadingMore, loadError, page, totalPages, queryClient]);
 
   function selectCategory(next: Category) {
     if (next !== category) setCategory(next);

@@ -9,10 +9,12 @@ import { Bell, User, Mail, Shield, ToggleLeft, ToggleRight, Check, Database } fr
 import { endpoints } from "@/lib/apiService";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 import { LocationPicker } from "@/components/admin/LocationPicker";
+import { useInvalidateSettings } from "@/lib/queryHooks";
 
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const invalidateSettings = useInvalidateSettings();
 
   // Notification preferences state (simulated)
   const [emailNotif, setEmailNotif] = useState(true);
@@ -35,6 +37,7 @@ export default function SettingsPage() {
 
   const saveRecipients = async (list: string[]) => {
     await endpoints.settings.updateSystemSettings({ PAYMENT_RECIPIENTS: JSON.stringify(list) });
+    await invalidateSettings();
   };
   const addRecipient = () => {
     if (!newRecipient.trim()) return;
@@ -100,6 +103,7 @@ export default function SettingsPage() {
         AUTO_ASSIGN_DRIVERS: systemSettings.AUTO_ASSIGN_DRIVERS,
         KITCHEN_OFF: systemSettings.KITCHEN_OFF,
       });
+      await invalidateSettings();
       setSysSaveStatus("saved");
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("settings-updated"));
@@ -121,6 +125,7 @@ export default function SettingsPage() {
         FREE_DELIVERY_KM: deliveryConfig.FREE_DELIVERY_KM,
         DELIVERY_CHARGE_PER_KM: deliveryConfig.DELIVERY_CHARGE_PER_KM,
       });
+      await invalidateSettings();
       setDeliverySaveStatus("saved");
     } catch (error) {
       console.error("Error saving delivery config:", error);

@@ -11,6 +11,8 @@ import { useRouter, useParams } from "next/navigation";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { useAuth } from "@/lib/AuthContext";
 import { PERMISSIONS } from "@/lib/permissions";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 const MEAL_SLOTS = ["breakfast", "lunch", "snack", "dinner"];
 
@@ -18,6 +20,7 @@ export default function EditPlanTierPage() {
   const router = useRouter();
   const params = useParams();
   const { hasPermission } = useAuth();
+  const queryClient = useQueryClient();
   const ulid = params.ulid as string;
   
   const [isLoading, setIsLoading] = useState(true);
@@ -100,6 +103,7 @@ export default function EditPlanTierPage() {
     
     try {
       await endpoints.planTiers.update(ulid, formData);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.planTiers.root });
       setModalState({
         isOpen: true,
         type: "success",

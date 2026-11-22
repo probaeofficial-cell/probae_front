@@ -10,11 +10,15 @@ import { RawMaterial } from "@/lib/types";
 import { getMediaUrl } from "@/lib/utils";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function IngredientPreviewPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
+  const queryClient = useQueryClient();
   const ulid = params.ulid as string;
 
   const [name, setName] = useState("");
@@ -62,6 +66,7 @@ export default function IngredientPreviewPage() {
 
   useEffect(() => {
     async function loadIngredient() {
+      if (!user) return;
       try {
         setError(""); // Clear any previous errors
         const ingredient = await endpoints.ingredients.getIngredient(ulid);
@@ -75,7 +80,7 @@ export default function IngredientPreviewPage() {
         let allItems: RawMaterial[] = [];
         let currentPage = 1;
         while (true) {
-          const res = await endpoints.rawMaterials.getRawMaterials(currentPage, 100);
+          const res = await fetchCatalogueQuery(queryClient, queryKeys.rawMaterials.list(user.id, [currentPage, 100, "", false, ""]), () => endpoints.rawMaterials.getRawMaterials(currentPage, 100), 30_000);
           allItems = [...allItems, ...res.items];
           if (res.items.length < 100) break;
           currentPage++;

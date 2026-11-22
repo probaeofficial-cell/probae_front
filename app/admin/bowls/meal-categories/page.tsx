@@ -12,10 +12,15 @@ import { MealCategory } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { getMediaUrl } from "@/lib/utils";
 import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery, useSystemSettingsQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function MealCategoriesPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: cachedSettings } = useSystemSettingsQuery();
   
   const [categories, setCategories] = useState<MealCategory[]>([]);
   const [totalCategories, setTotalCategories] = useState(0);
@@ -25,7 +30,7 @@ export default function MealCategoriesPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
-  const [systemSettings, setSystemSettings] = useState<any>({});
+  const systemSettings = cachedSettings ?? {};
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -72,10 +77,7 @@ export default function MealCategoriesPage() {
       await new Promise(r => setTimeout(r, 2000));
     }
     try {
-      const [data, settingsRes] = await Promise.all([
-        endpoints.mealCategories.getMealCategories(page, pageSize, debouncedSearch),
-        endpoints.settings.getSystemSettings().catch(() => ({}))
-      ]);
+      const data = await fetchCatalogueQuery(queryClient, queryKeys.mealCategories.list(user.id, [page, pageSize, debouncedSearch, ""]), () => endpoints.mealCategories.getMealCategories(page, pageSize, debouncedSearch));
       setCategories(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -84,16 +86,13 @@ export default function MealCategoriesPage() {
         return [...prev, ...uniqueNewItems];
       });
       setTotalCategories(data.total || 0);
-      if (settingsRes && (settingsRes as any).R2_BASE_URL) {
-        setSystemSettings({ R2_BASE_URL: (settingsRes as any).R2_BASE_URL });
-      }
     } catch (error: any) {
       console.error("Failed to fetch meal slots:", error);
     } finally {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch]);
+  }, [user, page, pageSize, debouncedSearch, queryClient]);
 
   useEffect(() => {
     fetchCategories();
@@ -180,6 +179,7 @@ export default function MealCategoriesPage() {
       } else {
         await endpoints.mealCategories.createMealCategory(payload as any);
       }
+      await queryClient.invalidateQueries({ queryKey: queryKeys.mealCategories.root });
       setIsModalOpen(false);
       fetchCategories();
     } catch (error: any) {
@@ -200,6 +200,7 @@ export default function MealCategoriesPage() {
     setIsDeleting(true);
     try {
       await endpoints.mealCategories.deleteMealCategory(itemToDelete.ulid);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.mealCategories.root });
       setIsDeleteModalOpen(false);
       setItemToDelete(null);
       fetchCategories();

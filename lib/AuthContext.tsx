@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, endpoints, setMemoryAccessToken, getAccessToken } from "./apiService";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 export interface User {
   id: string | number;
@@ -42,9 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // Update token
   const setAccessToken = (token: string | null, rememberMe?: boolean) => {
+    if (token !== accessToken) void queryClient.removeQueries({ queryKey: queryKeys.private });
     setMemoryAccessToken(token, rememberMe);
     setAccessTokenState(token);
     if (!token) {
@@ -74,7 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = await endpoints.users.getMe();
       setUser(data);
-      const effective = await endpoints.rbac.getMyEffectivePermissions();
+      queryClient.setQueryData(queryKeys.auth.currentUser(data.id), data);
+      const effective = await queryClient.fetchQuery({
+        queryKey: queryKeys.auth.permissions(data.id),
+        queryFn: () => endpoints.rbac.getMyEffectivePermissions(),
+        staleTime: 0,
+      });
       setPermissions(effective.permissions);
       setIsAdmin(effective.is_admin);
       setPermissionsLoaded(true);
@@ -82,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("Failed to fetch /me", err);
       setUser(null);
+      void queryClient.removeQueries({ queryKey: queryKeys.private });
       setMemoryAccessToken(null);
       setAccessTokenState(null);
       setPermissions([]);
@@ -97,7 +107,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!accessToken && !getAccessToken()) return;
 
     try {
-      const effective = await endpoints.rbac.getMyEffectivePermissions();
+      const effective = await queryClient.fetchQuery({
+        queryKey: queryKeys.auth.permissions(user?.id ?? "unknown"),
+        queryFn: () => endpoints.rbac.getMyEffectivePermissions(),
+        staleTime: 0,
+      });
       setPermissions(effective.permissions);
       setIsAdmin(effective.is_admin);
       setPermissionsLoaded(true);
@@ -112,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       console.error("Failed to refresh effective permissions", error);
     }
-  }, [accessToken]);
+  }, [accessToken, queryClient, user?.id]);
 
   const userIsAdmin =
     isAdmin || user?.role?.toUpperCase() === "ADMIN";

@@ -13,6 +13,9 @@ import { endpoints } from "@/lib/apiService";
 import type { RawMaterial, Vendor } from "@/lib/types";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 import { Calendar, Search, Store, PenLine, Trash2, CheckCircle2, ChevronDown, ListOrdered, CalendarDays, CalendarRange } from "lucide-react";
 
 interface DraftPurchase {
@@ -27,6 +30,7 @@ export default function PurchaseHistoryPage() {
   const { user, isLoading: authLoading, hasPermission, permissionsLoaded } = useAuth();
   const canUpdateInventory = hasPermission(PERMISSIONS.inventory.update);
   const router = useRouter();
+  const queryClient = useQueryClient();
   
   const [activeTab, setActiveTab] = useState<"record" | "daily" | "trends" | "monthly">("daily");
   useEffect(() => {
@@ -99,7 +103,8 @@ export default function PurchaseHistoryPage() {
   const fetchRawMaterialsAsync = async (pageNum: number, query: string, isNew: boolean) => {
     setRmIsLoading(true);
     try {
-      const res = await endpoints.rawMaterials.getRawMaterials(pageNum, 15, query || undefined);
+      if (!user) return;
+      const res = await fetchCatalogueQuery(queryClient, queryKeys.rawMaterials.list(user.id, [pageNum, 15, query ?? "", false, ""]), () => endpoints.rawMaterials.getRawMaterials(pageNum, 15, query || undefined), 30_000);
       const newItems = res.items || [];
       
       if (isNew) {

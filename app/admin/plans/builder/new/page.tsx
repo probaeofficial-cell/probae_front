@@ -10,12 +10,15 @@ import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { useAuth } from "@/lib/AuthContext";
 import { PERMISSIONS } from "@/lib/permissions";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 const MEAL_SLOTS = ["breakfast", "lunch", "snack", "dinner"];
 
 export default function CreatePlanTierPage() {
   const router = useRouter();
   const { hasPermission } = useAuth();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: "",
     category: "Core",
@@ -82,6 +85,7 @@ export default function CreatePlanTierPage() {
     
     try {
       await endpoints.planTiers.create(formData);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.planTiers.root });
       setModalState({
         isOpen: true,
         type: "success",

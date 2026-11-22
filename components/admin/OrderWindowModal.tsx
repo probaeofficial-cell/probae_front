@@ -4,6 +4,7 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
+import { useInvalidateSettings } from "@/lib/queryHooks";
 
 export interface OrderWindowModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ export interface OrderWindowModalProps {
 }
 
 export function OrderWindowModal({ isOpen, onClose }: OrderWindowModalProps) {
+  const invalidateSettings = useInvalidateSettings();
   const [openTime, setOpenTime] = useState("06:00");
   const [closeTime, setCloseTime] = useState("21:00");
   const [isLoading, setIsLoading] = useState(false);
@@ -42,6 +44,7 @@ export function OrderWindowModal({ isOpen, onClose }: OrderWindowModalProps) {
         ORDER_WINDOW_START: openTime,
         ORDER_WINDOW_END: closeTime,
       });
+      await invalidateSettings();
       onClose();
     } catch (error) {
       console.error("Failed to update settings", error);

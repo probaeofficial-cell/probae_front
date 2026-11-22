@@ -29,10 +29,14 @@ import { endpoints } from "@/lib/apiService";
 import { PackagingComponent, ChildStickerSummary, Bowl } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import AsyncBowlSelect from "@/components/admin/AsyncBowlSelect";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function PackagingComponentsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // ─── State Variables ───────────────────────────────────────────────────────
   const [components, setComponents] = useState<PackagingComponent[]>([]);
@@ -93,7 +97,7 @@ export default function PackagingComponentsPage() {
       setIsFetchingNextPage(true);
     }
     try {
-      const data = await endpoints.packagingComponents.getComponents(page, pageSize, debouncedSearch);
+      const data = await fetchCatalogueQuery(queryClient, queryKeys.packaging.components(user.id, [page, pageSize, debouncedSearch, "", "", false]), () => endpoints.packagingComponents.getComponents(page, pageSize, debouncedSearch), 30_000);
       setComponents(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -109,7 +113,7 @@ export default function PackagingComponentsPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch]);
+  }, [user, page, pageSize, debouncedSearch, queryClient]);
 
   useEffect(() => {
     fetchComponents();
@@ -190,6 +194,7 @@ export default function PackagingComponentsPage() {
     setIsDeleting(true);
     try {
       await endpoints.packagingComponents.deleteComponent(itemToDelete.ulid);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.packaging.root });
       showToast(`Item "${itemToDelete.name}" deleted successfully`, "success");
       fetchComponents();
     } catch (error: any) {
@@ -268,6 +273,7 @@ export default function PackagingComponentsPage() {
         await endpoints.packagingComponents.createComponent(payload);
         showToast("Packaging component created successfully", "success");
       }
+      await queryClient.invalidateQueries({ queryKey: queryKeys.packaging.root });
       setIsFormModalOpen(false);
       fetchComponents();
     } catch (error: any) {

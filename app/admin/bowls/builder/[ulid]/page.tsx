@@ -21,6 +21,8 @@ import AsyncPackagingSelect from "@/components/admin/AsyncPackagingSelect";
 import AsyncIngredientSelect from "@/components/admin/AsyncIngredientSelect";
 import AsyncBowlCategorySelect from "@/components/admin/AsyncBowlCategorySelect";
 import AsyncMealCategorySelect from "@/components/admin/AsyncMealCategorySelect";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 const SECTIONS: { id: BowlSection; label: string; headerColor: string; rowColor: string }[] = [
   { id: "Protein", label: "Protein", headerColor: "bg-[#7020A3]", rowColor: "bg-[#7020A3]/30" }, 
@@ -35,6 +37,7 @@ const SECTIONS: { id: BowlSection; label: string; headerColor: string; rowColor:
 export default function BowlBuilderPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useParams();
   const searchParams = useSearchParams();
   const cloneUlid = searchParams.get("clone");
@@ -245,6 +248,7 @@ export default function BowlBuilderPage() {
       } else {
         await endpoints.bowls.createBowl(payload);
       }
+      await queryClient.invalidateQueries({ queryKey: queryKeys.bowls });
       router.push("/admin/bowls");
     } catch (err: any) {
       setError(err.message || "Failed to save bowl");

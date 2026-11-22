@@ -11,10 +11,14 @@ import { ProbaeSearch } from "@/components/admin/ProbaeSearch";
 import { endpoints } from "@/lib/apiService";
 import { Packaging } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function PackagingBundlesPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [bundles, setBundles] = useState<Packaging[]>([]);
   const [totalBundles, setTotalBundles] = useState(0);
@@ -54,7 +58,7 @@ export default function PackagingBundlesPage() {
       await new Promise(r => setTimeout(r, 2000));
     }
     try {
-      const data = await endpoints.packaging.getBundles(page, pageSize, debouncedSearch);
+      const data = await fetchCatalogueQuery(queryClient, queryKeys.packaging.list(user.id, [page, pageSize, debouncedSearch, ""]), () => endpoints.packaging.getBundles(page, pageSize, debouncedSearch));
       setBundles(prev => {
         const newItems = data.items || [];
         if (page === 1) return newItems;
@@ -70,7 +74,7 @@ export default function PackagingBundlesPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch]);
+  }, [user, page, pageSize, debouncedSearch, queryClient]);
 
   useEffect(() => {
     fetchBundles();
@@ -101,6 +105,7 @@ export default function PackagingBundlesPage() {
     setIsDeleting(true);
     try {
       await endpoints.packaging.deleteBundle(itemToDelete.ulid);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.packaging.root });
       showToast(`Packaging Set "${itemToDelete.name}" deleted successfully`, "success");
       fetchBundles();
     } catch (error: any) {

@@ -3,6 +3,10 @@ import React, { useState, useEffect } from "react";
 import { X, Search } from "lucide-react";
 import { RawMaterial } from "@/lib/types";
 import { endpoints } from "@/lib/apiService";
+import { useAuth } from "@/lib/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface Props {
   isOpen: boolean;
@@ -14,6 +18,8 @@ interface Props {
 }
 
 export function AddIngredientRawMaterialModal({ isOpen, onClose, onAdd, initialMaterial = null, initialWeight = null, editIndex = null }: Props) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
@@ -43,7 +49,8 @@ export function AddIngredientRawMaterialModal({ isOpen, onClose, onAdd, initialM
   const fetchMaterials = async () => {
     setIsLoading(true);
     try {
-      const data = await endpoints.rawMaterials.getRawMaterials(1, 50, debouncedSearch);
+      if (!user) return;
+      const data = await fetchCatalogueQuery(queryClient, queryKeys.rawMaterials.list(user.id, [1, 50, debouncedSearch, false, ""]), () => endpoints.rawMaterials.getRawMaterials(1, 50, debouncedSearch), 30_000);
       setMaterials(data.items || []);
     } catch (error) {
       console.error("Failed to fetch raw materials", error);

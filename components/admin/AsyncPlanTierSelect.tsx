@@ -4,6 +4,10 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
+import { useAuth } from "@/lib/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface AsyncPlanTierSelectProps {
   value: string | "";
@@ -13,6 +17,8 @@ interface AsyncPlanTierSelectProps {
 }
 
 export default function AsyncPlanTierSelect({ value, onChange, onSelectFull, selectedPlan }: AsyncPlanTierSelectProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<any[]>([]);
@@ -45,7 +51,10 @@ export default function AsyncPlanTierSelect({ value, onChange, onSelectFull, sel
   const fetchOptions = async (pageNum: number, searchTerm: string, isNewSearch: boolean) => {
     setIsLoading(true);
     try {
-      const res = await endpoints.planTiers.list({ page: pageNum, limit: 10, search: searchTerm }) as any;
+      if (!user) return;
+      const params = { page: pageNum, limit: 10, search: searchTerm };
+      const keyParams = Object.keys(params).sort().map((key) => [key, params[key as keyof typeof params]] as const);
+      const res = await fetchCatalogueQuery(queryClient, queryKeys.planTiers.list(user.id, keyParams), () => endpoints.planTiers.list(params), 8 * 60_000) as any;
       const newItems = res.tiers || res.data || [];
       if (isNewSearch) {
         setOptions(newItems);

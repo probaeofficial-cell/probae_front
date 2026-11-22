@@ -13,10 +13,14 @@ import { endpoints } from "@/lib/apiService";
 import { getMediaUrl } from "@/lib/utils";
 import { RawMaterial } from "@/lib/types";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function CalorieManagementPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // ─── State Variables ───────────────────────────────────────────────────────
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
@@ -86,7 +90,7 @@ export default function CalorieManagementPage() {
       await new Promise(r => setTimeout(r, 2000));
     }
     try {
-      const data = await endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch, false, sort);
+      const data = await fetchCatalogueQuery(queryClient, queryKeys.rawMaterials.list(user.id, [page, pageSize, debouncedSearch, false, sort]), () => endpoints.rawMaterials.getRawMaterials(page, pageSize, debouncedSearch, false, sort), 30_000);
       const filtered = (data.items || []).filter(
         (m: RawMaterial) => m.calories !== null && m.calories !== undefined && m.calories !== 0
       );
@@ -110,7 +114,7 @@ export default function CalorieManagementPage() {
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  }, [user, page, pageSize, debouncedSearch, sort]);
+  }, [user, page, pageSize, debouncedSearch, sort, queryClient]);
 
   useEffect(() => {
     fetchMaterials();

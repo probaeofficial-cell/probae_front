@@ -12,10 +12,14 @@ import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { useAuth } from "@/lib/AuthContext";
 import { PERMISSIONS } from "@/lib/permissions";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function PlansPage() {
   const router = useRouter();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
+  const queryClient = useQueryClient();
   const canCreate = hasPermission(PERMISSIONS.plans.create);
   const canUpdate = hasPermission(PERMISSIONS.plans.update);
   const canDelete = hasPermission(PERMISSIONS.plans.delete);
@@ -41,7 +45,10 @@ export default function PlansPage() {
   const fetchTiers = useCallback(async (pageNum: number) => {
     setIsLoading(true);
     try {
-      const data = await endpoints.planTiers.list({ page: pageNum, limit: 10, search: debouncedSearch }) as any;
+      if (!user) return;
+      const params = { page: pageNum, limit: 10, search: debouncedSearch };
+      const keyParams = Object.keys(params).sort().map((key) => [key, params[key as keyof typeof params]] as const);
+      const data = await fetchCatalogueQuery(queryClient, queryKeys.planTiers.list(user.id, keyParams), () => endpoints.planTiers.list(params), 8 * 60_000) as any;
       if (data.success) {
         setTiers(data.tiers);
         setTotalPages(Math.ceil(data.totalCount / data.limit) || 1);
@@ -51,7 +58,7 @@ export default function PlansPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearch]);
+  }, [debouncedSearch, queryClient, user]);
 
   useEffect(() => {
     fetchTiers(page);
@@ -66,6 +73,7 @@ export default function PlansPage() {
     if (!isDeletingId) return;
     try {
       await endpoints.planTiers.delete(isDeletingId);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.planTiers.root });
       setIsDeletingId(null);
       fetchTiers(page);
     } catch (error) {
@@ -94,6 +102,7 @@ export default function PlansPage() {
       };
       
       await endpoints.planTiers.create(payload);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.planTiers.root });
       fetchTiers(page);
     } catch (err) {
       console.error("Failed to duplicate tier", err);

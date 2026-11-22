@@ -4,6 +4,10 @@ import { BowlLoader } from "@/components/admin/BowlLoader";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
+import { useAuth } from "@/lib/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchCatalogueQuery } from "@/lib/queryHooks";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface AsyncBowlSelectProps {
   value: string;
@@ -24,6 +28,8 @@ export default function AsyncBowlSelect({
   disabledBowlIds,
   placeholder
 }: AsyncBowlSelectProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<any[]>([]);
@@ -59,10 +65,13 @@ export default function AsyncBowlSelect({
       // Search by name — always
       // Also pass as code search if the term looks like a bowl code (short, no spaces)
       const looksLikeCode = searchTerm.length > 0 && !searchTerm.includes(' ');
-      const nameRes = await endpoints.bowls.getBowls(pageNum, 10, searchTerm, undefined, undefined, undefined, undefined, undefined, undefined, mealCategoryId === 0 ? undefined : mealCategoryId) as any;
+      if (!user) return;
+      const common = [pageNum, 10, searchTerm, "", "", "", "", "", null, mealCategoryId || null, null] as const;
+      const nameRes = await fetchCatalogueQuery(queryClient, queryKeys.bowlCatalogue.list(user.id, common), () => endpoints.bowls.getBowls(pageNum, 10, searchTerm, undefined, undefined, undefined, undefined, undefined, undefined, mealCategoryId === 0 ? undefined : mealCategoryId)) as any;
       let codeItems: any[] = [];
       if (looksLikeCode && pageNum === 1) {
-        const codeRes = await endpoints.bowls.getBowls(1, 10, undefined, undefined, undefined, undefined, undefined, searchTerm, undefined, mealCategoryId === 0 ? undefined : mealCategoryId) as any;
+        const codeParams = [1, 10, "", "", "", "", "", searchTerm, null, mealCategoryId || null, null] as const;
+        const codeRes = await fetchCatalogueQuery(queryClient, queryKeys.bowlCatalogue.list(user.id, codeParams), () => endpoints.bowls.getBowls(1, 10, undefined, undefined, undefined, undefined, undefined, searchTerm, undefined, mealCategoryId === 0 ? undefined : mealCategoryId)) as any;
         // Merge, dedup by ulid
         const seen = new Set((nameRes.items || []).map((i: any) => i.ulid));
         codeItems = (codeRes.items || []).filter((i: any) => !seen.has(i.ulid));
