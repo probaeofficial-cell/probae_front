@@ -65,6 +65,7 @@ export function getAdminLandingPath(
 export const MAIN_MENU: Record<string, MenuItem> = {
   dashboard: { label: "Dashboard", icon: Home, path: "/admin/dashboard", roles: ["ADMIN"] },
   deliveryDashboard: { label: "Dashboard", icon: Home, path: "/delivery", roles: ["DELIVERY"] },
+  deliveryOrders: { label: "My Orders", icon: Package, path: "/delivery/orders", roles: ["DELIVERY"] },
   rawMaterials: {
     label: "Raw materials",
     icon: Wheat,

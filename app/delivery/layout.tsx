@@ -27,6 +27,8 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
     } else {
       if (!user) {
         router.push("/delivery/login");
+      } else if (user.role?.toLowerCase() !== "delivery") {
+        router.push("/admin/dashboard");
       }
     }
   }, [isLoginPage, isLoading, user, router]);
@@ -40,7 +42,7 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
   }
 
   // Prevent UI flashing before redirect occurs, and avoid returning null which hangs Next.js App Router
-  if ((isLoginPage && user) || (!isLoginPage && !user)) {
+  if ((isLoginPage && user) || (!isLoginPage && (!user || user.role?.toLowerCase() !== "delivery"))) {
     return (
       <div className="flex h-screen w-full bg-[#141414] text-white items-center justify-center">
         <BowlLoader className="h-8 w-8 text-[#6A0FAD]" />

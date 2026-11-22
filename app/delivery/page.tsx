@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { BowlLoader } from "@/components/admin/BowlLoader";
@@ -13,9 +13,24 @@ export default function DeliveryPortal() {
   const router = useRouter();
   
   const [orders, setOrders] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [processingUlid, setProcessingUlid] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const fetchDeliveries = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMsg("");
+    try {
+      const data = await endpoints.orders.myDeliveryOverview("today") as any;
+      setOrders(data.orders || []);
+      setSummary(data.summary || null);
+    } catch (e: any) {
+      setErrorMsg(e.detail || e.message || "Failed to load deliveries");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!authLoading) {
@@ -24,23 +39,10 @@ export default function DeliveryPortal() {
       } else if (user.role?.toLowerCase() !== "delivery") {
         router.push("/admin/dashboard");
       } else {
-        fetchDeliveries();
+        void fetchDeliveries();
       }
     }
-  }, [user, authLoading]);
-
-  const fetchDeliveries = async () => {
-    setIsLoading(true);
-    setErrorMsg("");
-    try {
-      const data = await endpoints.orders.myDeliveries() as any;
-      setOrders(data.orders || []);
-    } catch (e: any) {
-      setErrorMsg(e.detail || e.message || "Failed to load deliveries");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [user, authLoading, router, fetchDeliveries]);
 
   const handleConfirmCod = async (ulid: string) => {
     setProcessingUlid(ulid);
@@ -91,7 +93,7 @@ export default function DeliveryPortal() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h1 className="text-2xl font-black text-neutral-900 tracking-tight">My Deliveries</h1>
-                <p className="text-sm text-neutral-500 font-medium mt-1">Today's assigned route</p>
+                <p className="text-sm text-neutral-500 font-medium mt-1">Today&apos;s assigned route</p>
               </div>
               <button 
                 onClick={fetchDeliveries}
@@ -103,15 +105,18 @@ export default function DeliveryPortal() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100 flex flex-col items-start">
                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-3">Pending</p>
                 <span className="text-4xl font-black text-[#6A0FAD]">{activeOrders.length}</span>
               </div>
-              <div className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100 flex flex-col items-start">
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-3">Completed</p>
-                <span className="text-4xl font-black text-green-600">{completedOrders.length}</span>
-              </div>
+              {(["today", "week", "month"] as const).map((range) => (
+                <div key={range} className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100 flex flex-col items-start">
+                  <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-3">Delivered · {range}</p>
+                  <span className="text-4xl font-black text-green-600">{summary?.[range]?.order_count ?? (range === "today" ? completedOrders.length : 0)}</span>
+                  <span className="text-sm font-semibold text-neutral-500 mt-2">₹{Number(summary?.[range]?.amount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} delivered value</span>
+                </div>
+              ))}
             </div>
 
             {/* Error */}
