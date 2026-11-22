@@ -19,11 +19,16 @@ import { CustomerCalories } from "@/components/admin/CustomerCalories";
 import { CustomerHistory } from "@/components/admin/CustomerHistory";
 import { CustomerOrderReport } from "@/components/admin/CustomerOrderReport";
 import { BowlCustomizerModal, CustomIngredient, parseBowlIngredient } from "@/components/admin/BowlCustomizerModal";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 
 
 
 export default function CustomerDetailPage() {
+  const { hasPermission, isAdmin } = useAuth();
+  const canUpdateCustomer = hasPermission(PERMISSIONS.customers.update);
+  const canCreateOrders = hasPermission(PERMISSIONS.orders.create);
   const params = useParams();
   const router = useRouter();
   useEffect(() => {
@@ -33,18 +38,20 @@ export default function CustomerDetailPage() {
         if (data && data.R2_BASE_URL !== undefined) {
           setSystemSettings({ R2_BASE_URL: data.R2_BASE_URL });
         }
-        const catData = await endpoints.mealCategories.getMealCategories(1, 100) as any;
-        if (catData) {
-          if (catData.items) setMealCategories(catData.items);
-          else if (catData.categories) setMealCategories(catData.categories);
-          else if (Array.isArray(catData)) setMealCategories(catData);
+        if (canUpdateCustomer) {
+          const catData = await endpoints.public.getMealCategories() as any;
+          if (catData) {
+            if (catData.items) setMealCategories(catData.items);
+            else if (catData.categories) setMealCategories(catData.categories);
+            else if (Array.isArray(catData)) setMealCategories(catData);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch settings", err);
       }
     }
     fetchSystemSettings();
-  }, []);
+  }, [canUpdateCustomer]);
   const ulid = params.ulid as string;
   
   const [customer, setCustomer] = useState<any>(null);
@@ -332,7 +339,7 @@ export default function CustomerDetailPage() {
           setCustomSchedule(data.custom_schedule);
         }
         
-        if (initialPlanId) {
+        if (initialPlanId && canUpdateCustomer) {
           const activeSub = data.subscriptions?.find((s: any) => s.status === "ACTIVE");
           fetchPreview(initialPlanId, data.goal || "MAINTENANCE", data.calorie_profile?.mealCalories || {}, undefined, activeSub ? activeSub.total_price_paid : undefined, data.custom_schedule);
         }
@@ -383,13 +390,13 @@ export default function CustomerDetailPage() {
   }, [ulid]);
 
   useEffect(() => {
-    if (formData.selectedPlanId && formData.mealCalories && Object.keys(formData.mealCalories).length > 0) {
+    if (canUpdateCustomer && formData.selectedPlanId && formData.mealCalories && Object.keys(formData.mealCalories).length > 0) {
       const timer = setTimeout(() => {
         fetchPreview(formData.selectedPlanId as string, formData.goal, formData.mealCalories, undefined, undefined, customSchedule);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [formData.selectedPlanId, formData.goal, formData.mealCalories, customSchedule]);
+  }, [canUpdateCustomer, formData.selectedPlanId, formData.goal, formData.mealCalories, customSchedule]);
 
 
   
@@ -756,18 +763,18 @@ export default function CustomerDetailPage() {
                 {!isEditMode ? (
                   <>
                     <CustomerOrderReport customer={customer} />
-                    <Link
+                    {canCreateOrders && <Link
                       href={`/admin/orders/new?customer_ulid=${customer.ulid}&order_type=PLAN`}
                       className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#16A34A] px-3 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#15803d] max-sm:flex-1 sm:px-4 sm:text-sm"
                     >
                       <Plus className="w-4 h-4" /> Create Plan Order
-                    </Link>
-                    <button onClick={() => setShowDeleteModal(true)} className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-transparent px-3 py-2.5 text-xs font-bold text-red-600 transition-colors hover:border-red-200 hover:bg-red-50 max-sm:flex-1 sm:px-4 sm:text-sm">
+                    </Link>}
+                    {isAdmin && <button onClick={() => setShowDeleteModal(true)} className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-transparent px-3 py-2.5 text-xs font-bold text-red-600 transition-colors hover:border-red-200 hover:bg-red-50 max-sm:flex-1 sm:px-4 sm:text-sm">
                       <Trash2 className="w-4 h-4" /> Delete
-                    </button>
-                    <ProbaeButton onClick={() => setIsEditMode(true)} className="!w-auto whitespace-nowrap !border-transparent !bg-[#f8f5fb] !px-3 !py-2.5 !text-xs !text-[#6A0FAD] hover:!bg-[#6A0FAD] hover:!text-white max-sm:flex-1 max-sm:justify-center sm:!px-4 sm:!text-sm">
+                    </button>}
+                    {canUpdateCustomer && <ProbaeButton onClick={() => setIsEditMode(true)} className="!w-auto whitespace-nowrap !border-transparent !bg-[#f8f5fb] !px-3 !py-2.5 !text-xs !text-[#6A0FAD] hover:!bg-[#6A0FAD] hover:!text-white max-sm:flex-1 max-sm:justify-center sm:!px-4 sm:!text-sm">
                       <Edit2 className="w-4 h-4 mr-2" /> Edit Customer
-                    </ProbaeButton>
+                    </ProbaeButton>}
                   </>
                 ) : (
                   <>

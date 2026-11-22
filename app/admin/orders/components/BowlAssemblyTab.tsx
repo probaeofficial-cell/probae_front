@@ -4,8 +4,12 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Package, Search, CheckCircle2, Circle, User } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
+  const { hasPermission } = useAuth();
+  const canUpdateOrders = hasPermission(PERMISSIONS.orders.update);
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mealSlots, setMealSlots] = useState<any[]>([]);
@@ -218,7 +222,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
                 </div>
                 
                 <div className="shrink-0 flex flex-col gap-2">
-                  {bowl.assembly_status === "PENDING" ? (
+                  {canUpdateOrders ? (bowl.assembly_status === "PENDING" ? (
                     <button
                       onClick={() => setConfirmAction({ ulid: bowl.order_item_ulid, status: "ASSEMBLED" })}
                       className="flex flex-col items-center justify-center bg-white border border-neutral-200 text-neutral-400 hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-colors w-16 h-16 rounded-xl"
@@ -234,7 +238,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
                       <CheckCircle2 className="w-6 h-6 mb-1" />
                       <span className="text-[10px] font-bold leading-none">DONE</span>
                     </button>
-                  )}
+                  )) : <span className="text-xs font-semibold text-neutral-500">{bowl.assembly_status}</span>}
                 </div>
               </div>
               <div className="p-4 flex-1">
@@ -256,7 +260,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
         )}
       </div>
 
-      <ConfirmationModal
+      {canUpdateOrders && <ConfirmationModal
         isOpen={!!confirmAction}
         onClose={() => setConfirmAction(null)}
         onConfirm={handleConfirmUpdate}
@@ -270,7 +274,7 @@ export function BowlAssemblyTab({ targetDate }: { targetDate: string }) {
         confirmText={confirmAction?.status === "ASSEMBLED" ? "Yes, Mark Assembled" : "Yes, Revert"}
         cancelText="Cancel"
         isLoading={isUpdating}
-      />
+      />}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface BatchPrepOrder {
   order_ulid: string;
@@ -32,7 +33,8 @@ interface BatchPrepGroup {
 }
 
 export default function PackagingDashboardPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, hasPermission } = useAuth();
+  const canUpdateOrders = hasPermission(PERMISSIONS.orders.update);
   const [data, setData] = useState<BatchPrepGroup[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +100,7 @@ export default function PackagingDashboardPage() {
     orderStatus: string,
     bowlName?: string
   ) => {
+    if (!canUpdateOrders) return;
     // Only allow if assembled OR if the order is already PREPARED
     if (assemblyStatus !== "ASSEMBLED" && assemblyStatus !== "PACKAGED" && assemblyStatus !== "COMPLETED" && orderStatus !== "PREPARED") {
       alert("This bowl has not been assembled or prepared yet! Please wait for it to be ready before packaging.");
@@ -322,7 +325,7 @@ export default function PackagingDashboardPage() {
                                         <div className="tooltip-container relative group inline-block">
                                           <Square className="w-5 h-5 text-neutral-200 inline-block cursor-not-allowed" />
                                         </div>
-                                      ) : (
+                                      ) : canUpdateOrders ? (
                                         <div className="cursor-pointer inline-block" onClick={() => toggleOrderComplete(order.order_item_ulid, isCompleted, order.assembly_status, order.order_status, group.bowl_name)}>
                                           {isCompleted ? (
                                             <CheckSquare className="w-5 h-5 text-[#5B108E] inline-block" />
@@ -330,6 +333,8 @@ export default function PackagingDashboardPage() {
                                             <Square className="w-5 h-5 text-neutral-300 hover:text-[#5B108E] inline-block" />
                                           )}
                                         </div>
+                                      ) : (
+                                        isCompleted ? <CheckSquare className="w-5 h-5 text-[#5B108E] inline-block" /> : <Square className="w-5 h-5 text-neutral-300 inline-block" />
                                       )}
                                     </td>
                                     <td className="px-6 py-4 font-mono text-neutral-500">{order.order_number || order.order_ulid.slice(-6)}</td>
