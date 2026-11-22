@@ -10,9 +10,16 @@ import { endpoints } from "@/lib/apiService";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export default function PlansPage() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission(PERMISSIONS.plans.create);
+  const canUpdate = hasPermission(PERMISSIONS.plans.update);
+  const canDelete = hasPermission(PERMISSIONS.plans.delete);
+  const canCalculate = hasPermission(PERMISSIONS.plans.calculate);
   const [tiers, setTiers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -111,25 +118,25 @@ export default function PlansPage() {
             placeholder="Search plans..."
            isLoading={isLoading} />
           <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-            <Link
+            {canCreate && <Link
               href="/admin/plans/bulk-upload"
               className="px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 w-full sm:w-auto"
             >
               <Upload className="w-4 h-4" />
               Bulk Upload
-            </Link>
-            <button
+            </Link>}
+            {canCalculate && <button
               type="button"
               onClick={() => router.push("/admin/plans/calculator")}
               className="px-4 py-2.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-[#6A0FAD] text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 w-full sm:w-auto"
             >
               <Calculator className="w-4 h-4" />
               Price Calculator
-            </button>
-            <ProbaeButton type="button" onClick={() => router.push("/admin/plans/builder/new")} className="w-full sm:w-auto shrink-0">
+            </button>}
+            {canCreate && <ProbaeButton type="button" onClick={() => router.push("/admin/plans/builder/new")} className="w-full sm:w-auto shrink-0">
               <Plus className="w-4 h-4 mr-2" />
               Create Plan
-            </ProbaeButton>
+            </ProbaeButton>}
           </div>
         </div>
 
@@ -191,25 +198,25 @@ export default function PlansPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
+                        {canCreate && <button
                           onClick={(e) => { e.stopPropagation(); setIsDuplicatingId(tier.ulid); }}
                           className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-emerald-500 hover:bg-emerald-50 transition-colors"
                           title="Duplicate Tier"
                         >
                           <Copy className="w-4 h-4" />
-                        </button>
-                        <button
+                        </button>}
+                        {canUpdate && <button
                           onClick={() => router.push(`/admin/plans/preview/${tier.ulid}`)}
                           className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-[#6b21a8] hover:bg-[#6b21a8]/10 transition-colors"
                         >
                           <Eye className="w-4 h-4" />
-                        </button>
-                        <button
+                        </button>}
+                        {canDelete && <button
                           onClick={() => router.push(`/admin/plans/builder/${tier.ulid}`)}
                           className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
                         >
                           <Edit className="w-4 h-4" />
-                        </button>
+                        </button>}
                         <button
                           onClick={() => setIsDeletingId(tier.ulid)}
                           className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"

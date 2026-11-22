@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { BowlLoader } from "@/components/admin/BowlLoader";
@@ -132,7 +133,8 @@ type BulkPlanTierJob = {
 const ACTIVE_JOB_STORAGE_KEY = "probae_bulk_plan_tier_active_job_id";
 
 export default function BulkPlanTiersUploadPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, hasPermission } = useAuth();
+  const canUpdatePlans = hasPermission(PERMISSIONS.plans.update);
 
   const [sampleData, setSampleData] = useState<SampleData | null>(null);
   const [isLoadingSample, setIsLoadingSample] = useState(true);
@@ -853,7 +855,7 @@ export default function BulkPlanTiersUploadPage() {
                   )}
                 </div>
                 <div className="w-full sm:w-auto flex flex-wrap items-center gap-2.5">
-                  {isJobRunning(activeJob?.status) && (
+                  {canUpdatePlans && isJobRunning(activeJob?.status) && (
                     <button
                       type="button"
                       onClick={handleCancelActiveJob}
@@ -946,7 +948,7 @@ export default function BulkPlanTiersUploadPage() {
                     />
                     Refresh
                   </button>
-                  {isJobRunning(activeJob.status) ? (
+                  {isJobRunning(activeJob.status) && canUpdatePlans ? (
                     <button
                       type="button"
                       onClick={handleCancelActiveJob}

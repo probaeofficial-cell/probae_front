@@ -8,9 +8,13 @@ import { endpoints } from "@/lib/apiService";
 import { ProbaeButton } from "@/components/ProbaeButton";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import { getMediaUrl } from "@/lib/utils";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 
 export default function MenuBlueprintPage() {
+  const { hasPermission } = useAuth();
+  const canUpdate = hasPermission(PERMISSIONS.plans.update);
   const [systemSettings, setSystemSettings] = useState({ R2_BASE_URL: "" });
   const [durationType, setDurationType] = useState("WEEKLY");
   const [mealSlot, setMealSlot] = useState("lunch");
@@ -217,9 +221,9 @@ export default function MenuBlueprintPage() {
               <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight">Menu Rotations</h1>
               <p className="text-sm font-medium text-neutral-500 mt-1">Configure the global master rotation template for plan assignments</p>
             </div>
-            <ProbaeButton onClick={handleSave} disabled={isSaving} className="w-full sm:!w-auto flex items-center justify-center gap-2 h-[48px]">
+            {canUpdate && <ProbaeButton onClick={handleSave} disabled={isSaving} className="w-full sm:!w-auto flex items-center justify-center gap-2 h-[48px]">
               <Save className="w-4 h-4" /> {isSaving ? "Saving..." : "Save Rotation"}
-            </ProbaeButton>
+            </ProbaeButton>}
           </div>
 
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 flex-1 min-h-0">
@@ -232,7 +236,7 @@ export default function MenuBlueprintPage() {
                   <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Plan Type</label>
                   <div className="flex gap-2">
                     {["Core", "Pro", "Performance"].map(p => (
-                      <button 
+                      <button
                         key={p}
                         onClick={() => setPlanCategory(p)}
                         className={`flex-1 py-3 rounded-xl text-sm font-bold transition-colors ${planCategory === p ? 'bg-[#6A0FAD] text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:border-[#6A0FAD]/30'}`}
@@ -321,12 +325,12 @@ export default function MenuBlueprintPage() {
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-neutral-800 truncate">{bowl.name}</div>
                       </div>
-                      <button 
+                      {canUpdate && <button 
                         onClick={() => removeBowl(index)}
                         className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors shrink-0 ml-2"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </button>}
                     </div>
                   ))
                 )}
@@ -369,13 +373,13 @@ export default function MenuBlueprintPage() {
                         <div className="text-sm font-bold text-neutral-800 truncate">{b.name}</div>
                       </div>
                     </div>
-                    <button 
+                    {canUpdate && <button
                       onClick={() => addBowl(b)}
                       disabled={selectedBowls.length >= maxDays}
                       className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-100 text-[#6A0FAD] hover:bg-[#6A0FAD] hover:text-white transition-colors disabled:opacity-50 disabled:hover:bg-neutral-100 disabled:hover:text-[#6A0FAD] shrink-0"
                     >
                       <Plus className="w-4 h-4" />
-                    </button>
+                    </button>}
                   </div>
                 ))}
                 {filteredBowls.length === 0 && (

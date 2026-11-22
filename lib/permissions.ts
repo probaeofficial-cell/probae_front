@@ -6,6 +6,10 @@ export const PERMISSIONS = {
   },
   plans: {
     read: "plans:read",
+    calculate: "plans:calculate",
+    create: "plans:create",
+    update: "plans:update",
+    delete: "plans:delete",
   },
   inventory: {
     read: "inventory:read",

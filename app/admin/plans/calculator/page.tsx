@@ -41,11 +41,15 @@ import { endpoints } from "@/lib/apiService";
 import Link from "next/navigation";
 import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const MEAL_SLOTS = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
 export default function PlanPriceCalculatorPage() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
+  const canDeletePlans = hasPermission(PERMISSIONS.plans.delete);
 
   // ── Calculation Form State ────────────────────────────────────────────────
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | 0>(0);
@@ -1347,13 +1351,13 @@ export default function PlanPriceCalculatorPage() {
                             >
                               <RotateCcw className="w-3.5 h-3.5" />
                             </button>
-                            <button
+                            {canDeletePlans && <button
                               onClick={() => setDeletingLogUlid(log.ulid)}
                               className="p-1.5 rounded-lg border border-red-100 hover:bg-red-50 text-red-500"
                               title="Delete log"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            </button>}
                           </div>
                         </td>
                       </tr>

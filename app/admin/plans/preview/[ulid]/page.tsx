@@ -6,6 +6,8 @@ import { useRouter, useParams } from "next/navigation";
 import { endpoints } from "@/lib/apiService";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
 
 const getTypeName = (t: string) => t === 'B' ? 'Breakfast' : t === 'L' ? 'Lunch' : 'Dinner';
@@ -15,6 +17,7 @@ const getTotalDeliveredDays = (duration: string, daysPerWeek: number) => {
 };
 
 export default function PlanPreviewPage() {
+  const { hasPermission } = useAuth();
   const router = useRouter();
   const params = useParams();
   const ulid = params.ulid as string;
@@ -50,9 +53,9 @@ export default function PlanPreviewPage() {
           <h1 className="text-2xl font-bold text-neutral-900">Plan Details</h1>
           <p className="text-sm text-neutral-500">View configuration for {tier.name}</p>
         </div>
-        <ProbaeButton className="!w-auto" onClick={() => router.push(`/admin/plans/builder/${tier._id}`)}>
+        {hasPermission(PERMISSIONS.plans.update) && <ProbaeButton className="!w-auto" onClick={() => router.push(`/admin/plans/builder/${tier._id}`)}>
           <Edit className="w-4 h-4 mr-2" /> Edit Plan
-        </ProbaeButton>
+        </ProbaeButton>}
       </div>
 
       <div className="flex-1 overflow-auto bg-white pt-4">

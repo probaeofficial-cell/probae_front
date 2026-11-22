@@ -8,11 +8,14 @@ import { endpoints } from "@/lib/apiService";
 import { ProbaeButton } from "@/components/ProbaeButton";
 import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const MEAL_SLOTS = ["breakfast", "lunch", "snack", "dinner"];
 
 export default function CreatePlanTierPage() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     category: "Core",
@@ -116,9 +119,9 @@ export default function CreatePlanTierPage() {
                 <p className="text-sm font-medium text-neutral-500 mt-1">Configure subscription metadata and included meals</p>
               </div>
             </div>
-            <ProbaeButton onClick={handleSave} disabled={isSaving} className="!w-auto flex items-center gap-2 h-[48px]">
+            {hasPermission(PERMISSIONS.plans.create) && <ProbaeButton onClick={handleSave} disabled={isSaving} className="!w-auto flex items-center gap-2 h-[48px]">
               <Save className="w-4 h-4" /> {isSaving ? "Saving..." : "Save Plan Tier"}
-            </ProbaeButton>
+            </ProbaeButton>}
           </div>
 
           <div className="flex-1 overflow-y-auto scrollbar-thin max-w-3xl">

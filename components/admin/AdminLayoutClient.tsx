@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/admin/Sidebar";
 import React, { useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
-import { getAdminLandingPath } from "@/lib/sidebarConfig";
+import { getAdminLandingPath, getPlanPermissionForPath } from "@/lib/sidebarConfig";
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,6 +13,8 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const { user, isLoading, permissionsLoaded, hasPermission } = useAuth();
 
   const isLoginPage = pathname === "/admin/login";
+  const planPermission = getPlanPermissionForPath(pathname);
+  const isStaff = user?.role?.toUpperCase() === "STAFF";
 
   useEffect(() => {
     if (isLoading) return;
@@ -31,8 +33,10 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
       router.push("/delivery");
     } else if (user.role?.toUpperCase() === "STAFF" && pathname === "/admin/dashboard" && permissionsLoaded) {
       router.replace(getAdminLandingPath("STAFF", hasPermission));
+    } else if (isStaff && planPermission && permissionsLoaded && !hasPermission(planPermission)) {
+      router.replace(getAdminLandingPath("STAFF", hasPermission));
     }
-  }, [isLoginPage, isLoading, user, router, pathname, permissionsLoaded, hasPermission]);
+  }, [isLoginPage, isLoading, user, router, pathname, permissionsLoaded, hasPermission, isStaff, planPermission]);
 
   if (isLoading) {
     return (
@@ -44,7 +48,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
 
   // While waiting for router.push to take effect, show the loader instead of returning null
   // Returning null during an active Next.js App Router transition can cause the page to freeze
-  if ((isLoginPage && user) || (!isLoginPage && !user) || (!isLoginPage && user?.role?.toLowerCase() === "delivery") || (!isLoginPage && user?.role?.toUpperCase() === "STAFF" && pathname === "/admin/dashboard")) {
+  if ((isLoginPage && user) || (!isLoginPage && !user) || (!isLoginPage && user?.role?.toLowerCase() === "delivery") || (!isLoginPage && isStaff && pathname === "/admin/dashboard") || (!isLoginPage && isStaff && planPermission && (!permissionsLoaded || !hasPermission(planPermission)))) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#141414] text-white">
         <BowlLoader className="h-8 w-8 text-[#6A0FAD]" />

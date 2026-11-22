@@ -9,12 +9,15 @@ import { endpoints } from "@/lib/apiService";
 import { ProbaeButton } from "@/components/ProbaeButton";
 import { useRouter, useParams } from "next/navigation";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const MEAL_SLOTS = ["breakfast", "lunch", "snack", "dinner"];
 
 export default function EditPlanTierPage() {
   const router = useRouter();
   const params = useParams();
+  const { hasPermission } = useAuth();
   const ulid = params.ulid as string;
   
   const [isLoading, setIsLoading] = useState(true);
@@ -134,9 +137,9 @@ export default function EditPlanTierPage() {
                 <p className="text-sm font-medium text-neutral-500 mt-1">Configure subscription metadata and included meals</p>
               </div>
             </div>
-            <ProbaeButton onClick={handleSave} disabled={isSaving || isLoading} className="!w-auto flex items-center gap-2 h-[48px]">
+            {hasPermission(PERMISSIONS.plans.update) && <ProbaeButton onClick={handleSave} disabled={isSaving || isLoading} className="!w-auto flex items-center gap-2 h-[48px]">
               <Save className="w-4 h-4" /> {isSaving ? "Saving..." : "Save Changes"}
-            </ProbaeButton>
+            </ProbaeButton>}
           </div>
 
           <div className="flex-1 overflow-y-auto scrollbar-thin max-w-3xl">

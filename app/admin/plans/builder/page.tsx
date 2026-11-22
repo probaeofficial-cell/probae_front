@@ -11,9 +11,16 @@ import { ProbaeButton } from "@/components/ProbaeButton";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { useAuth } from "@/lib/AuthContext";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export default function PlanTierList() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission(PERMISSIONS.plans.create);
+  const canUpdate = hasPermission(PERMISSIONS.plans.update);
+  const canDelete = hasPermission(PERMISSIONS.plans.delete);
+  const canCalculate = hasPermission(PERMISSIONS.plans.calculate);
   const [tiers, setTiers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -164,28 +171,28 @@ export default function PlanTierList() {
               <p className="text-sm font-medium text-neutral-500 mt-1">Manage subscription packages and rules</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <Link
+              {canCreate && <Link
                 href="/admin/plans/bulk-upload"
                 className="px-4 h-[48px] rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
               >
                 <Upload className="w-4 h-4" />
                 Bulk Upload
-              </Link>
-              <button
+              </Link>}
+              {canCalculate && <button
                 type="button"
                 onClick={() => router.push("/admin/plans/calculator")}
                 className="px-4 h-[48px] rounded-2xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-[#6A0FAD] text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
               >
                 <Calculator className="w-4 h-4" />
                 Price Calculator
-              </button>
-              <ProbaeButton 
+              </button>}
+              {canCreate && <ProbaeButton 
                 type="button"
                 onClick={() => router.push("/admin/plans/builder/new")} 
                 className="!w-auto flex items-center gap-2 h-[48px]"
               >
                 <Plus className="w-4 h-4" /> Create New Tier
-              </ProbaeButton>
+              </ProbaeButton>}
             </div>
           </div>
 
@@ -273,15 +280,15 @@ export default function PlanTierList() {
                             <button onClick={() => handlePreview(t)} title="Preview & Subscribers" className="p-2 text-neutral-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors">
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleDuplicate(t)} title="Duplicate" className="p-2 text-neutral-400 hover:text-green-500 hover:bg-green-50 rounded-xl transition-colors">
+                            {canCreate && <button onClick={() => handleDuplicate(t)} title="Duplicate" className="p-2 text-neutral-400 hover:text-green-500 hover:bg-green-50 rounded-xl transition-colors">
                               <Copy className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => handleEdit(t)} title="Edit" className="p-2 text-neutral-400 hover:text-[#6A0FAD] hover:bg-[#6A0FAD]/10 rounded-xl transition-colors">
+                            </button>}
+                            {canUpdate && <button onClick={() => handleEdit(t)} title="Edit" className="p-2 text-neutral-400 hover:text-[#6A0FAD] hover:bg-[#6A0FAD]/10 rounded-xl transition-colors">
                               <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => handleDelete(t._id)} title="Delete" className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                            </button>}
+                            {canDelete && <button onClick={() => handleDelete(t._id)} title="Delete" className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                               <Trash2 className="w-4 h-4" />
-                            </button>
+                            </button>}
                           </div>
                         </td>
                       </tr>

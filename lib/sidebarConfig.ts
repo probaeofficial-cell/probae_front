@@ -59,7 +59,19 @@ export function getAdminLandingPath(
   if (hasPermission(PERMISSIONS.inventory.read)) return "/admin/raw-materials/stock";
   if (hasPermission(PERMISSIONS.customers.read)) return "/admin/customers";
   if (hasPermission(PERMISSIONS.expenses.read)) return "/admin/expenses/logs";
+  if (hasPermission(PERMISSIONS.plans.read)) return "/admin/plans/builder";
+  if (hasPermission(PERMISSIONS.plans.calculate)) return "/admin/plans/calculator";
   return "/admin/profile";
+}
+
+export function getPlanPermissionForPath(pathname: string): PermissionCode | null {
+  if (pathname === "/admin/plans/calculator") return PERMISSIONS.plans.calculate;
+  if (pathname === "/admin/plans/bulk-upload" || pathname === "/admin/plans/builder/new") return PERMISSIONS.plans.create;
+  if (/^\/admin\/plans\/builder\/[^/]+$/.test(pathname)) return PERMISSIONS.plans.update;
+  if (pathname.startsWith("/admin/plans/menu-blueprint")) return PERMISSIONS.plans.read;
+  if (pathname.startsWith("/admin/plans/preview/")) return PERMISSIONS.plans.read;
+  if (pathname === "/admin/plans" || pathname === "/admin/plans/builder") return PERMISSIONS.plans.read;
+  return null;
 }
 
 export const MAIN_MENU: Record<string, MenuItem> = {
@@ -103,12 +115,12 @@ export const MAIN_MENU: Record<string, MenuItem> = {
   plans: {
     label: "Plans",
     icon: Calendar,
-    roles: ["ADMIN"],
+    permission: PERMISSIONS.plans.read,
     subItems: {
-      rotations: { label: "Menu Rotations", dotColor: "bg-blue-500", path: "/admin/plans/menu-blueprint" },
-      tiers: { label: "Plan Tiers", dotColor: "bg-purple-500", path: "/admin/plans/builder" },
-      bulkUpload: { label: "Bulk Upload", dotColor: "bg-indigo-500", path: "/admin/plans/bulk-upload" },
-      calculator: { label: "Price Calculator", dotColor: "bg-emerald-500", path: "/admin/plans/calculator" },
+      rotations: { label: "Menu Rotations", dotColor: "bg-blue-500", path: "/admin/plans/menu-blueprint", permission: PERMISSIONS.plans.read },
+      tiers: { label: "Plan Tiers", dotColor: "bg-purple-500", path: "/admin/plans/builder", permission: PERMISSIONS.plans.read },
+      bulkUpload: { label: "Bulk Upload", dotColor: "bg-indigo-500", path: "/admin/plans/bulk-upload", permission: PERMISSIONS.plans.create },
+      calculator: { label: "Price Calculator", dotColor: "bg-emerald-500", path: "/admin/plans/calculator", permission: PERMISSIONS.plans.calculate },
     },
   },
   orders: {
