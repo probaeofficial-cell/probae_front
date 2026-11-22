@@ -5,18 +5,20 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { endpoints } from "@/lib/apiService";
 
-interface AsyncCustomerSelectProps {
-  value: number | 0;
-  onChange: (id: number) => void;
+interface AsyncCustomerSelectProps<T extends number | string = number> {
+  value: T | 0;
+  onChange: (id: T | 0) => void;
   onSelectFull?: (customer: any) => void;
   selectedCustomer?: any;
+  placeholder?: string;
+  allowAny?: boolean;
+  valueKey?: "id" | "ulid";
 }
 
-export default function AsyncCustomerSelect({ value, onChange, onSelectFull, selectedCustomer }: AsyncCustomerSelectProps) {
+export default function AsyncCustomerSelect<T extends number | string = number>({ value, onChange, onSelectFull, selectedCustomer, placeholder = "Select Customer...", allowAny = true, valueKey = "id" }: AsyncCustomerSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<any[]>([]);
-  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -24,6 +26,9 @@ export default function AsyncCustomerSelect({ value, onChange, onSelectFull, sel
   const containerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingNodeRef = useRef<HTMLDivElement>(null);
+  const isLoadingRef = useRef(false);
+  const pageRef = useRef(1);
+  const inFlightRequestsRef = useRef(new Set<string>());
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -43,46 +48,52 @@ export default function AsyncCustomerSelect({ value, onChange, onSelectFull, sel
   }, [search]);
 
   const fetchOptions = async (pageNum: number, searchTerm: string, isNewSearch: boolean) => {
+    const requestKey = `${searchTerm}:${pageNum}`;
+    if (inFlightRequestsRef.current.has(requestKey)) return;
+    inFlightRequestsRef.current.add(requestKey);
+    isLoadingRef.current = true;
     setIsLoading(true);
     try {
       const res = await endpoints.customers.list({ page: pageNum, limit: 10, search: searchTerm }) as any;
       const newItems = res.customers || [];
+      const uniqueItems = [...new Map(newItems.map((item: any, index: number) => [item.ulid ?? item.id ?? index, item])).values()];
       if (isNewSearch) {
-        setOptions(newItems);
+        setOptions(uniqueItems);
       } else {
-        setOptions(prev => [...prev, ...newItems]);
+        setOptions(prev => {
+          const existingKeys = new Set(prev.map(item => item.ulid ?? item.id));
+          return [...prev, ...uniqueItems.filter((item: any) => !existingKeys.has(item.ulid ?? item.id))];
+        });
       }
-      setHasMore(newItems.length === 10);
+      setHasMore(typeof res.totalCount === "number"
+        ? pageNum * (res.limit || 10) < res.totalCount
+        : newItems.length === 10);
     } catch (err) {
       console.error("Failed to load customers", err);
     } finally {
+      inFlightRequestsRef.current.delete(requestKey);
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
     if (isOpen) {
-      setPage(1);
+      pageRef.current = 1;
+      setOptions([]);
+      setHasMore(true);
       fetchOptions(1, debouncedSearch, true);
     }
   }, [debouncedSearch, isOpen]);
 
-  useEffect(() => {
-    if (isOpen && options.length === 0 && !isLoading) {
-      fetchOptions(1, "", true);
-    }
-  }, [isOpen]);
-
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
     const target = entries[0];
-    if (target.isIntersecting && hasMore && !isLoading) {
-      setPage(prev => {
-        const nextPage = prev + 1;
-        fetchOptions(nextPage, debouncedSearch, false);
-        return nextPage;
-      });
+    if (target.isIntersecting && hasMore && !isLoadingRef.current) {
+      const nextPage = pageRef.current + 1;
+      pageRef.current = nextPage;
+      void fetchOptions(nextPage, debouncedSearch, false);
     }
-  }, [hasMore, isLoading, debouncedSearch]);
+  }, [hasMore, debouncedSearch]);
 
   useEffect(() => {
     const option = { root: null, rootMargin: "20px", threshold: 0 };
@@ -94,8 +105,9 @@ export default function AsyncCustomerSelect({ value, onChange, onSelectFull, sel
     };
   }, [handleObserver]);
 
-  const currentOption = options.find(o => (o.id !== undefined && o.id === value) || (o.ulid && o.ulid === value)) || selectedCustomer;
-  const displayLabel = value === 0 ? "Select Customer..." : currentOption ? currentOption.name : "Select Customer...";
+  const optionValue = (option: any) => option[valueKey] ?? option.ulid ?? option.id;
+  const currentOption = options.find(option => String(optionValue(option)) === String(value)) || selectedCustomer;
+  const displayLabel = value === 0 || value === "" ? placeholder : currentOption ? currentOption.name : placeholder;
 
   return (
     <div className="relative w-full" ref={containerRef}>
@@ -103,7 +115,7 @@ export default function AsyncCustomerSelect({ value, onChange, onSelectFull, sel
         className={`w-full h-[44px] bg-neutral-50 rounded-xl px-4 flex items-center justify-between cursor-pointer transition-all border ${isOpen ? 'border-[#7c3aed] ring-2 ring-[#7c3aed]/20' : 'border-neutral-200'}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className={`text-sm font-medium ${currentOption || value !== 0 ? 'text-neutral-900' : 'text-neutral-500'} line-clamp-1`}>
+        <span className={`text-sm font-medium ${currentOption || (value !== 0 && value !== "") ? 'text-neutral-900' : 'text-neutral-500'} line-clamp-1`}>
           {displayLabel}
         </span>
         <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''} shrink-0`} />
@@ -125,7 +137,7 @@ export default function AsyncCustomerSelect({ value, onChange, onSelectFull, sel
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
-            <div 
+            {allowAny && <div
               onClick={() => {
                 onChange(0);
                 setIsOpen(false);
@@ -135,16 +147,16 @@ export default function AsyncCustomerSelect({ value, onChange, onSelectFull, sel
             >
               <span>Any Customer</span>
               {value === 0 && <div className="w-2 h-2 rounded-full bg-[#7c3aed]" />}
-            </div>
+            </div>}
             
             {options.map((opt, idx) => {
               const optKey = opt.ulid ? `cust-${opt.ulid}` : opt.id !== undefined ? `cust-id-${opt.id}` : `cust-idx-${idx}`;
-              const isSelected = (opt.id !== undefined && opt.id === value) || (opt.ulid && opt.ulid === value);
+              const isSelected = String(optionValue(opt)) === String(value);
               return (
                 <div 
                   key={optKey}
                   onClick={() => {
-                    onChange(opt.id ?? opt.ulid);
+                    onChange(optionValue(opt));
                     if (onSelectFull) onSelectFull(opt);
                     setIsOpen(false);
                     setSearch("");
@@ -163,8 +175,8 @@ export default function AsyncCustomerSelect({ value, onChange, onSelectFull, sel
             })}
             
             {hasMore && (
-              <div ref={loadingNodeRef} className="py-3 flex justify-center">
-                <BowlLoader className="w-4 h-4 text-neutral-400" />
+              <div ref={loadingNodeRef} className="py-3 flex min-h-2 justify-center">
+                {isLoading && <BowlLoader className="w-4 h-4 text-neutral-400" />}
               </div>
             )}
             

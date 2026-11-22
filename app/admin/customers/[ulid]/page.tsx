@@ -68,7 +68,9 @@ export default function CustomerDetailPage() {
   const [allPlans, setAllPlans] = useState<any[]>([]);
   const [customSchedule, setCustomSchedule] = useState<any[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
-  const [activeTab, setActiveTab] = useState<"PROFILE" | "LEDGER" | "CALORIES" | "HISTORY">("PROFILE");
+  const [activeTab, setActiveTab] = useState<"PROFILE" | "LEDGER" | "CALORIES" | "HISTORY" | "BADGES">("PROFILE");
+  const [customerBadges, setCustomerBadges] = useState<any[]>([]);
+  const [badgesLoading, setBadgesLoading] = useState(false);
   const [showRenewalModal, setShowRenewalModal] = useState(false);
   const [showCancelPlanModal, setShowCancelPlanModal] = useState(false);
   const [isCancellingPlan, setIsCancellingPlan] = useState(false);
@@ -387,6 +389,15 @@ export default function CustomerDetailPage() {
 
   useEffect(() => {
     if (ulid) fetchCustomer();
+  }, [ulid]);
+
+  useEffect(() => {
+    if (!ulid) return;
+    setBadgesLoading(true);
+    endpoints.badges.customerBadges(ulid)
+      .then((items: any) => setCustomerBadges(Array.isArray(items) ? items : []))
+      .catch((err) => console.error("Failed to load customer badges", err))
+      .finally(() => setBadgesLoading(false));
   }, [ulid]);
 
   useEffect(() => {
@@ -728,6 +739,12 @@ export default function CustomerDetailPage() {
               >
                 Subscription History
               </button>
+              <button
+                onClick={() => setActiveTab("BADGES")}
+                className={`px-6 py-3 font-bold text-sm whitespace-nowrap transition-colors border-b-2 ${activeTab === "BADGES" ? "border-[#6A0FAD] text-[#6A0FAD]" : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300"}`}
+              >
+                Badges <span className="ml-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs text-violet-700">{customerBadges.length}</span>
+              </button>
             </div>
 
             {activeTab === "LEDGER" ? (
@@ -745,6 +762,13 @@ export default function CustomerDetailPage() {
                 cancellationLogs={customer.cancellation_logs || []} 
                 onRefresh={fetchCustomer} 
               />
+            ) : activeTab === "BADGES" ? (
+              <section className="rounded-3xl border border-neutral-200 bg-white p-5 sm:p-7">
+                <h2 className="text-xl font-black text-neutral-900">{customer.name}&apos;s badges</h2>
+                <p className="mt-1 text-sm text-neutral-500">Badges assigned manually by admins and earned through activity.</p>
+                <div className="mt-4 inline-flex rounded-xl bg-violet-50 px-4 py-2 text-sm font-bold text-violet-800">Available reward points: {customer.reward_points ?? 0}</div>
+                {badgesLoading ? <p className="py-8 text-center text-sm text-neutral-500">Loading badges…</p> : customerBadges.length === 0 ? <p className="mt-5 rounded-2xl bg-neutral-50 p-8 text-center text-sm text-neutral-500">No badges assigned yet.</p> : <div className="mt-5 grid gap-3 sm:grid-cols-2">{customerBadges.map((badge: any) => <div key={badge.ulid} className="flex items-center gap-4 rounded-2xl border border-neutral-100 bg-neutral-50 p-4"><img src={getMediaUrl(systemSettings.R2_BASE_URL, badge.image_filename) || ""} alt={badge.name} className="h-16 w-16 rounded-xl border border-neutral-200 object-cover"/><div className="min-w-0"><h3 className="font-bold text-neutral-900">{badge.name}</h3><p className="mt-1 text-xs text-neutral-500">{badge.description || ""}</p><span className="mt-2 inline-block rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-neutral-600">{badge.assignment_source === "AUTO" ? "AUTO EARNED" : "ADMIN ASSIGNED"}</span><span className="mt-2 ml-2 inline-block rounded-full bg-violet-100 px-2.5 py-1 text-[10px] font-bold text-violet-800">+{badge.points_awarded} points</span></div></div>)}</div>}
+              </section>
             ) : (
             <div className="animate-in fade-in zoom-in duration-300">
             

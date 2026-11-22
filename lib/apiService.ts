@@ -35,6 +35,7 @@ import { createNotificationsApi } from "./api/sections/notifications";
 import { createBowlsApi } from "./api/sections/bowls";
 import { createPublicApi } from "./api/sections/public";
 import { createEnquiriesApi } from "./api/sections/enquiries";
+import { createBadgesApi } from "./api/sections/badges";
 
 // ─── Base URL ────────────────────────────────────────────────────────────────
 // Read the backend base URL from environment variables.
@@ -367,6 +368,7 @@ export const endpoints = {
   bowls: createBowlsApi(api),
   public: createPublicApi(api),
   enquiries: createEnquiriesApi(api),
+  badges: createBadgesApi(api),
 };
 
 // Export dedicated customer-side API client & endpoints

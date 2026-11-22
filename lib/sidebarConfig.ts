@@ -15,6 +15,7 @@ import {
   Truck,
   MessageSquare,
   ShieldCheck,
+  Award,
 } from "lucide-react";
 import { PERMISSIONS, type PermissionCode } from "@/lib/permissions";
 
@@ -182,6 +183,16 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       transactions: { label: "Wallet & Transactions", dotColor: "bg-green-500", path: "/admin/customers/transactions", roles: ["ADMIN"] },
       dues: { label: "Dues", dotColor: "bg-red-500", path: "/admin/customers/dues", roles: ["ADMIN"] },
       bulkOrders: { label: "Bulk Legacy Orders", dotColor: "bg-amber-500", path: "/admin/customers/bulk-orders", roles: ["ADMIN"] },
+    },
+  },
+  badges: {
+    label: "Badges",
+    icon: Award,
+    roles: ["ADMIN"],
+    subItems: {
+      list: { label: "Badge List", dotColor: "bg-blue-500", path: "/admin/badges" },
+      assigned: { label: "Assigned Badges", dotColor: "bg-emerald-500", path: "/admin/badges/assigned" },
+      assign: { label: "Assign Badge", dotColor: "bg-amber-500", path: "/admin/badges/assign" },
     },
   },
   enquiries: { label: "Enquiries", icon: MessageSquare, path: "/admin/enquiries", roles: ["ADMIN"] },
