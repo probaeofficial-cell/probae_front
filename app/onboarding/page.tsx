@@ -7,6 +7,10 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { endpoints } from "@/lib/apiService";
 import { customerEndpoints } from "@/lib/customerApiService";
+import { getDeviceFingerprint } from "@/lib/fingerprint";
+import { saveEnquiryForPatch, getEnquiryForPatch, clearEnquiryForPatch, PatchedEnquiryData } from "@/lib/patchHelper";
+import { triggerHaptic } from "@/lib/haptics";
+import { Sparkles } from "lucide-react";
 
 const calculateMifflinLocally = (data: { sex: string; age: number; height: number; weight: number; activityLevel: string; goal: string }) => {
   const isMale = data.sex.toLowerCase() === "male";
@@ -38,6 +42,50 @@ const calculateMifflinLocally = (data: { sex: string; age: number; height: numbe
   const carbs = Math.max(0, Math.round((tdee - proteinCals - fatCals) / 4));
   const fiber = Math.round((tdee / 1000) * 14);
   return { total: tdee, protein, carbs, fat, fiber };
+};
+
+const patchEnquiryIntoForm = (
+  enquiry: PatchedEnquiryData,
+  setFormData: React.Dispatch<React.SetStateAction<any>>,
+  setCalorieProfile: React.Dispatch<React.SetStateAction<any>>,
+  setSelectedPlan: React.Dispatch<React.SetStateAction<string | null>>
+) => {
+  if (!enquiry) return;
+  const meta = enquiry.meta_data || {};
+  const fd = meta.formData || {};
+
+  setFormData((prev: any) => ({
+    ...prev,
+    name: fd.name || enquiry.name || prev.name,
+    phone: fd.phone || enquiry.phone || prev.phone,
+    address: fd.address || prev.address,
+    sex: fd.sex || prev.sex,
+    age: fd.age ? String(fd.age) : prev.age,
+    height: fd.height ? String(fd.height) : prev.height,
+    weight: fd.weight ? String(fd.weight) : prev.weight,
+    activityLevel: fd.activityLevel || prev.activityLevel,
+    goal: fd.goal || prev.goal,
+    dietaryPreferences: Array.isArray(fd.dietaryPreferences) ? fd.dietaryPreferences : prev.dietaryPreferences,
+    allergies: Array.isArray(fd.allergies) ? fd.allergies : prev.allergies,
+    comments: fd.chefInstructions || fd.comments || enquiry.message || prev.comments,
+    planDuration: meta.duration || fd.planDuration || prev.planDuration,
+    planFrequency: meta.frequency || fd.planFrequency || prev.planFrequency,
+    mealSlots: Array.isArray(meta.slots) ? meta.slots : (Array.isArray(fd.mealSlots) ? fd.mealSlots : prev.mealSlots),
+    mealCalories: fd.mealCalories || prev.mealCalories,
+  }));
+
+  if (meta.calories) {
+    setCalorieProfile((prev: any) => ({
+      ...(prev || {}),
+      total: meta.calories,
+    }));
+  }
+
+  if (meta.plan_name) {
+    if (meta.plan_name.toLowerCase().includes("custom") || meta.plan_name.toLowerCase().includes("bespoke")) {
+      setSelectedPlan("CUSTOM_BUILDER");
+    }
+  }
 };
 
 export default function OnboardingPage() {
@@ -105,6 +153,97 @@ export default function OnboardingPage() {
     is_custom: boolean;
   } | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+
+  // Existing enquiries state for pre-filling & "Already Enquired" prompt
+  const [existingEnquiries, setExistingEnquiries] = useState<PatchedEnquiryData[]>([]);
+  const [selectedEnquiryIndex, setSelectedEnquiryIndex] = useState(0);
+  const [showAlreadyEnquiredPrompt, setShowAlreadyEnquiredPrompt] = useState(false);
+  const [isPatched, setIsPatched] = useState(false);
+  const [checkingEnquiries, setCheckingEnquiries] = useState(true);
+
+  // Check for previous enquiries by device fingerprint or active patch draft
+  useEffect(() => {
+    const savedPatch = getEnquiryForPatch();
+    if (savedPatch) {
+      patchEnquiryIntoForm(savedPatch, setFormData, setCalorieProfile, setSelectedPlan);
+      setIsPatched(true);
+    }
+
+    const isVerifiedReturn = typeof window !== "undefined" && window.location.search.includes("verified=true");
+    if (isVerifiedReturn) {
+      sessionStorage.setItem("probae_dismiss_enquiry_prompt", "true");
+    }
+    const isDismissed = isVerifiedReturn || sessionStorage.getItem("probae_dismiss_enquiry_prompt") === "true";
+
+    const fp = getDeviceFingerprint();
+    if (fp) {
+      customerEndpoints
+        .getEnquirySuggestions(fp)
+        .then((res: any) => {
+          if (res && res.success && Array.isArray(res.suggestions) && res.suggestions.length > 0) {
+            setExistingEnquiries(res.suggestions);
+            if (!isDismissed) {
+              setShowAlreadyEnquiredPrompt(true);
+            }
+          }
+        })
+        .catch(() => {
+          // Ignore
+        })
+        .finally(() => {
+          setCheckingEnquiries(false);
+        });
+    } else {
+      setCheckingEnquiries(false);
+    }
+  }, []);
+
+  const activeEnquiry = existingEnquiries[selectedEnquiryIndex] || existingEnquiries[0];
+
+  const handleLoginAndContinue = () => {
+    if (!activeEnquiry) return;
+    triggerHaptic("impact");
+    sessionStorage.setItem("probae_dismiss_enquiry_prompt", "true");
+    saveEnquiryForPatch(activeEnquiry);
+    patchEnquiryIntoForm(activeEnquiry, setFormData, setCalorieProfile, setSelectedPlan);
+    setIsPatched(true);
+    setShowAlreadyEnquiredPrompt(false);
+
+    const query = new URLSearchParams({
+      phone: activeEnquiry.phone || "",
+      patch: "true",
+      name: activeEnquiry.name || "",
+    });
+    router.push(`/login?${query.toString()}`);
+  };
+
+  const handleEnquireForAnother = () => {
+    triggerHaptic("selection");
+    sessionStorage.setItem("probae_dismiss_enquiry_prompt", "true");
+    clearEnquiryForPatch();
+    setIsPatched(false);
+    setShowAlreadyEnquiredPrompt(false);
+    setFormData({
+      name: "",
+      phone: "",
+      address: "",
+      sex: "Male",
+      age: "25",
+      height: "180",
+      weight: "75",
+      activityLevel: "Lightly Active",
+      goal: "Muscle Gain",
+      dietaryPreferences: [],
+      allergies: [],
+      comments: "",
+      planDuration: "WEEKLY",
+      planFrequency: "5 DAYS",
+      mealSlots: ["LUNCH"],
+      mealCalories: { "LUNCH": 500 },
+      lockedMeals: {},
+    });
+    setStep(1);
+  };
   
   const [formData, setFormData] = useState({
     name: "",
@@ -153,87 +292,13 @@ export default function OnboardingPage() {
   }, [calorieProfile?.total]);
 
   useEffect(() => {
-    async function fetchProfile() {
-      try {
-        const res = await fetch('/api/onboarding/profile');
-        if (res.ok) {
-          const { data } = await res.json();
-          if (data) {
-            const updatedData = { ...data };
-            if (updatedData.mealSlots && !updatedData.mealCalories) {
-              updatedData.mealCalories = {};
-              updatedData.mealSlots.forEach((slot: string) => {
-                updatedData.mealCalories[slot] = 500;
-              });
-            }
-            setFormData(prev => ({ ...prev, ...updatedData }));
-            
-            if (data.calorieProfile) {
-              setCalorieProfile(data.calorieProfile);
-            }
-            if (data.selectedPlan) {
-              setSelectedPlan(data.selectedPlan);
-            }
-
-            if (data.onboardingStep) {
-              setStep(data.onboardingStep);
-            }
-            if (data.latestPlanRequest) {
-              setLatestPlanRequest(data.latestPlanRequest);
-            }
-
-            // If user is at Step 5 or 6, they need the `plans` array loaded to view them!
-            if (data.onboardingStep >= 5 && data.planDuration && data.planFrequency && data.mealSlots) {
-              try {
-                const plansData = await customerEndpoints.getFilteredPlans({
-                  duration: data.planDuration,
-                  frequency: data.planFrequency,
-                  mealSlots: data.mealSlots,
-                });
-                let fetched = (plansData && plansData.success && Array.isArray(plansData.plans)) ? plansData.plans : [];
-                if (data.mealSlots && data.mealSlots.length > 0 && fetched.length > 0) {
-                  const normTarget = new Set(
-                    data.mealSlots.map((s: string) => {
-                      const lower = s.toLowerCase();
-                      if (lower.includes("fast") || lower.includes("break")) return "breakfast";
-                      if (lower.includes("lunch")) return "lunch";
-                      if (lower.includes("din")) return "dinner";
-                      if (lower.includes("snack")) return "snack";
-                      return lower;
-                    })
-                  );
-                  fetched = fetched.filter((p: any) => {
-                    const planSlots = new Set(
-                      (p.included_meal_slots || []).map((s: string) => {
-                        const lower = s.toLowerCase();
-                        if (lower.includes("fast") || lower.includes("break")) return "breakfast";
-                        if (lower.includes("lunch")) return "lunch";
-                        if (lower.includes("din")) return "dinner";
-                        if (lower.includes("snack")) return "snack";
-                        return lower;
-                      })
-                    );
-                    if (planSlots.size !== normTarget.size) return false;
-                    for (const s of normTarget) {
-                      if (!planSlots.has(s)) return false;
-                    }
-                    return true;
-                  });
-                }
-                setPlans(fetched);
-              } catch (err) {
-                console.error("Failed to load plans on mount", err);
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch profile", err);
-      } finally {
-        setProfileLoaded(true);
-      }
+    // Hydrate profile state from active patch if present
+    const saved = getEnquiryForPatch();
+    if (saved) {
+      patchEnquiryIntoForm(saved, setFormData, setCalorieProfile, setSelectedPlan);
+      setIsPatched(true);
     }
-    fetchProfile();
+    setProfileLoaded(true);
   }, []);
 
   const distributeCaloriesAcrossSlots = (
@@ -677,9 +742,7 @@ export default function OnboardingPage() {
         `Calorie Distribution: ${slotCaloriesSummary}`,
         "",
         "=== PRICING BREAKDOWN ===",
-        `Gross Price: ₹${planPreviewData?.gross_price || 0}`,
-        `Discount: ${planPreviewData?.discount_percentage || 0}% (₹${planPreviewData?.discount_amount || 0})`,
-        `Final Price: ₹${planPreviewData?.final_discounted_price || 0}`,
+        `Price: ₹${planPreviewData?.final_discounted_price || planPreviewData?.gross_price || 0}`,
         "",
         "=== SCHEDULED BOWLS ===",
         bowlsSummary
@@ -691,6 +754,27 @@ export default function OnboardingPage() {
         email: undefined,
         plan_interest: `${planName} - ₹${planPreviewData?.final_discounted_price || 0}`,
         message: formattedMessage,
+        device_fingerprint: getDeviceFingerprint(),
+        meta_data: {
+          plan_name: planName,
+          duration: formData.planDuration,
+          frequency: formData.planFrequency,
+          slots: formData.mealSlots,
+          calories: getTotalPurchasedCalories(),
+          final_price: planPreviewData?.final_discounted_price,
+          formData: {
+            sex: formData.sex,
+            age: formData.age,
+            height: formData.height,
+            weight: formData.weight,
+            activityLevel: formData.activityLevel,
+            goal: formData.goal,
+            allergies: formData.allergies,
+            dietaryPreferences: formData.dietaryPreferences,
+            chefInstructions: formData.comments,
+            address: formData.address,
+          }
+        }
       });
 
       setShowCheckoutModal(false);
@@ -909,6 +993,133 @@ export default function OnboardingPage() {
           </motion.div>
         </div>
       )}
+
+      {/* Already Enquired Prompt Modal */}
+      {showAlreadyEnquiredPrompt && activeEnquiry && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0, y: 15 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="w-full max-w-lg bg-[#181818] border border-gray-800 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden text-center md:text-left"
+          >
+            {/* Top gradient glow line */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#F97316] via-[#FFD700] to-[#16A34A]" />
+
+            {/* Header Badge & Title */}
+            <div className="flex items-center justify-center md:justify-start gap-2 mb-3 text-[#FFD700]">
+              <Sparkles className="w-5 h-5 text-[#FFD700]" />
+              <span className="text-xs font-bold uppercase tracking-widest">Previous Enquiry Found</span>
+            </div>
+            
+            <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight mb-2">
+              You Have Already Enquired!
+            </h2>
+            <p className="text-gray-400 text-sm leading-relaxed mb-6">
+              We found your previous inquiry on this device. You can log in now to review and complete your plan, or start a new enquiry for another person.
+            </p>
+
+            {/* Multiple enquiries toggle (if > 1) */}
+            {existingEnquiries.length > 1 && (
+              <div className="mb-4 text-left">
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-2">
+                  Select Profile ({existingEnquiries.length} found):
+                </label>
+                <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                  {existingEnquiries.map((enq, idx) => (
+                    <button
+                      key={enq.ulid || idx}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic("selection");
+                        setSelectedEnquiryIndex(idx);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${
+                        selectedEnquiryIndex === idx 
+                          ? "bg-[#FFD700]/15 text-[#FFD700] border-[#FFD700]/50" 
+                          : "bg-white/5 text-gray-400 border-gray-800 hover:border-gray-700"
+                      }`}
+                    >
+                      {enq.name || `Enquiry #${idx + 1}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Enquiry Details Card */}
+            <div className="bg-[#202020] border border-gray-800/80 rounded-2xl p-4 md:p-5 mb-6 space-y-3 text-left">
+              <div className="flex justify-between items-start border-b border-gray-800 pb-3">
+                <div>
+                  <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                    {activeEnquiry.name || "Customer"}
+                  </h4>
+                  <p className="text-sm text-gray-400">{activeEnquiry.phone}</p>
+                </div>
+                {activeEnquiry.plan_interest && (
+                  <span className="bg-[#16A34A]/20 text-[#16A34A] border border-[#16A34A]/30 text-xs px-2.5 py-1 rounded-full font-bold">
+                    {activeEnquiry.plan_interest}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs pt-1">
+                {activeEnquiry.meta_data?.calories && (
+                  <div>
+                    <span className="text-gray-500 block">Daily Target</span>
+                    <span className="font-semibold text-white">{activeEnquiry.meta_data.calories} kcal</span>
+                  </div>
+                )}
+                {activeEnquiry.meta_data?.duration && (
+                  <div>
+                    <span className="text-gray-500 block">Schedule</span>
+                    <span className="font-semibold text-white">
+                      {activeEnquiry.meta_data.duration} ({activeEnquiry.meta_data.frequency || "5 Days"})
+                    </span>
+                  </div>
+                )}
+                {activeEnquiry.meta_data?.formData?.goal && (
+                  <div>
+                    <span className="text-gray-500 block">Fitness Goal</span>
+                    <span className="font-semibold text-white">{activeEnquiry.meta_data.formData.goal}</span>
+                  </div>
+                )}
+                {activeEnquiry.created_at && (
+                  <div>
+                    <span className="text-gray-500 block">Enquired On</span>
+                    <span className="font-semibold text-gray-300">
+                      {new Date(activeEnquiry.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              {/* Option 1: Login to Pay and Continue */}
+              <button
+                type="button"
+                onClick={handleLoginAndContinue}
+                className="w-full py-4 bg-[#16A34A] hover:bg-[#15803D] active:scale-95 text-white font-bold rounded-xl text-base flex items-center justify-center gap-2 shadow-lg shadow-green-600/20 transition-all cursor-pointer"
+              >
+                <span>Login to Pay and Continue</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
+
+              {/* Option 2: Enquire for Another */}
+              <button
+                type="button"
+                onClick={handleEnquireForAnother}
+                className="w-full py-3.5 bg-white/5 hover:bg-white/10 active:scale-95 text-gray-300 hover:text-white font-bold rounded-xl text-sm border border-gray-800 transition-all cursor-pointer"
+              >
+                Enquire for Another
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       <div 
         id="onboarding-root"
         className="min-h-screen w-full bg-[#111111] font-sans text-gray-100 flex flex-col items-center justify-start p-4 md:p-8 relative overflow-x-hidden overflow-y-auto"
@@ -934,6 +1145,28 @@ export default function OnboardingPage() {
           
           <div className="px-4 md:px-12">
             
+            {/* Patched Details Notification Pill */}
+            {isPatched && (
+              <div className="mb-6 flex items-center justify-between rounded-2xl border border-green-500/30 bg-green-950/30 px-4 py-3 text-xs text-green-300 backdrop-blur-sm animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-400 shrink-0" />
+                  <span>
+                    Patched details from your enquiry for <strong>{formData.name || "you"}</strong> ({formData.phone}). You can review or edit before finalizing.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearEnquiryForPatch();
+                    setIsPatched(false);
+                  }}
+                  className="text-gray-400 hover:text-white underline text-[11px] shrink-0 ml-3 cursor-pointer"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+
             {/* PERSISTENT HEADER AREA FOR INDICATORS */}
             <div className="flex justify-between items-center mb-10">
                {step === 1 ? (
@@ -1729,9 +1962,6 @@ export default function OnboardingPage() {
                             <span className="text-4xl font-extrabold text-white">
                               ₹{planPreviewData?.final_discounted_price || "—"}
                             </span>
-                            {planPreviewData && planPreviewData.discount_percentage > 0 && (
-                              <span className="text-sm line-through text-white/60">₹{planPreviewData.gross_price}</span>
-                            )}
                             <span className="text-xs text-white/70">all-inclusive</span>
                           </div>
                         </div>
@@ -1763,7 +1993,7 @@ export default function OnboardingPage() {
 
                           const displayPrice = isSelected && planPreviewData 
                             ? planPreviewData.final_discounted_price 
-                            : (plan.discount_percentage > 0 ? `₹— (${plan.discount_percentage}% OFF)` : "₹—");
+                            : "₹—";
 
                           return (
                             <div 
@@ -1818,9 +2048,6 @@ export default function OnboardingPage() {
                                 <span className="text-5xl font-bold text-white">
                                   {typeof displayPrice === "number" ? `₹${displayPrice}` : displayPrice}
                                 </span>
-                                {isSelected && planPreviewData && planPreviewData.discount_percentage > 0 && (
-                                  <span className="text-lg text-white/60 line-through mb-1">₹{planPreviewData.gross_price}</span>
-                                )}
                               </div>
                               
                               <button 
@@ -2103,16 +2330,88 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic("impact");
+                      const planName = selectedPlan === "CUSTOM_BUILDER" 
+                        ? "Bespoke Custom Plan" 
+                        : (plans.find(p => (p.ulid || p._id) === selectedPlan)?.name || "Personalized Meal Plan");
+                      
+                      saveEnquiryForPatch({
+                        ulid: `locked_${Date.now()}`,
+                        name: formData.name,
+                        phone: formData.phone,
+                        plan_interest: `${planName} - ₹${planPreviewData?.final_discounted_price || 0}`,
+                        meta_data: {
+                          plan_name: planName,
+                          duration: formData.planDuration,
+                          frequency: formData.planFrequency,
+                          slots: formData.mealSlots,
+                          calories: getTotalPurchasedCalories(),
+                          final_price: planPreviewData?.final_discounted_price,
+                          formData,
+                        }
+                      });
+
+                      const query = new URLSearchParams({
+                        phone: formData.phone || "",
+                        name: formData.name || "",
+                        patch: "true",
+                      });
+                      router.push(`/login?${query.toString()}`);
+                    }}
+                    className="w-full sm:w-auto px-8 py-4 bg-[#16A34A] hover:bg-[#15803D] active:scale-95 text-white rounded-xl font-extrabold text-base transition-all shadow-lg shadow-green-600/25 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Login to Start the Plan</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic("selection");
+                      clearEnquiryForPatch();
+                      setIsPatched(false);
+                      setFormData({
+                        name: "",
+                        phone: "",
+                        address: "",
+                        sex: "Male",
+                        age: "25",
+                        height: "180",
+                        weight: "75",
+                        activityLevel: "Lightly Active",
+                        goal: "Muscle Gain",
+                        dietaryPreferences: [],
+                        allergies: [],
+                        comments: "",
+                        planDuration: "WEEKLY",
+                        planFrequency: "5 DAYS",
+                        mealSlots: ["LUNCH"],
+                        mealCalories: { "LUNCH": 500 },
+                        lockedMeals: {},
+                      });
+                      setSelectedPlan(null);
+                      setStep(1);
+                    }}
+                    className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 active:scale-95 text-white rounded-xl font-bold text-base transition-all border border-white/20 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    Enquire for Another Person
+                  </button>
+                </div>
+
+                <div className="flex gap-6 justify-center text-xs text-gray-400">
                   <Link 
                     href="/"
-                    className="px-8 py-3.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold text-sm transition-colors"
+                    className="hover:text-white underline transition-colors"
                   >
                     Return Home
                   </Link>
+                  <span>•</span>
                   <Link 
                     href="/menu"
-                    className="px-8 py-3.5 bg-[#F97316] hover:bg-white hover:text-[#F97316] text-white rounded-xl font-bold text-sm transition-colors border border-[#F97316]"
+                    className="hover:text-white underline transition-colors"
                   >
                     Explore Today&apos;s Menu
                   </Link>

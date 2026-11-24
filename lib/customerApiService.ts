@@ -203,7 +203,113 @@ export const customerEndpoints = {
     email?: string;
     message?: string;
     plan_interest?: string;
+    device_fingerprint?: string;
+    meta_data?: any;
   }): Promise<any> => {
     return await customerApi.post<any>("/public/enquiry", data);
+  },
+
+  /**
+   * Fetch previous enquiry suggestions by device fingerprint or phone
+   */
+  getEnquirySuggestions: async (fingerprint?: string, phone?: string): Promise<any> => {
+    const params = new URLSearchParams();
+    if (fingerprint) params.set("fingerprint", fingerprint);
+    if (phone) params.set("phone", phone);
+    return await customerApi.get<any>(`/public/enquiry-suggestions?${params.toString()}`);
+  },
+
+  /**
+   * Save guest onboarding or enquiry draft to Redis
+   */
+  saveDraftToRedis: async (key: string, data: any, ttlSeconds = 86400): Promise<any> => {
+    return await customerApi.post<any>("/public/draft", { key, data, ttl_seconds: ttlSeconds });
+  },
+
+  /**
+   * Get and verify guest draft from Redis only
+   */
+  getDraftFromRedis: async (key: string): Promise<any> => {
+    return await customerApi.get<any>(`/public/draft?key=${encodeURIComponent(key)}`);
+  },
+
+  /**
+   * Remove guest draft from Redis
+   */
+  deleteDraftFromRedis: async (key: string): Promise<any> => {
+    return await customerApi.del<any>(`/public/draft?key=${encodeURIComponent(key)}`);
+  },
+
+  /**
+   * Send Customer OTP (Saved in Redis with 5-minute TTL)
+   */
+  sendCustomerOtp: async (phone: string): Promise<any> => {
+    return await customerApi.post<any>("/auth/customer/send-otp", { phone });
+  },
+
+  /**
+   * Verify Customer OTP (Verified against Redis)
+   */
+  verifyCustomerOtp: async (phone: string, otp: string, name?: string): Promise<any> => {
+    return await customerApi.post<any>("/auth/customer/verify-otp", { phone, otp, name });
+  },
+
+  /**
+   * Save Authenticated Customer Onboarding Profile to PostgreSQL & clear temporary Redis drafts
+   */
+  saveCustomerOnboardingProfile: async (
+    payload: {
+      name: string;
+      sex: string;
+      age: number;
+      height: number;
+      weight: number;
+      activity_level: string;
+      goal: string;
+      meal_frequency: number;
+      meal_slots: string[];
+      calorie_split?: Record<string, number>;
+      fingerprint?: string;
+    },
+    token: string
+  ): Promise<any> => {
+    return await customerApi.put<any>("/customers/me/onboarding-profile", payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Fetch Authenticated Customer Onboarding Profile
+   */
+  getCustomerOnboardingProfile: async (token: string): Promise<any> => {
+    return await customerApi.get<any>("/customers/me/onboarding-profile", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Save Guest Onboarding Profile to Redis (when user skipped login)
+   */
+  saveGuestOnboardingProfile: async (payload: {
+    name: string;
+    sex: string;
+    age: number;
+    height: number;
+    weight: number;
+    activity_level: string;
+    goal: string;
+    meal_frequency: number;
+    meal_slots: string[];
+    calorie_split?: Record<string, number>;
+    fingerprint?: string;
+  }): Promise<any> => {
+    return await customerApi.post<any>("/public/onboarding-profile", payload);
+  },
+
+  /**
+   * Fetch Guest Onboarding Profile from Redis
+   */
+  getGuestOnboardingProfile: async (fingerprint: string): Promise<any> => {
+    return await customerApi.get<any>(`/public/onboarding-profile?fingerprint=${encodeURIComponent(fingerprint)}`);
   },
 };

@@ -24,8 +24,22 @@ export const createPublicApi = (api: ApiClient) => (
       if (category) params.set('category', category);
       return await api.get<any>(`/public/plans?${params.toString()}`);
     },
-    submitEnquiry: async (data: { name: string; phone: string; email?: string; message?: string; plan_interest?: string }): Promise<any> => {
+    submitEnquiry: async (data: { 
+      name: string; 
+      phone: string; 
+      email?: string; 
+      message?: string; 
+      plan_interest?: string;
+      device_fingerprint?: string;
+      meta_data?: any;
+    }): Promise<any> => {
       return await api.post<any>('/public/enquiry', data);
+    },
+    getEnquirySuggestions: async (fingerprint?: string, phone?: string): Promise<any> => {
+      const params = new URLSearchParams();
+      if (fingerprint) params.set("fingerprint", fingerprint);
+      if (phone) params.set("phone", phone);
+      return await api.get<any>(`/public/enquiry-suggestions?${params.toString()}`);
     },
   }
 );

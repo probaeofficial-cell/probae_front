@@ -40,7 +40,6 @@ export default function PlanCard({ plan }: { plan: PlanData }) {
       </div>
       <h3 className="text-xl font-extrabold">{plan.name}</h3>
       <p className="mt-3 text-2xl font-black">₹— <span className="text-sm font-medium text-white/80">Contact for Pricing</span></p>
-      {plan.discount_percentage > 0 && <p className="mt-1 text-sm">Save {plan.discount_percentage}%</p>}
       <button type="button" onClick={() => setIsOpen(true)} className="mt-6 rounded-xl bg-[#FFD700] px-5 py-3 font-extrabold text-neutral-900 transition hover:bg-yellow-300">Choose {plan.name}</button>
     </article>
     <EnquiryModal isOpen={isOpen} onClose={() => setIsOpen(false)} planName={plan.name} />
