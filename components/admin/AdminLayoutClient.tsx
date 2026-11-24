@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/admin/Sidebar";
 import React, { useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { getAdminLandingPath, getPlanPermissionForPath } from "@/lib/sidebarConfig";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -15,6 +16,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === "/admin/login";
   const planPermission = getPlanPermissionForPath(pathname);
   const isStaff = user?.role?.toUpperCase() === "STAFF";
+  const inventoryRouteDenied = isStaff && pathname.startsWith("/admin/raw-materials/") && !hasPermission(PERMISSIONS.inventory.read);
 
   useEffect(() => {
     if (isLoading) return;
@@ -35,8 +37,10 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
       router.replace(getAdminLandingPath("STAFF", hasPermission));
     } else if (isStaff && planPermission && permissionsLoaded && !hasPermission(planPermission)) {
       router.replace(getAdminLandingPath("STAFF", hasPermission));
+    } else if (inventoryRouteDenied && permissionsLoaded) {
+      router.replace(getAdminLandingPath("STAFF", hasPermission));
     }
-  }, [isLoginPage, isLoading, user, router, pathname, permissionsLoaded, hasPermission, isStaff, planPermission]);
+  }, [isLoginPage, isLoading, user, router, pathname, permissionsLoaded, hasPermission, isStaff, planPermission, inventoryRouteDenied]);
 
   if (isLoading) {
     return (
@@ -48,7 +52,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
 
   // While waiting for router.push to take effect, show the loader instead of returning null
   // Returning null during an active Next.js App Router transition can cause the page to freeze
-  if ((isLoginPage && user) || (!isLoginPage && !user) || (!isLoginPage && user?.role?.toLowerCase() === "delivery") || (!isLoginPage && isStaff && pathname === "/admin/dashboard") || (!isLoginPage && isStaff && planPermission && (!permissionsLoaded || !hasPermission(planPermission)))) {
+  if ((isLoginPage && user) || (!isLoginPage && !user) || (!isLoginPage && user?.role?.toLowerCase() === "delivery") || (!isLoginPage && isStaff && pathname === "/admin/dashboard") || (!isLoginPage && isStaff && planPermission && (!permissionsLoaded || !hasPermission(planPermission))) || (!isLoginPage && isStaff && pathname.startsWith("/admin/raw-materials/") && (!permissionsLoaded || !hasPermission(PERMISSIONS.inventory.read)))) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#141414] text-white">
         <BowlLoader className="h-8 w-8 text-[#6A0FAD]" />
@@ -69,7 +73,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
       <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] pointer-events-none">
         <div className="pointer-events-auto backdrop-blur-xl bg-white/30 border border-white/50 shadow-[0_8px_32px_rgba(31,38,135,0.15)] rounded-full px-3 py-1.5 flex items-center justify-center hover:bg-white/40 transition-all duration-300 cursor-default">
           <span className="text-[10px] sm:text-xs font-black text-neutral-800/70 tracking-widest uppercase">
-            v1.261124
+            v2.261124
           </span>
         </div>
       </div>

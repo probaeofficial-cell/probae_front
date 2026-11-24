@@ -28,6 +28,7 @@ export const queryKeys = {
   rawMaterials: {
     root: ["private", "raw-material-catalogue"] as const,
     list: (userId: string | number, params: readonly unknown[]) => ["private", "raw-material-catalogue", userId, ...params] as const,
+    costReport: (userId: string | number, params: readonly unknown[]) => ["private", "raw-material-cost-report", userId, ...params] as const,
   },
   packaging: {
     root: ["private", "packaging"] as const,

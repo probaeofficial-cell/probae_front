@@ -83,5 +83,36 @@ export const createRawMaterialsApi = (api: ApiClient) => (
         return await api.del<void>(`/raw-materials/purchases/${id}`);
       },
     },
+    getCostReport: async (params: { startDate: string; endDate: string; search?: string; page: number; size: number }) => {
+      const query = new URLSearchParams({
+        start_date: params.startDate,
+        end_date: params.endDate,
+        page: String(params.page),
+        size: String(params.size),
+      });
+      if (params.search) query.set("search", params.search);
+      return await api.get<RawMaterialCostReport>(`/raw-materials/reports/cost?${query.toString()}`);
+    },
   }
 );
+
+export interface RawMaterialCostReport {
+  start_date: string;
+  end_date: string;
+  summary: { purchased_cost: number; bowl_cost: number };
+  items: Array<{
+    id: number;
+    ulid: string;
+    name: string;
+    item_code?: string | null;
+    unit: string;
+    purchased_quantity: number;
+    purchased_cost: number;
+    bowl_quantity: number;
+    bowl_cost: number;
+  }>;
+  total: number;
+  page: number;
+  size: number;
+  cost_allocation_note: string;
+}

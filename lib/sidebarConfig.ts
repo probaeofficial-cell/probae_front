@@ -90,6 +90,7 @@ export const MAIN_MENU: Record<string, MenuItem> = {
       calorieMgt: { label: "Calorie MGT", dotColor: "bg-red-500", path: "/admin/raw-materials/calorie-management", roles: ["ADMIN"] },
       stockMgt: { label: "Stock MGT", dotColor: "bg-green-500", badge: 3, path: "/admin/raw-materials/stock", permission: PERMISSIONS.inventory.read },
       purchaseHistory: { label: "Purchase History", dotColor: "bg-teal-500", path: "/admin/raw-materials/purchase-history", permission: PERMISSIONS.inventory.read },
+      costReport: { label: "Cost Report", dotColor: "bg-emerald-500", path: "/admin/raw-materials/cost-report", permission: PERMISSIONS.inventory.read },
       bulkUpload: { label: "Bulk Upload", dotColor: "bg-indigo-500", path: "/admin/raw-materials/bulk-upload", roles: ["ADMIN"] },
     },
   },
