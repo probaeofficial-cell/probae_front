@@ -2,11 +2,11 @@
 import { BowlLoader } from "@/components/admin/BowlLoader";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronDown, ChevronUp, Trash2, Edit3, Check, X, Download, Package, User, Calendar, Flame, Beef, Wheat, Droplets, Leaf, AlertTriangle, ClipboardList, CheckCircle2 } from "lucide-react";
-import { Phone, MapPin, Printer, Sun, Moon, UtensilsCrossed } from "lucide-react";
+import { Phone, MapPin, Sun, Moon, UtensilsCrossed } from "lucide-react";
 import { Header } from "@/components/admin/Header";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProbaeButton } from "@/components/admin/ProbaeButton";
@@ -46,7 +46,7 @@ export default function OrderDetailPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [prepList, setPrepList] = useState<any>(null);
   const [isPrepWarning, setIsPrepWarning] = useState<boolean>(false);
-  const invoiceRef = useRef<HTMLDivElement>(null);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
 
   // Edit Item State
 
@@ -157,35 +157,25 @@ export default function OrderDetailPage() {
   };
 
 
-  // ─── invoice (print-to-PDF) ───────────────────────────────────────────────
-  const handleDownloadInvoice = () => {
-    const printContent = invoiceRef.current;
-    if (!printContent) return;
-    const win = window.open("", "_blank");
-    if (!win) return;
-    win.document.write(`
-      <html><head><title>Invoice – ${order?.ulid}</title>
-      <style>
-        *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:system-ui,sans-serif;color:#111;padding:32px;font-size:14px}
-        h1{font-size:22px;font-weight:900;margin-bottom:4px}
-        .sub{color:#6b7280;font-size:12px;margin-bottom:24px}
-        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-        .card{border:1px solid #e5e7eb;border-radius:12px;padding:16px}
-        .label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af;margin-bottom:4px}
-        .value{font-weight:700;font-size:14px}
-        table{width:100%;border-collapse:collapse;font-size:12px}
-        th{text-align:left;padding:6px 10px;background:#f9fafb;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;border-bottom:1px solid #e5e7eb}
-        td{padding:6px 10px;border-bottom:1px solid #f3f4f6}
-        .bowl-title{font-weight:800;font-size:13px;margin:16px 0 6px}
-        .total{display:flex;justify-content:flex-end;margin-top:16px;font-size:16px;font-weight:900}
-        .badge{display:inline-block;padding:2px 10px;border-radius:100px;font-size:10px;font-weight:700;text-transform:uppercase}
-      </style></head><body>
-      ${printContent.innerHTML}
-      </body></html>`);
-    win.document.close();
-    win.focus();
-    win.print();
+  // ─── invoice download ─────────────────────────────────────────────────────
+  const handleDownloadInvoice = async () => {
+    if (!order || invoiceLoading) return;
+    setInvoiceLoading(true);
+    try {
+      const blob = await endpoints.orders.downloadInvoice(ulid);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `probae-invoice-${(order.order_number || order.ulid).replace(/[^a-zA-Z0-9-_]/g, "-")}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      setErrorMsg(error?.message || "Could not download this invoice. Please try again.");
+    } finally {
+      setInvoiceLoading(false);
+    }
   };
 
   // ─── collapse toggle ──────────────────────────────────────────────────────
@@ -235,57 +225,6 @@ export default function OrderDetailPage() {
   }, { protein: 0, carbs: 0, fat: 0, fiber: 0 });
 
 
-  // ─── invoice template (rendered off-screen) ───────────────────────────────
-  const InvoiceTemplate = () => (
-    <div ref={invoiceRef} style={{ display: "none" }}>
-      <h1>Probae Order Invoice</h1>
-      <div className="sub">Order ID: {order.ulid} &nbsp;·&nbsp; Date: {order.target_date}</div>
-      <div className="grid">
-        <div className="card">
-          <div className="label">Customer</div>
-          <div className="value">{order.customer?.name}</div>
-          <div style={{ color: "#6b7280", fontSize: 12 }}>{order.customer?.phone}</div>
-        </div>
-        <div className="card">
-          <div className="label">Status</div>
-          <div className="value">{order.status}</div>
-          <div className="label" style={{ marginTop: 8 }}>Source</div>
-          <div className="value">{order.order_source}</div>
-        </div>
-      </div>
-      {order.items.map((item: any) => (
-        <div key={item.ulid}>
-          <div className="bowl-title">{item.meal_slot} – {item.bowl_name} (x{item.quantity})</div>
-          <table>
-            <thead>
-              <tr>
-                <th>Ingredient</th><th>Tag</th><th>Base Weight</th><th>Scaled Weight</th>
-              </tr>
-            </thead>
-            <tbody>
-              {item.adjusted_ingredients?.map((ing: any, i: number) => {
-                const origW = Number(ing.original_weight ?? ing.weight_g ?? ing.weight_g_or_ml ?? ing.new_weight ?? 0);
-                const newW = Number(ing.new_weight ?? ing.weight_g ?? ing.weight_g_or_ml ?? ing.original_weight ?? 0);
-                return (
-                  <tr key={i}>
-                    <td>{ing.name}</td>
-                    <td>{ing.macro_tag}</td>
-                    <td>{origW > 0 ? `${origW.toFixed(1)}g` : "—"}</td>
-                    <td><strong>{newW > 0 ? `${newW.toFixed(1)}g` : "—"}</strong></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 6 }}>
-            {Math.round(item.adjusted_calories)} kcal &nbsp;·&nbsp; ₹{item.adjusted_price.toFixed(2)}
-          </div>
-        </div>
-      ))}
-      <div className="total">Total: ₹{order.total_order_price.toFixed(2)}</div>
-    </div>
-  );
-
   return (<>
     <div className="flex flex-col flex-1 h-full bg-[#f8f9fa] overflow-y-auto">
       <div className="p-4 sm:p-8 flex flex-col mx-auto w-full max-w-7xl">
@@ -316,9 +255,10 @@ export default function OrderDetailPage() {
             )}
             <button 
               onClick={handleDownloadInvoice} 
+              disabled={invoiceLoading}
               className="px-6 py-2.5 rounded-full border border-neutral-300 font-bold text-neutral-700 bg-white hover:bg-neutral-50 flex items-center gap-2 shadow-sm transition-colors"
             >
-              <Printer className="w-4 h-4" /> Print Ticket
+              <Download className="w-4 h-4" /> {invoiceLoading ? "Preparing invoice..." : "Download Invoice"}
             </button>
             {nextStatus && canChangeToNextStatus && (
               <button 
@@ -587,8 +527,6 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
-
-      <InvoiceTemplate />
 
       {/* ── Status Confirm Modal ── */}
       {statusConfirm && (

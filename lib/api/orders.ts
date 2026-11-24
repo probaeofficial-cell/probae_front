@@ -33,6 +33,7 @@ export function createOrdersApi(api: ApiClient) {
     bulkUpdateItems: (ulid: string, payload: any) => api.put(`/orders/${ulid}/items`, payload),
     updateStatus: (ulid: string, status: string) => api.patch(`/orders/${ulid}/status`, { status }),
     get: (ulid: string) => api.get(`/orders/${ulid}`),
+    downloadInvoice: (ulid: string) => api.get<Blob>(`/orders/${ulid}/invoice.pdf`, { responseType: "blob" }),
     delete: (ulid: string) => api.del(`/orders/${ulid}`),
     updateItem: (orderUlid: string, itemUlid: string, payload: any) => api.patch(`/orders/${orderUlid}/items/${itemUlid}`, payload),
     bulkAssignDriver: (payload: { order_ulids: string[]; driver_ulid: string | null }) => api.patch("/orders/bulk-assign-driver", payload),
